@@ -24,6 +24,16 @@ multiboot_header:
 
 multiboot_entry:
 
+	movl $(stack+4096), %esp
+
+	pushl $0
+	popf
+
+	pushl %ebx
+
+	call os_main_from_multiboot
+	hlt
+
         # print
 
         movl $4, %eax  # (Syscall 4: write)

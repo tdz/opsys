@@ -1,9 +1,28 @@
 
+#define MULTIBOOT_HEADER_MAGIC  0x1BADB001
+#define MULTIBOOT_HEADER_FLAGS  0x00000003
+
 .text
 
 .global _start
 
 _start:
+        jmp multiboot_entry
+
+        .align 4
+
+multiboot_header:
+
+        .long 0x1BADB002 # MULTIBOOT_HEADER_MAGIC
+        .long 0x00000003 # MULTIBOOT_HEADER_FLAGS
+        .long -(0x1BADB002+0x00000003)
+        .long multiboot_header
+        .long _start
+        .long _edata
+        .long _end
+        .long multiboot_entry
+
+multiboot_entry:
 
         # print
 
@@ -22,4 +41,6 @@ _start:
 .data
 
 HW: .ascii "Hello world!\n"
+
+.comm stack,4096
 

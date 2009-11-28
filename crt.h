@@ -9,6 +9,9 @@ crt_write(volatile unsigned char *vidmem,
           unsigned char attr);
 
 int
+crt_getmaxpos(unsigned short *row, unsigned short *col);
+
+int
 crt_getpos(unsigned short *row, unsigned short *col);
 
 int

@@ -11,7 +11,7 @@ all : oskernel
 %.o : %.c
 	gcc -m32 -march=i386 -c -o $@ $<
 
-oskernel : hworld.S.o main.o
+oskernel : boot.S.o crt.o ioports.o main.o
 	ld -nostdlib -static -melf_i386 -Ttext=$(RELOC_ADDR) -o $@ $?
 
 clean :

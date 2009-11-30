@@ -25,5 +25,8 @@ idt_init(void);
 void
 idt_install(void);
 
+void
+idt_install_irq(void);
+
 #endif
 

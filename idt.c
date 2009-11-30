@@ -57,7 +57,7 @@ default_handler(void)
         return;
 }
 
-static struct idt_entry g_idt[2];
+static struct idt_entry g_idt[256];
 
 void
 idt_init(void)
@@ -88,5 +88,31 @@ void
 idt_install()
 {
         __asm__ ("lidt (_idtr)\n\t");
+}
+
+void
+idt_install_irq()
+{
+        __asm__ (/* out ICW 1 */
+                 "mov $0x11, %%al\n\t"
+                 "out %%al, $0x20\n\t"
+                 "out %%al, $0xa0\n\t"
+                 /* out ICW 2 */
+                 "mov $0x20, %%al\n\t"
+                 "out %%al, $0x21\n\t"
+                 "mov $0x28, %%al\n\t"
+                 "out %%al, $0xa1\n\t"
+                 /* out ICW 3 */
+                 "mov $0x04, %%al\n\t"
+                 "out %%al, $0x21\n\t"
+                 "mov $0x02, %%al\n\t"
+                 "out %%al, $0xa1\n\t"
+                 /* out ICW 4 */
+                 "mov $0x01, %%al\n\t"
+                 "out %%al, $0x21\n\t"
+                 "out %%al, $0xa1\n\t"
+                        :
+                        :
+                        : "al");
 }
 

@@ -15,6 +15,7 @@ CSOURCES = console.c \
            crt.c \
            gdt.c \
            idt.c \
+           intrrupt.c \
            ioports.c \
            main.c \
            string.c \

@@ -53,7 +53,7 @@ multiboot_entry:
 
 #	hlt
 
-        int $0x1
+        int $0x80
 
 	hlt
 

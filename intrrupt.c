@@ -16,28 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "multiboot.h"
-#include "console.h"
-#include "gdt.h"
-#include "idt.h"
 #include "intrrupt.h"
 
 void
-os_main_from_multiboot(struct multiboot_info *mb_info)
+cli()
 {
-        console_printf("%s...\n\t%s\n", "OS kernel booting",
-                                        "Cool, isn't it?");
+        __asm__("cli");
+}
 
-        /* setup GDT for protected mode */
-        gdt_init();
-        gdt_install();
-
-        /* setup IDT for protected mode */
-        idt_init();
-        idt_install();
-
-        idt_install_irq();
-
-        sti();
+void
+sti()
+{
+        __asm__("sti");
 }
 

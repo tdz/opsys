@@ -34,6 +34,10 @@ multiboot_entry:
 	pushl %ebx
 	call os_main_from_multiboot
 
+#	hlt
+
+        int $0x1
+
 	hlt
 
         # print

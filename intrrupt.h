@@ -25,5 +25,8 @@ cli(void);
 void
 sti(void);
 
+void
+eio(void);
+
 #endif
 

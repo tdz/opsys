@@ -57,6 +57,13 @@ default_handler(void)
         return;
 }
 
+static void
+timer_handler(void)
+{
+        console_printf("timer handler\n");
+        return;
+}
+
 static struct idt_entry g_idt[256];
 
 void
@@ -66,11 +73,17 @@ idt_init(void)
 
         for (i = 0; i < sizeof(g_idt)/sizeof(g_idt[0]); ++i) {
                 idt_entry_init(g_idt+i, (unsigned long)default_handler,
-                                        0x8,
+                                        0x08,
                                         0,
                                         IDT_FLAG_SEGINMEM|
                                         IDT_FLAG_32BITINT);
         }
+
+        idt_entry_init(g_idt+0x20, (unsigned long)timer_handler,
+                                   0x08,
+                                   0,
+                                   IDT_FLAG_SEGINMEM|
+                                   IDT_FLAG_32BITINT);
 }
 
 struct idt_register

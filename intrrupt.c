@@ -18,15 +18,28 @@
 
 #include "intrrupt.h"
 
+/* clear interrupts */
 void
 cli()
 {
-        __asm__("cli");
+        __asm__("cli\n\t");
 }
 
+/* set interrupts */
 void
 sti()
 {
-        __asm__("sti");
+        __asm__("sti\n\t");
+}
+
+/* signal end of interrupt to PIC */
+void
+eoi()
+{
+        __asm__("mov $0x20, %%al\n\t"
+                "out %%al, $0x20\n\t"
+                        :
+                        :
+                        : "al");
 }
 

@@ -1,6 +1,17 @@
 
 #include "gdt.h"
 
+enum {
+        GDT_FLAG_LOWGRAN  = 0x80,
+        GDT_FLAG_32BITSEG = 0x40,
+        /* flag bits */
+        GDT_FLAG_SEGINMEM = 0x80,
+        GDT_FLAG_CODEDATA = 0x10,
+        GDT_FLAG_CODESEG  = 0x08,
+        GDT_FLAG_DATASEG  = 0x00,
+        GDT_FLAG_RDWRRDEX = 0x02
+};
+
 struct gdt_entry
 {
         unsigned short limit_low;
@@ -20,7 +31,8 @@ gdt_entry_init(struct gdt_entry *gdte, unsigned long base,
         gdte->base_low   = base&0xffff;
         gdte->base_mid   = (base>>16)&0xff;
         gdte->flags      = flags;
-        gdte->limit_high = (limit>>16)&0x0f | 0xc0;
+        gdte->limit_high = (limit>>16)&0x0f | GDT_FLAG_LOWGRAN|
+                                              GDT_FLAG_32BITSEG;
         gdte->base_high  = (base>>24)&0xff;
 }
 
@@ -32,10 +44,16 @@ gdt_init()
         gdt_entry_init(g_gdt+0, 0, 0, 0);
         gdt_entry_init(g_gdt+1, 0x00000000,
                                 0x00ffffff,
-                                0x9a/*10011010*/);
+                                GDT_FLAG_SEGINMEM|
+                                GDT_FLAG_CODEDATA|
+                                GDT_FLAG_CODESEG|
+                                GDT_FLAG_RDWRRDEX);
         gdt_entry_init(g_gdt+2, 0x00000000,
                                 0x00ffffff,
-                                0x92/*10010010*/);
+                                GDT_FLAG_SEGINMEM|
+                                GDT_FLAG_CODEDATA|
+                                GDT_FLAG_DATASEG|
+                                GDT_FLAG_RDWRRDEX);
 }
 
 struct gdt_register

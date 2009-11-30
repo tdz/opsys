@@ -3,6 +3,12 @@
 #include "syscall.h"
 #include "idt.h"
 
+enum {
+        IDT_FLAG_SEGINMEM = 0x80,
+        IDT_FLAG_32BITINT = 0x0e,
+        IDT_FLAG_16BITINT = 0x06
+};
+
 struct idt_entry
 {
         unsigned short base_low;
@@ -15,12 +21,13 @@ struct idt_entry
 static void
 idt_entry_init(struct idt_entry *idte, unsigned long  func,
                                        unsigned short tss,
+                                       unsigned char  ring,
                                        unsigned char  flags)
 {
         idte->base_low = func&0xffff;
         idte->tss = tss;
         idte->reserved = 0;
-        idte->flags = flags;
+        idte->flags = flags | ((ring&0x03)<<7);
         idte->base_high = (func>>16)&0xffff;
 }
 
@@ -43,7 +50,9 @@ idt_init(void)
         for (i = 0; i < sizeof(g_idt)/sizeof(g_idt[0]); ++i) {
                 idt_entry_init(g_idt+i, (unsigned long)default_handler,
                                         0x8,
-                                        0x8e /*1000 1110*/);
+                                        0,
+                                        IDT_FLAG_SEGINMEM|
+                                        IDT_FLAG_32BITINT);
         }
 }
 

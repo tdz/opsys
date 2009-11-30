@@ -1,20 +1,41 @@
 
-.PHONY : all clean
+ARCH = i386
+
+CFLAGS = -m32
+
+ASFLAGS = --32
+
+LDFLAGS = -nostdlib -static
 
 RELOC_ADDR = 0x1000000
 
+ASMSOURCES = boot.S
+
+CSOURCES = console.c \
+           crt.c \
+           gdt.c \
+           idt.c \
+           ioports.c \
+           main.c \
+           string.c \
+           syscall.c
+
+.PHONY : all clean
+
 all : oskernel
-
-%.S.o : %.S
-	as --32 -march=i386 -o $@ $<
-
-%.o : %.c
-	gcc -m32 -march=i386 -c -o $@ $<
-
-oskernel : boot.S.o console.o crt.o gdt.o idt.o ioports.o main.o string.o syscall.o
-	ld -nostdlib -static -melf_i386 -Ttext=$(RELOC_ADDR) -o $@ $?
 
 clean :
 	rm -fr oskernel
-	rm -fr *.o
+	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+
+
+oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+	ld $(LDFLAGS) -melf_i386 -Ttext=$(RELOC_ADDR) -o $@ $?
+
+
+%.S.o : %.S
+	as $(ASFLAGS) -march=$(ARCH) -o $@ $<
+
+%.o : %.c
+	gcc $(CFLAGS) -march=$(ARCH) -c -o $@ $<
 

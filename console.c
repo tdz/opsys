@@ -22,6 +22,45 @@
 #include "string.h"
 #include "crt.h"
 
+static size_t
+console_hextostr(unsigned long v, char *str)
+{
+        static const char symbol[] = {'0','1','2','3','4','5','6','7',
+                                      '8','9','a','b','c','d','e','f'};
+
+        char *digit;
+        size_t len;
+
+        digit = str;
+
+        if (v) {
+                while (v) {
+                        *digit = symbol[v&0xf];
+                        ++digit;
+                        v >>= 4;
+                }
+        } else {
+                *(digit++)  = '0';
+        }
+
+        *(digit++) = 'x';
+        *(digit++) = '0';
+
+        len = digit-str;
+
+        *(digit--) = '\0';
+
+        while (str < digit) {
+                const char tmp = *str;
+                *str = *digit;
+                *digit = tmp;
+                ++str;
+                --digit;
+        }
+
+        return len;
+}
+
 int
 console_printf(const char *str, ...)
 {
@@ -59,9 +98,22 @@ console_printf(const char *str, ...)
                                         strbeg = str+1;
                                 }
                                 break;
-                        case 'd':
-                                break;
-                        case 'i':
+                        case 'x':
+                                {
+                                        char astr[12];
+                                        size_t len;
+                                        unsigned long a;
+
+                                        a = va_arg(args, unsigned long);
+
+                                        len = console_hextostr(a, astr);
+
+                                        crt_getpos(&row, &col);
+                                        crt_write(crt_getaddress(row, col),
+                                                  astr, len, 0x07);
+                                        crt_setpos(row, col+len);
+                                        strbeg = str+1;
+                                }
                                 break;
                         case '%':
                                 break;

@@ -19,6 +19,20 @@
 #include "types.h"
 #include "string.h"
 
+void *
+memset(void *mem, int c, size_t n)
+{
+        unsigned char *s = mem;
+
+        while (n) {
+                *s = c;
+                ++s;
+                --n;
+        }
+
+        return mem;
+}
+
 size_t
 strlen(const char *str)
 {

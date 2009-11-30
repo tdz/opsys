@@ -19,6 +19,9 @@
 #ifndef STRING_H
 #define STRING_H
 
+void *
+memset(void *mem, int c, size_t n);
+
 size_t
 strlen(const char *str);
 

@@ -35,8 +35,7 @@ console_hextostr(unsigned long v, char *str)
 
         if (v) {
                 while (v) {
-                        *digit = symbol[v&0xf];
-                        ++digit;
+                        *(digit++) = symbol[v&0xf];
                         v >>= 4;
                 }
         } else {

@@ -140,13 +140,14 @@ timer_handler(unsigned long irqnum)
         
         ++tickcounter;
 
-/*        console_printf("timer handler\n");*/
+        eoi(0);
 }
 
 void
 keyboard_handler(unsigned long irqnum)
 {
         console_printf("keyboard handler\n");
+        eoi(1);
 }
 
 void

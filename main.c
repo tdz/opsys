@@ -21,6 +21,9 @@
 #include "gdt.h"
 #include "idt.h"
 #include "intrrupt.h"
+#include "pit.h"
+
+unsigned long tickcounter = 0;
 
 void
 os_main_from_multiboot(struct multiboot_info *mb_info)
@@ -35,9 +38,16 @@ os_main_from_multiboot(struct multiboot_info *mb_info)
         /* setup IDT for protected mode */
         idt_init();
         idt_install();
-
         idt_install_irq();
 
+        /* setup PIT for system timer*/
+        pit_install(0, 100, PIT_MODE_RATEGEN);
+
         sti();
+
+        for (;;) {
+                crt_setpos(12, 40);
+                console_printf("%x      ", tickcounter);
+        }
 }
 

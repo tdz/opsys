@@ -16,32 +16,27 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "intrrupt.h"
+#include "pit.h"
 
-/* clear interrupts */
 void
-cli()
+pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode)
 {
-        __asm__("cli\n\t");
-}
+        unsigned char byte;
+        unsigned short word;
 
-/* set interrupts */
-void
-sti()
-{
-        __asm__("sti\n\t");
-}
+        /* setup PIT control word */
 
-/* signal end of interrupt to PIC */
-void
-eoi(unsigned char intno)
-{
-        if (intno > 15) {
-                return;
-        } else if (intno > 7) {
-                io_outb(0xa0, 0x20);
-        } else {
-                io_outb(0x20, 0x20);
-        }
+        byte = ((counter&0x3) << 6) |
+             (0x3 << 4) | /* LSB then MSB */
+             ((mode&0x7) << 1);
+
+        io_outb(0x43, byte);
+
+        /* setup PIT counter */
+
+        word = 1193180 / freq;
+
+        io_outb(0x40+(counter&0x03), word&0xff);
+        io_outb(0x40+(counter&0x03), (word&0xff00)>>8);
 }
 

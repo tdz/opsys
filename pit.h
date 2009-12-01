@@ -16,32 +16,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "intrrupt.h"
+#ifndef PIT_H
+#define PIT_H
 
-/* clear interrupts */
-void
-cli()
-{
-        __asm__("cli\n\t");
-}
+enum pit_mode {
+        PIT_MODE_TERMINAL = 0x00,
+        PIT_MODE_ONESHOT  = 0x01,
+        PIT_MODE_RATEGEN  = 0x02,
+        PIT_MODE_WAVEGEN  = 0x03,
+        PIT_MODE_SWSTROBE = 0x04,
+        PIT_MODE_HWSTROBE = 0x05
+};
 
-/* set interrupts */
 void
-sti()
-{
-        __asm__("sti\n\t");
-}
+pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode);
 
-/* signal end of interrupt to PIC */
-void
-eoi(unsigned char intno)
-{
-        if (intno > 15) {
-                return;
-        } else if (intno > 7) {
-                io_outb(0xa0, 0x20);
-        } else {
-                io_outb(0x20, 0x20);
-        }
-}
+#endif
 

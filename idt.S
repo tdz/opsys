@@ -75,81 +75,55 @@ handle_unknown_interrupt:
         iret
 
 handle_interrupt0:
-        push $0
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt1:
-        push $1
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt2:
-        push $2
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt3:
-        push $3
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt4:
-        push $4
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt5:
-        push $5
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt6:
-        push $6
-        call interrupt_handler
-        add $1, %esp
+        call invalid_opcode_handler
         iret
 
 handle_interrupt7:
-        push $7
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt8:
-        push $8
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt9:
-        push $9
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt10:
-        push $10
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt11:
-        push $11
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt12:
-        push $12
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt13:
@@ -157,115 +131,84 @@ handle_interrupt13:
         iret
 
 handle_interrupt14:
-        push $14
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt15:
-        push $15
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt16:
-        push $16
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt17:
-        push $17
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt18:
-        push $18
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt19:
-        push $19
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt20:
-        push $20
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt21:
-        push $21
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt22:
-        push $22
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt23:
-        push $23
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt24:
-        push $24
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt25:
-        push $25
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt26:
-        push $26
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt27:
-        push $27
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt28:
-        push $28
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt29:
-        push $29
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt30:
-        push $30
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_interrupt31:
-        push $31
-        call interrupt_handler
-        add $1, %esp
+        call unhandled_interrupt_handler
         iret
 
 handle_irq0:
         call timer_handler
+/*        pushl %eax
+        mov $0x20, %al
+        outb %al, $0x20
+        popl %eax*/
+/*        add $1, tickcounter*/
         iret
 
 handle_irq1:
@@ -273,86 +216,58 @@ handle_irq1:
         iret
 
 handle_irq2:
-        push $2
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq3:
-        push $3
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq4:
-        push $4
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq5:
-        push $5
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq6:
-        push $6
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq7:
-        push $7
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq8:
-        push $8
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq9:
-        push $9
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq10:
-        push $10
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq11:
-        push $11
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq12:
-        push $12
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq13:
-        push $13
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq14:
-        push $14
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 
 handle_irq15:
-        push $15
-        call irq_handler
-        add $1, %esp
+        call unhandled_irq_handler
         iret
 

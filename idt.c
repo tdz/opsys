@@ -51,135 +51,38 @@ idt_entry_init(struct idt_entry *idte, unsigned long  func,
 
 #include "console.h"
 
-#define HANDLER(NUM)                                    \
-static void                                             \
-default##NUM##_handler(void)                            \
-{                                                       \
-/*        cli();*/                                          \
-        console_printf("default handler " #NUM "\n");   \
-/*        sti();*/                                          \
-/*        eoi();*/                                          \
-        __asm__("hlt\n\t");                             \
-}
-
-HANDLER(0)
-HANDLER(1)
-HANDLER(2)
-HANDLER(3)
-HANDLER(4)
-HANDLER(5)
-HANDLER(6)
-HANDLER(7)
-HANDLER(8)
-HANDLER(9)
-HANDLER(10)
-HANDLER(11)
-HANDLER(12)
-HANDLER(13)
-HANDLER(14)
-HANDLER(15)
-HANDLER(16)
-HANDLER(17)
-HANDLER(18)
-HANDLER(19)
-HANDLER(20)
-HANDLER(21)
-HANDLER(22)
-HANDLER(23)
-HANDLER(24)
-HANDLER(25)
-HANDLER(26)
-HANDLER(27)
-HANDLER(28)
-HANDLER(29)
-HANDLER(30)
-HANDLER(31)
-HANDLER(32)
-HANDLER(33)
-HANDLER(34)
-HANDLER(35)
-HANDLER(36)
-HANDLER(37)
-HANDLER(38)
-HANDLER(39)
-HANDLER(40)
-HANDLER(41)
-HANDLER(42)
-HANDLER(43)
-HANDLER(44)
-HANDLER(45)
-HANDLER(46)
-HANDLER(47)
-HANDLER(48)
-HANDLER(49)
-HANDLER(50)
-HANDLER(51)
-HANDLER(52)
-HANDLER(53)
-HANDLER(54)
-HANDLER(55)
-HANDLER(56)
-HANDLER(57)
-HANDLER(58)
-HANDLER(59)
-HANDLER(60)
-HANDLER(61)
-HANDLER(62)
-HANDLER(63)
-HANDLER(64)
-HANDLER(65)
-HANDLER(66)
-HANDLER(67)
-HANDLER(68)
-HANDLER(69)
-
 void
-timer_handler(unsigned long irqnum)
+timer_handler(unsigned long eip,
+              unsigned long cs,
+              unsigned long eflags)
 {
         extern unsigned long tickcounter;
-        
-        ++tickcounter;
 
-        eoi(0);
+        __asm__("pusha\n\t");
+
+        ++tickcounter;
+/*        eoi(0);*/
+
+        __asm__("popa\n\t");
 }
 
 void
-keyboard_handler(unsigned long irqnum)
+keyboard_handler(unsigned long eip,
+                 unsigned long cs,
+                 unsigned long eflags)
 {
         console_printf("keyboard handler\n");
         eoi(1);
 }
 
 void
-unhandled_irq_handler(unsigned long irqnum)
+unhandled_irq_handler(unsigned long eip,
+                      unsigned long cs,
+                      unsigned long eflags)
 {
-        console_printf("unhandled IRQ %x\n", irqnum);
-}
-
-void (*irq_func[16])(unsigned long) = {
-        timer_handler,
-        keyboard_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler,
-        unhandled_irq_handler
-};
-
-void
-irq_handler(unsigned char irqnum)
-{
-        irq_func[irqnum](irqnum);
-        eoi(irqnum);
+        console_printf("unhandled IRQ eip=%x cs=%x eflags=%x\n", eip,
+                                                                 cs,
+                                                                 eflags);
 }
 
 void
@@ -189,10 +92,13 @@ default_handler(void)
 }
 
 void
-unhandled_interrupt_handler(unsigned long intnum)
+unhandled_interrupt_handler(unsigned long eip,
+                            unsigned long cs,
+                            unsigned long eflags)
 {
-        console_printf("unhandled interrupt %x\n", intnum);
-/*        __asm__("hlt\n\t");*/
+        console_printf("unhandled exception eip=%x cs=%x eflags=%x\n", eip,
+                                                                       cs,
+                                                                       eflags);
 }
 
 void
@@ -205,56 +111,17 @@ int_segfault(unsigned long err,
                                                                    err,
                                                                    eip,
                                                                    eflags);
-/*        __asm__("hlt\n\t");*/
 }
 
 void
-invalid_opcode_handler(unsigned long intnum)
+invalid_opcode_handler(unsigned long eip,
+                       unsigned long cs,
+                       unsigned long eflags)
 {
-        console_printf("invalid opcode\n");
+        console_printf("invalid opcode eip=%x cs=%x eflags=%x\n", eip,
+                                                                  cs,
+                                                                  eflags);
 }
-
-void (*interrupt_func[32])(unsigned long) = {
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        invalid_opcode_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler,
-        unhandled_interrupt_handler
-};
-
-void
-interrupt_handler(unsigned char intnum)
-{
-        interrupt_func[intnum](intnum);
-}
-
 
 void handle_interrupt0(void);
 void handle_interrupt1(void);

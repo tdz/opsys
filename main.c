@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "types.h"
 #include "multiboot.h"
 #include "console.h"
 #include "gdt.h"
@@ -25,9 +26,31 @@
 
 unsigned long tickcounter = 0;
 
+int
+load_modules(struct multiboot_info *mb_info)
+{
+        if (mb_info->flags&MULTIBOOT_HEADER_FLAG_MODS) {
+
+                size_t i;
+                const struct multiboot_module *mod;
+
+                mod = (const struct multiboot_module*)mb_info->mods_addr;
+
+                for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
+                        console_printf("found module at %x, size=%x\n",
+                                        mod->mod_start,
+                                        mod->mod_end-mod->mod_start);
+                }
+        }
+
+        return 0;
+}
+
 void
 os_main_from_multiboot(struct multiboot_info *mb_info)
 {
+        unsigned long esp;
+
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");
 
@@ -40,14 +63,22 @@ os_main_from_multiboot(struct multiboot_info *mb_info)
         idt_install();
         idt_install_irq();
 
-        /* setup PIT for system timer*/
-        pit_install(0, 100, PIT_MODE_RATEGEN);
+        /* setup PIT for system timer */
+/*        pit_install(0, 20, PIT_MODE_WAVEGEN);*/
+
+        load_modules(mb_info);
 
         sti();
 
         for (;;) {
+                __asm__("int $0x20\n\t");
+                __asm__("movl %%esp, %0\n\t"
+                                : "=r"(esp)
+                                :
+                                :);
+
                 crt_setpos(12, 40);
-                console_printf("%x      ", tickcounter);
+                console_printf("%x", esp);
         }
 }
 

@@ -33,12 +33,32 @@ struct multiboot_entry
 
 };
 
+struct aout_symbol_table
+{
+        unsigned long tabsize;
+        unsigned long strsize;
+        unsigned long addr;
+        unsigned long reserved;
+};
+
 struct elf_section_header_table
 {
         unsigned long num;
         unsigned long size;
         unsigned long addr;
         unsigned long shndx;
+};
+
+struct multiboot_module
+{
+        unsigned long  mod_start;
+        unsigned long  mod_end;
+        unsigned char *string;
+        unsigned long  reserved;
+};
+
+enum {
+        MULTIBOOT_HEADER_FLAG_MODS = 0x04
 };
 
 struct multiboot_info
@@ -50,7 +70,10 @@ struct multiboot_info
         unsigned long cmdline;
         unsigned long mods_count;
         unsigned long mods_addr;
-        struct elf_section_header_table elf_sec_hdr;
+        union {
+                struct aout_symbol_table        aout_sym_tab;
+                struct elf_section_header_table elf_sec;
+        } syms;
         unsigned long mmap_length;
         unsigned long mmap_addr;
 };

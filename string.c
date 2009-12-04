@@ -40,6 +40,22 @@ memcmp(const void *s1, const void *s2, size_t n)
 }
 
 void *
+memcpy(void *dest, const void *src, size_t n)
+{
+        unsigned char *cdest;
+        const unsigned char *csrc;
+
+        while (n) {
+                *cdest = *csrc;
+                --n;
+                ++cdest;
+                ++csrc;
+        }
+
+        return dest;
+}
+
+void *
 memset(void *mem, int c, size_t n)
 {
         unsigned char *s = mem;

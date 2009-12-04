@@ -20,7 +20,7 @@
 #define ELFLDR_H
 
 int
-elf_load(const void *elfimg);
+elf_exec(const void *elfimg);
 
 #endif
 

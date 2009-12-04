@@ -16,53 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "string.h"
+#ifndef ELFLDR_H
+#define ELFLDR_H
 
 int
-memcmp(const void *s1, const void *s2, size_t n)
-{
-        int res;
-        const unsigned char *c1, *c2;
+elf_load(const void *elfimg);
 
-        res = 0;
-        c1 = s1;
-        c2 = s2;
-
-        while (n && !res) {
-                res = *c1 == *c2 ? 0 : *c1 < *c2 ? -1 : 1;
-                --n;
-                ++s1;
-                ++s2;
-        }
-
-        return res;
-}
-
-void *
-memset(void *mem, int c, size_t n)
-{
-        unsigned char *s = mem;
-
-        while (n) {
-                *s = c;
-                ++s;
-                --n;
-        }
-
-        return mem;
-}
-
-size_t
-strlen(const char *str)
-{
-        size_t len = 0;
-        
-        while (*str) {
-                ++str;
-                ++len;
-        }
-
-        return len;
-}
+#endif
 

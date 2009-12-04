@@ -14,6 +14,7 @@ ASMSOURCES = boot.S \
 
 CSOURCES = console.c \
            crt.c \
+           elfldr.c \
            gdt.c \
            idt.c \
            intrrupt.c \

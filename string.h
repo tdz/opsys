@@ -19,6 +19,9 @@
 #ifndef STRING_H
 #define STRING_H
 
+int
+memcmp(const void *s1, const void *s2, size_t n);
+
 void *
 memset(void *mem, int c, size_t n);
 

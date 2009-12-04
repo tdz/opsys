@@ -64,14 +64,15 @@ os_main_from_multiboot(struct multiboot_info *mb_info)
         idt_install_irq();
 
         /* setup PIT for system timer */
-/*        pit_install(0, 20, PIT_MODE_WAVEGEN);*/
+        pit_install(0, 20, PIT_MODE_RATEGEN);
 
         load_modules(mb_info);
 
         sti();
 
         for (;;) {
-                __asm__("int $0x20\n\t");
+/*                __asm__("int $0x20\n\t");*/
+                cli();
                 __asm__("movl %%esp, %0\n\t"
                                 : "=r"(esp)
                                 :
@@ -79,6 +80,7 @@ os_main_from_multiboot(struct multiboot_info *mb_info)
 
                 crt_setpos(12, 40);
                 console_printf("%x", esp);
+                sti();
         }
 }
 

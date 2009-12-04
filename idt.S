@@ -203,12 +203,13 @@ handle_interrupt31:
         iret
 
 handle_irq0:
-        call timer_handler
-/*        pushl %eax
+/*        call timer_handler*/
+        pushl %eax
         mov $0x20, %al
         outb %al, $0x20
-        popl %eax*/
-/*        add $1, tickcounter*/
+/*        popl %eax*/
+        addl $4, %esp
+        addl $1, tickcounter
         iret
 
 handle_irq1:

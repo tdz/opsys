@@ -22,24 +22,24 @@
 #include "physmem.h"
 
 /* memory-map offset at 24 MiB */
-static unsigned char *physmap = (unsigned char*)0x01800000;
-static unsigned long  physmap_npages = 0;
+static unsigned char *g_physmap = (unsigned char*)0x01800000;
+static unsigned long  g_physmap_npages = 0;
 
 int
 physmem_init(unsigned long npages)
 {
-        memset(physmap, 0, npages*sizeof(physmap[0]));
-        physmap_npages = npages;
+        memset(g_physmap, 0, npages*sizeof(g_physmap[0]));
+        g_physmap_npages = npages;
 
         /* add global variables of physmem */
-        physmem_add_area(((unsigned long)physmap)>>PHYSPAGE_SHIFT, 1,
+        physmem_add_area(((unsigned long)g_physmap)>>PHYSPAGE_SHIFT, 1,
                          PHYSMEM_FLAG_RESERVED);
-        physmem_add_area(((unsigned long)physmap_npages)>>PHYSPAGE_SHIFT, 1,
+        physmem_add_area(g_physmap_npages>>PHYSPAGE_SHIFT, 1,
                          PHYSMEM_FLAG_RESERVED);
 
         /* add physmap */
-        physmem_add_area(((unsigned long)physmap>>PHYSPAGE_SHIFT),
-                         physmap_npages+1,
+        physmem_add_area(((unsigned long)g_physmap>>PHYSPAGE_SHIFT),
+                         g_physmap_npages+1,
                          PHYSMEM_FLAG_RESERVED);
 
         return 0;
@@ -50,10 +50,10 @@ physmem_add_area(unsigned long pgoffset,
                  unsigned long npages,
                  unsigned char flags)
 {
-        unsigned char *physmap = physmap+pgoffset;
+        unsigned char *physmap = g_physmap+pgoffset;
 
         while (npages--) {
-                *(physmap++) |= (flags&0x3)<<7;
+                *(physmap++) |= (flags&0x1)<<7;
         }
 
         return 0;

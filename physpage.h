@@ -25,5 +25,17 @@ enum {
         PHYSPAGE_MASK  = PHYSPAGE_SIZE-1
 };
 
+static inline unsigned long
+physpage_address(unsigned long addr)
+{
+        return addr>>PHYSPAGE_SHIFT;
+}
+
+static inline unsigned long
+physpage_count(unsigned long count)
+{
+        return count ? 1+((count)>>PHYSPAGE_SHIFT) : 0;
+}
+
 #endif
 

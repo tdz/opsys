@@ -37,34 +37,75 @@ init_physmem(const struct multiboot_info *mb_info)
 }
 
 static int
-init_physmap(const struct multiboot_info *mb_info)
+init_physmap_areas(const struct multiboot_info *mb_info)
 {
         size_t i;
         unsigned long mmap_addr;
 
-        mmap_addr = mb_info->mmap_addr-4;
+        mmap_addr = mb_info->mmap_addr;
 
         /* add memory areas */
 
-        for (i = 0; i < mb_info->mmap_length; ++i) {
+        console_printf("mmap_length=%x\n", mb_info->mmap_length);
+
+        for (i = 0; i < mb_info->mmap_length;) {
                 const struct multiboot_mmap *mmap;
                 unsigned long pgoffset;
                 unsigned long npages;
 
                 mmap = (const struct multiboot_mmap*)mmap_addr;
 
-                pgoffset = mmap->base_addr_high<<(32-PHYSPAGE_SHIFT) +
-                          (mmap->base_addr_low>>PHYSPAGE_SHIFT);
+                pgoffset = physpage_address(
+                        (((unsigned long long)mmap->base_addr_high)<<32) +
+                                              mmap->base_addr_low);
 
-                npages = 1 + mmap->length_high<<(32-PHYSPAGE_SHIFT) +
-                            (mmap->length_low>>PHYSPAGE_SHIFT);
+                npages = physpage_count(
+                        (((unsigned long long)mmap->length_high)<<32) +
+                                              mmap->length_low);
+
+                console_printf("%s:%x %x %x %x\n",
+                                __FILE__,
+                                __LINE__,
+                                (pgoffset<<PHYSPAGE_SHIFT),
+                                (npages<<PHYSPAGE_SHIFT),
+                                mmap->type);
 
                 physmem_add_area(pgoffset,
                                  npages,
                                  mmap->type==1 ? PHYSMEM_FLAG_USEABLE
                                                : PHYSMEM_FLAG_RESERVED);
 
-                mmap_addr += mmap->size;                
+                mmap_addr += mmap->size+4;
+                i += mmap->size+4;
+        }
+
+        return 0;
+}
+
+static int
+init_physmap_modules(const struct multiboot_info *mb_info)
+{
+        size_t i;
+        const struct multiboot_module *mod;
+
+        mod = (const struct multiboot_module*)mb_info->mods_addr;
+
+        for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
+                unsigned long pgoffset;
+                unsigned long npages;
+
+                pgoffset = physpage_address(mod->mod_start);
+                npages = physpage_count(mod->mod_end-mod->mod_start);
+
+                console_printf("%s:%x %x %x\n",
+                                __FILE__,
+                                __LINE__,
+                                (pgoffset<<PHYSPAGE_SHIFT),
+                                (npages<<PHYSPAGE_SHIFT));
+
+                physmem_add_area(pgoffset,
+                                 npages,
+                                 PHYSMEM_FLAG_RESERVED);
         }
 
         return 0;
@@ -99,12 +140,13 @@ multiboot_main(const struct multiboot_info *mb_info)
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");
 
-/*        if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
+        if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
                 init_physmem(mb_info);
         }
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MMAP) {
-                init_physmap(mb_info);
-        }*/
+                init_physmap_areas(mb_info);
+                init_physmap_modules(mb_info);
+        }
 
         /* setup GDT for protected mode */
         gdt_init();

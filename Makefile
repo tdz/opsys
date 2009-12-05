@@ -9,8 +9,8 @@ LDFLAGS = -nostdlib -static
 
 RELOC_ADDR = 0x1000000
 
-ASMSOURCES = boot.S \
-             idt.S
+ASMSOURCES = idt.S \
+             multiboot.S
 
 CSOURCES = console.c \
            crt.c \
@@ -19,7 +19,7 @@ CSOURCES = console.c \
            idt.c \
            intrrupt.c \
            ioports.c \
-           main.c \
+           multiboot.c \
            physmem.c \
            pit.c \
            string.c \

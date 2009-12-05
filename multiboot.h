@@ -28,11 +28,6 @@ struct multiboot_header
         unsigned long entry_addr;
 };
 
-struct multiboot_entry
-{
-
-};
-
 struct aout_symbol_table
 {
         unsigned long tabsize;
@@ -49,16 +44,19 @@ struct elf_section_header_table
         unsigned long shndx;
 };
 
-struct multiboot_module
-{
-        unsigned long  mod_start;
-        unsigned long  mod_end;
-        unsigned char *string;
-        unsigned long  reserved;
-};
-
 enum {
-        MULTIBOOT_HEADER_FLAG_MODS = 0x04
+        MULTIBOOT_INFO_FLAG_MEM        = 1<<0,
+        MULTIBOOT_INFO_FLAG_BOOTDEV    = 1<<1,
+        MULTIBOOT_INFO_FLAG_CMDLINE    = 1<<2,
+        MULTIBOOT_INFO_FLAG_MODS       = 1<<3,
+        MULTIBOOT_INFO_FLAG_AOUTSYMS   = 1<<4,
+        MULTIBOOT_INFO_FLAG_ELFSYMS    = 1<<5,
+        MULTIBOOT_INFO_FLAG_MMAP       = 1<<6,
+        MULTIBOOT_INFO_FLAG_DRIVES     = 1<<7,
+        MULTIBOOT_INFO_FLAG_CONFIG     = 1<<8,
+        MULTIBOOT_INFO_FLAG_BOOTLOADER = 1<<9,
+        MULTIBOOT_INFO_FLAG_APM        = 1<<10,
+        MULTIBOOT_INFO_FLAG_VBE        = 1<<11
 };
 
 struct multiboot_info
@@ -77,4 +75,25 @@ struct multiboot_info
         unsigned long mmap_length;
         unsigned long mmap_addr;
 };
+
+struct multiboot_module
+{
+        unsigned long  mod_start;
+        unsigned long  mod_end;
+        unsigned char *string;
+        unsigned long  reserved;
+};
+
+struct multiboot_mmap
+{
+        unsigned long size;
+        unsigned long base_addr_low;
+        unsigned long base_addr_high;
+        unsigned long length_low;
+        unsigned long length_high;
+        unsigned long type;
+};
+
+void
+multiboot_main(const struct multiboot_info *mb_info);
 

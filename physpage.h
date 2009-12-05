@@ -16,27 +16,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PHYSMEM_H
-#define PHYSMEM_H
+#ifndef PHYSPAGE_H
+#define PHYSPAGE_H
 
 enum {
-        PHYSMEM_FLAG_USEABLE  = 0, /* available for use */
-        PHYSMEM_FLAG_RESERVED = 1 /* reserved by system */
+        PHYSPAGE_SHIFT = 12,
+        PHYSPAGE_SIZE  = 1<<PHYSPAGE_SHIFT,
+        PHYSPAGE_MASK  = PHYSPAGE_SIZE-1
 };
-
-int
-physmem_init(unsigned long npages);
-
-int
-physmem_add_area(unsigned long pgoffset,
-                 unsigned long npages,
-                 unsigned char flags);
-
-int
-physmem_alloc(unsigned long npages);
-
-int
-physmem_free(unsigned long npages);
 
 #endif
 

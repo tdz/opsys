@@ -41,10 +41,10 @@ multiboot_entry:
 	pushl $0
 	popf
 
-        # Call C main function
+        # Call C main function for multiboot
 
 	pushl %ebx
-	call os_main_from_multiboot
+	call multiboot_main
 
 hltloop:
 	hlt

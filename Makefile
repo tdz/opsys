@@ -20,6 +20,7 @@ CSOURCES = console.c \
            intrrupt.c \
            ioports.c \
            main.c \
+           physmem.c \
            pit.c \
            string.c \
            syscall.c

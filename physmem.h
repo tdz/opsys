@@ -21,7 +21,7 @@
 
 enum {
         PHYSMEM_FLAG_USEABLE  = 0, /* available for use */
-        PHYSMEM_FLAG_RESERVED = 1 /* reserved by system */
+        PHYSMEM_FLAG_RESERVED = 1<<0 /* reserved by system */
 };
 
 int
@@ -32,11 +32,14 @@ physmem_add_area(unsigned long pgoffset,
                  unsigned long npages,
                  unsigned char flags);
 
-int
+unsigned long
 physmem_alloc(unsigned long npages);
 
 int
-physmem_free(unsigned long npages);
+physmem_ref(unsigned pgoffset, unsigned long npages);
+
+void
+physmem_unref(unsigned pgoffset, unsigned long npages);
 
 #endif
 

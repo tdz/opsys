@@ -59,3 +59,105 @@ physmem_add_area(unsigned long pgoffset,
         return 0;
 }
 
+unsigned long
+physmem_alloc(unsigned long npages)
+{
+        unsigned long pgoffset;
+        unsigned char *beg;
+        const unsigned char *end;
+
+        /* FIXME: lock here */
+
+        pgoffset = 0;
+        beg = g_physmap+1; /* first page not used */
+        end = g_physmap+g_physmap_npages-npages;
+
+        while (!pgoffset && (beg < end)) {
+
+                /* find next useable page */
+                for (; *beg && (beg < end); ++beg) {}
+
+                /* end reached */
+                if (beg == end) {
+                        break;
+                }
+
+                /* empty page found */
+                {
+                        unsigned char *beg2;
+                        const unsigned char *end2;
+
+                        beg2 = beg;
+                        end2 = beg+npages;
+
+                        /* check empty block */
+                        for (; (beg2 < end2) && !(*beg2); ++beg2) {}
+
+                        /* block not empty */
+                        if (beg2 < end2) {
+                                break;
+                        }
+
+                        /* empty block found*/
+                        for (beg2 = beg; beg2 < end2; ++beg2) {
+                                *beg2 = 1 | (PHYSMEM_FLAG_RESERVED<<7);
+                        }
+                        pgoffset = beg-g_physmap;
+                }
+        }
+
+        /* FIXME: unlock here */
+        return pgoffset;
+}
+
+int
+physmem_ref(unsigned pgoffset, unsigned long npages)
+{
+        unsigned long i;
+        unsigned char *physmap;
+
+        /* FIXME: lock here */
+
+        physmap = g_physmap+pgoffset;
+
+        /* check for allocation and max refcount */
+        for (i = 0; i < npages; ++i) {
+                if (((*physmap) == 0xff) || !(*physmap)) {
+                        return -1;
+                }
+        }
+
+        physmap = g_physmap+pgoffset;
+
+        /* increment refcount */
+        for (i = 0; i < npages; ++i) {
+                *physmap = (PHYSMEM_FLAG_RESERVED<<7) + ((*physmap)&0x7f) + 1;
+                ++physmap;
+        }
+
+        /* FIXME: unlock here */
+        return 0;
+}
+
+void
+physmem_unref(unsigned pgoffset, unsigned long npages)
+{
+        unsigned char *physmap;
+
+        /* FIXME: lock here */
+
+        physmap = g_physmap+pgoffset;
+
+        while (npages--) {
+                if ((*physmap) == ((PHYSMEM_FLAG_RESERVED<<7)|1)) {
+                        *physmap = PHYSMEM_FLAG_USEABLE<<7;
+                } else {
+                        *physmap = (PHYSMEM_FLAG_RESERVED<<7) +
+                                   ((*physmap)&0x7f) - 1;
+                }
+                ++physmap;
+        }
+
+        /* FIXME: unlock here */
+}
+

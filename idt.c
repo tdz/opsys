@@ -86,9 +86,13 @@ unhandled_irq_handler(unsigned long eip,
 }
 
 void
-default_handler(void)
+default_handler(unsigned long eip,
+                unsigned long cs,
+                unsigned long eflags)
 {
-        console_printf("default handler\n");
+        console_printf("unknown interrupt eip=%x cs=%x eflags=%x\n", eip,
+                                                                     cs,
+                                                                     eflags);
 }
 
 void

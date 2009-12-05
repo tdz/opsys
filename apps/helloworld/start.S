@@ -5,6 +5,7 @@
 .global exit
 
 _start:
+        ret
         pushl $0 /* TODO: push argv */
         pushl $0 /* TODO: push argc */
         call main
@@ -13,4 +14,5 @@ exit:
         /* when we call here, status should already be on the stack */
         pushl $0 /* push exit system-call number */
         int $0x80
+        ret
 

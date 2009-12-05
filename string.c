@@ -45,6 +45,9 @@ memcpy(void *dest, const void *src, size_t n)
         unsigned char *cdest;
         const unsigned char *csrc;
 
+        cdest = dest;
+        csrc = src;
+
         while (n) {
                 *cdest = *csrc;
                 --n;

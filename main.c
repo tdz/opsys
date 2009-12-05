@@ -40,6 +40,8 @@ load_modules(struct multiboot_info *mb_info)
                         console_printf("found module at %x, size=%x\n",
                                         mod->mod_start,
                                         mod->mod_end-mod->mod_start);
+
+                        elf_exec((const void*)mod->mod_start);
                 }
         }
 
@@ -64,15 +66,15 @@ os_main_from_multiboot(struct multiboot_info *mb_info)
         idt_install_irq();
 
         /* setup PIT for system timer */
-        pit_install(0, 20, PIT_MODE_RATEGEN);
+/*        pit_install(0, 20, PIT_MODE_RATEGEN);*/
 
         load_modules(mb_info);
 
-        sti();
+/*        sti();*/
 
-        for (;;) {
+/*        for (;;) {*/
 /*                __asm__("int $0x20\n\t");*/
-                cli();
+/*                cli();
                 __asm__("movl %%esp, %0\n\t"
                                 : "=r"(esp)
                                 :
@@ -81,6 +83,6 @@ os_main_from_multiboot(struct multiboot_info *mb_info)
                 crt_setpos(12, 40);
                 console_printf("%x", esp);
                 sti();
-        }
+        }*/
 }
 

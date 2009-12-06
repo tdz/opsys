@@ -27,14 +27,124 @@
 #include "physmem.h"
 
 static int
+range_order(unsigned long beg1, unsigned long end1,
+            unsigned long beg2, unsigned long end2)
+{
+        if (end1 <= beg2) {
+                return -1;
+        } else if (end2 <= beg1) {
+                return 1;
+        }
+
+        return 0;
+}
+
+static unsigned long
+find_unused_area(const struct multiboot_header *mb_header,
+                 const struct multiboot_info *mb_info,
+                 unsigned long npages)
+{
+        size_t i;
+        unsigned long mmap_addr;
+        unsigned long kernel_pgindex, kernel_npages;
+        unsigned long pgoffset;
+
+        kernel_pgindex = physpage_index(mb_header->load_addr);
+        kernel_npages = physpage_count(mb_header->bss_end_addr -
+                                       mb_header->load_addr);
+
+        mmap_addr = mb_info->mmap_addr;
+
+        for (pgoffset = 0, i = 0; !pgoffset && (i < mb_info->mmap_length);) {
+                const struct multiboot_mmap *mmap;
+                unsigned long area_pgindex;
+                unsigned long area_npages;
+                unsigned long pgindex;
+
+                mmap = (const struct multiboot_mmap*)mmap_addr;
+
+                /* next entry address */
+                mmap_addr += mmap->size+4;
+                i += mmap->size+4;
+
+                /* area if not useable */
+                if (mmap->type != 1) {
+                        continue;
+                }
+
+                /* area page index and length */
+
+                area_pgindex = physpage_index(
+                        (((unsigned long long)mmap->base_addr_high)<<32) +
+                                              mmap->base_addr_low);
+
+                area_npages = physpage_count(
+                        (((unsigned long long)mmap->length_high)<<32) +
+                                              mmap->length_low);
+
+                /* area at address 0, or too small */
+                if (!area_pgindex || (area_npages < npages)) {
+                        continue;
+                }
+
+                /* possible index */
+                pgindex = area_pgindex;
+
+                /* check for intersection with kernel */
+                if (!range_order(kernel_pgindex,
+                                 kernel_pgindex+kernel_npages,
+                                 pgindex,
+                                 pgindex+npages)) {
+                        pgindex = kernel_pgindex+kernel_npages;
+                }
+
+                /* check for intersection with modules */
+
+                while ( !pgoffset &&
+                       ((pgindex+npages) < (area_pgindex+area_npages)) ) {
+
+                        size_t j;
+                        const struct multiboot_module *mod;
+
+                        mod = (const struct multiboot_module*)mb_info->mods_addr;
+
+                        for (j = 0; j < mb_info->mods_count; ++j, ++mod) {
+                                unsigned long mod_pgindex;
+                                unsigned long mod_npages;
+
+                                mod_pgindex =
+                                        physpage_index(mod->mod_start);
+                                mod_npages =
+                                        physpage_count(mod->mod_end -
+                                                       mod->mod_start);
+
+                                /* check intersection */
+                                if (range_order(mod_pgindex,
+                                                mod_pgindex+mod_npages,
+                                                pgindex,
+                                                pgindex+npages)) {
+                                        /* no intersection, offset found */
+                                        pgoffset = physpage_offset(pgindex);
+                                } else {
+                                        pgindex = mod_pgindex+mod_npages;
+                                }
+                        }
+                }
+        }
+
+        return pgoffset;
+}
+
+static int
 init_physmem(const struct multiboot_header *mb_header,
              const struct multiboot_info *mb_info)
 {
         unsigned long physmap, npages;
 
-        /* memory-map starts with page after kernel image */
-        physmap = physpage_ceil(mb_header->bss_end_addr);
         npages = physpage_count((mb_info->mem_upper+1)<<10);
+        physmap = find_unused_area(mb_header, mb_info, npages>>PHYSPAGE_SHIFT);
+
+        console_printf("found phymap area at %x\n", (unsigned long)physmap);
 
         /* init memory manager */
         return physmem_init(physmap, npages);

@@ -32,6 +32,12 @@ physpage_index(unsigned long addr)
 }
 
 static inline unsigned long
+physpage_offset(unsigned long index)
+{
+        return index<<PHYSPAGE_SHIFT;
+}
+
+static inline unsigned long
 physpage_count(unsigned long count)
 {
         return count ? 1+((count)>>PHYSPAGE_SHIFT) : 0;

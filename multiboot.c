@@ -171,7 +171,7 @@ init_physmap_areas(const struct multiboot_info *mb_info)
 
         /* add memory areas */
 
-        console_printf("mmap_length=%x\n", mb_info->mmap_length);
+/*        console_printf("mmap_length=%x\n", mb_info->mmap_length);*/
 
         for (i = 0; i < mb_info->mmap_length;) {
                 const struct multiboot_mmap *mmap;
@@ -188,12 +188,12 @@ init_physmap_areas(const struct multiboot_info *mb_info)
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
-                console_printf("%s:%x %x %x %x\n",
+/*                console_printf("%s:%x %x %x %x\n",
                                 __FILE__,
                                 __LINE__,
                                 (pgoffset<<PHYSPAGE_SHIFT),
                                 (npages<<PHYSPAGE_SHIFT),
-                                mmap->type);
+                                mmap->type);*/
 
                 physmem_add_area(pgoffset,
                                  npages,
@@ -222,11 +222,11 @@ init_physmap_modules(const struct multiboot_info *mb_info)
                 pgoffset = physpage_index(mod->mod_start);
                 npages = physpage_count(mod->mod_end-mod->mod_start);
 
-                console_printf("%s:%x %x %x\n",
+/*                console_printf("%s:%x %x %x\n",
                                 __FILE__,
                                 __LINE__,
                                 (pgoffset<<PHYSPAGE_SHIFT),
-                                (npages<<PHYSPAGE_SHIFT));
+                                (npages<<PHYSPAGE_SHIFT));*/
 
                 physmem_add_area(pgoffset,
                                  npages,
@@ -245,9 +245,9 @@ load_modules(const struct multiboot_info *mb_info)
         mod = (const struct multiboot_module*)mb_info->mods_addr;
 
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
-                console_printf("found module at %x, size=%x\n",
+/*                console_printf("found module at %x, size=%x\n",
                                 mod->mod_start,
-                                mod->mod_end-mod->mod_start);
+                                mod->mod_end-mod->mod_start);*/
 
                 elf_exec((const void*)mod->mod_start);
         }
@@ -266,11 +266,11 @@ multiboot_main(const struct multiboot_header *mb_header,
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");
 
-        console_printf("Multiboot magic %x\n", mb_header->magic);
+/*        console_printf("Multiboot magic %x\n", mb_header->magic);
 
         console_printf("%x %x %x\n", mb_header->load_addr,
                                      mb_header->load_end_addr,
-                                     mb_header->bss_end_addr);
+                                     mb_header->bss_end_addr);*/
 
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
                 init_physmem(mb_header, mb_info);

@@ -5,6 +5,7 @@
 .global exit
 
 _start:
+        int $0x80
         ret
         pushl $0 /* TODO: push argv */
         pushl $0 /* TODO: push argc */

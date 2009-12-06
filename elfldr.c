@@ -42,7 +42,9 @@ elf_construct_shdr_progbits(const Elf32_Shdr *elf_shdr, const void *elfimg)
 
         console_printf("src=%x dst=%x\n", (unsigned long)src, (unsigned long)dst);
 
-        memcpy(dst, src, elf_shdr->sh_size);
+        if (src && dst && elf_shdr->sh_size) {
+                memcpy(dst, src, elf_shdr->sh_size);
+        }
 
         return 0;
 }
@@ -166,14 +168,10 @@ elf_construct_phdr(const Elf32_Phdr *elf_phdr, const void *elfimg)
 
         /* some sanity checks */
 
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-
         if (!(elf_phdr->p_type < sizeof(construct_phdr)/sizeof(construct_phdr[0])) ||
             !construct_phdr[elf_phdr->p_type]) {
                 return 0;
         }
-
-        console_printf("%s:%x\n", __FILE__, __LINE__);
 
         return construct_phdr[elf_phdr->p_type](elf_phdr, elfimg);
 }
@@ -190,8 +188,6 @@ elf_exec(const void *elfimg)
 
         /* Some sanity checks */
 
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-
         if (!memcmp(elf_ehdr->e_ident, ident, 4) ||
             (elf_ehdr->e_ident[EI_CLASS] != ELFCLASS32) ||
             (elf_ehdr->e_ident[EI_DATA] != ELFDATA2LSB) ||
@@ -204,11 +200,9 @@ elf_exec(const void *elfimg)
                 return -1;
         }
 
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-
         /* construct sections from section headers */
 
-        for (i = 0; i < elf_ehdr->e_shnum; ++i) {
+/*        for (i = 0; i < elf_ehdr->e_shnum; ++i) {
 
                 const Elf32_Shdr *elf_shdr;
                 int res;
@@ -220,13 +214,11 @@ elf_exec(const void *elfimg)
                 if ((res = elf_construct_shdr(elf_shdr, elfimg)) < 0) {
                         return res;
                 }
-        }
-
-        console_printf("%s:%x\n", __FILE__, __LINE__);
+        }*/
 
         /* construct sections from program headers */
 
-/*        for (i = 0; i < elf_ehdr->e_phnum; ++i) {
+        for (i = 0; i < elf_ehdr->e_phnum; ++i) {
 
                 const Elf32_Phdr *elf_phdr;
                 int res;
@@ -238,9 +230,8 @@ elf_exec(const void *elfimg)
                 if ((res = elf_construct_phdr(elf_phdr, elfimg)) < 0) {
                         return res;
                 }
-        }*/
+        }
 
-        console_printf("%s:%x\n", __FILE__, __LINE__);
         console_printf("%s:%x entry point=%x\n", __FILE__, __LINE__, elf_ehdr->e_entry);
 
         __asm__("       call *%0\n\t"

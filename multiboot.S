@@ -44,6 +44,7 @@ multiboot_entry:
         # Call C main function for multiboot
 
 	pushl %ebx
+	pushl $multiboot_header
 	call multiboot_main
 
 hltloop:

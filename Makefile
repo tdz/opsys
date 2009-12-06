@@ -7,7 +7,7 @@ ASFLAGS = --32
 
 LDFLAGS = -nostdlib -static
 
-RELOC_ADDR = 0x1000000
+RELOC_ADDR = 0x100000
 
 ASMSOURCES = idt.S \
              multiboot.S

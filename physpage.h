@@ -26,7 +26,7 @@ enum {
 };
 
 static inline unsigned long
-physpage_address(unsigned long addr)
+physpage_index(unsigned long addr)
 {
         return addr>>PHYSPAGE_SHIFT;
 }
@@ -35,6 +35,18 @@ static inline unsigned long
 physpage_count(unsigned long count)
 {
         return count ? 1+((count)>>PHYSPAGE_SHIFT) : 0;
+}
+
+static inline unsigned long
+physpage_floor(unsigned long addr)
+{
+        return addr & ~PHYSPAGE_MASK;
+}
+
+static inline unsigned long
+physpage_ceil(unsigned long addr)
+{
+        return ((addr>>PHYSPAGE_SHIFT)+1) << PHYSPAGE_SHIFT;
 }
 
 #endif

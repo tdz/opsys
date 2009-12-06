@@ -27,13 +27,28 @@
 #include "physmem.h"
 
 static int
-init_physmem(const struct multiboot_info *mb_info)
+init_physmem(const struct multiboot_header *mb_header,
+             const struct multiboot_info *mb_info)
 {
-        size_t i;
-        unsigned long mmap_addr;
+        unsigned long physmap, npages;
+
+        /* memory-map starts with page after kernel image */
+        physmap = physpage_ceil(mb_header->bss_end_addr);
+        npages = physpage_count((mb_info->mem_upper+1)<<10);
 
         /* init memory manager */
-        return physmem_init(((mb_info->mem_upper+1)<<10)>>PHYSPAGE_SHIFT);
+        return physmem_init(physmap, npages);
+}
+
+static int
+init_physmap_kernel(const struct multiboot_header *mb_header)
+{
+        unsigned long pgindex, npages;
+
+        pgindex = physpage_index(mb_header->load_addr);
+        npages = physpage_count(mb_header->bss_end_addr-mb_header->load_addr);
+
+        return physmem_add_area(pgindex, npages, PHYSMEM_FLAG_RESERVED);
 }
 
 static int
@@ -55,7 +70,7 @@ init_physmap_areas(const struct multiboot_info *mb_info)
 
                 mmap = (const struct multiboot_mmap*)mmap_addr;
 
-                pgoffset = physpage_address(
+                pgoffset = physpage_index(
                         (((unsigned long long)mmap->base_addr_high)<<32) +
                                               mmap->base_addr_low);
 
@@ -94,7 +109,7 @@ init_physmap_modules(const struct multiboot_info *mb_info)
                 unsigned long pgoffset;
                 unsigned long npages;
 
-                pgoffset = physpage_address(mod->mod_start);
+                pgoffset = physpage_index(mod->mod_start);
                 npages = physpage_count(mod->mod_end-mod->mod_start);
 
                 console_printf("%s:%x %x %x\n",
@@ -133,16 +148,28 @@ load_modules(const struct multiboot_info *mb_info)
 unsigned long tickcounter = 0;
 
 void
-multiboot_main(const struct multiboot_info *mb_info)
+multiboot_main(const struct multiboot_header *mb_header,
+               const struct multiboot_info *mb_info)
 {
         unsigned long esp;
 
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");
 
+        console_printf("Multiboot magic %x\n", mb_header->magic);
+
+        console_printf("%x %x %x\n", mb_header->load_addr,
+                                     mb_header->load_end_addr,
+                                     mb_header->bss_end_addr);
+
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
-                init_physmem(mb_info);
+                init_physmem(mb_header, mb_info);
+        } else {
+                /* FIXME: abort kernel */
         }
+
+        init_physmap_kernel(mb_header);
+
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MMAP) {
                 init_physmap_areas(mb_info);
                 init_physmap_modules(mb_info);

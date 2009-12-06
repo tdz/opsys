@@ -25,7 +25,7 @@ enum {
 };
 
 int
-physmem_init(unsigned long npages);
+physmem_init(unsigned int physmap, unsigned long npages);
 
 int
 physmem_add_area(unsigned long pgoffset,

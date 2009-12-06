@@ -16,18 +16,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "stddef.h"
 #include "types.h"
 #include "string.h"
 #include "physpage.h"
 #include "physmem.h"
 
-/* memory-map offset at 24 MiB */
-static unsigned char *g_physmap = (unsigned char*)0x01800000;
+static unsigned char *g_physmap = NULL;
 static unsigned long  g_physmap_npages = 0;
 
 int
-physmem_init(unsigned long npages)
+physmem_init(unsigned int physmap, unsigned long npages)
 {
+        g_physmap = (unsigned char*)physmap;
+
         memset(g_physmap, 0, npages*sizeof(g_physmap[0]));
         g_physmap_npages = npages;
 
@@ -50,11 +52,17 @@ physmem_add_area(unsigned long pgoffset,
                  unsigned long npages,
                  unsigned char flags)
 {
-        unsigned char *physmap = g_physmap+pgoffset;
+        unsigned char *physmap;
 
-        while (npages--) {
+        /* FIXME: lock here */
+
+        physmap = g_physmap+pgoffset;
+
+        while (npages-- && (physmap < (g_physmap+g_physmap_npages))) {
                 *(physmap++) |= (flags&0x1)<<7;
         }
+
+        /* FIXME: unlock here */
 
         return 0;
 }
@@ -95,12 +103,13 @@ physmem_alloc(unsigned long npages)
 
                         /* block not empty */
                         if (beg2 < end2) {
-                                break;
+                                beg = beg2+1; /* next possible empty block */
+                                continue;
                         }
 
                         /* empty block found*/
                         for (beg2 = beg; beg2 < end2; ++beg2) {
-                                *beg2 = 1 | (PHYSMEM_FLAG_RESERVED<<7);
+                                *beg2 = (PHYSMEM_FLAG_RESERVED<<7) + 1;
                         }
                         pgoffset = beg-g_physmap;
                 }

@@ -48,8 +48,8 @@ gdt_entry_init(struct gdt_entry *gdte, unsigned long base,
         gdte->base_low   = base&0xffff;
         gdte->base_mid   = (base>>16)&0xff;
         gdte->flags      = flags;
-        gdte->limit_high = (limit>>16)&0x0f | GDT_FLAG_LOWGRAN|
-                                              GDT_FLAG_32BITSEG;
+        gdte->limit_high = ((limit>>16)&0x0f) | GDT_FLAG_LOWGRAN|
+                                                GDT_FLAG_32BITSEG;
         gdte->base_high  = (base>>24)&0xff;
 }
 

@@ -24,7 +24,7 @@
 
 /* section headers
  */
-
+/*
 static int
 elf_construct_shdr_null(const Elf32_Shdr *elf_shdr, const void *elfimg)
 {
@@ -51,44 +51,44 @@ elf_construct_shdr_progbits(const Elf32_Shdr *elf_shdr, const void *elfimg)
 
 static int
 elf_construct_shdr_symtab(const Elf32_Shdr *elf_shdr, const void *elfimg)
-{
+{*/
         /* section ignored */
-        return 0;
+/*        return 0;
 }
 
 static int
 elf_construct_shdr_strtab(const Elf32_Shdr *elf_shdr, const void *elfimg)
-{
+{*/
         /* section ignored */
-        return 0;
+/*        return 0;
 }
 
 static int
 elf_construct_shdr_rela(const Elf32_Shdr *elf_shdr, const void *elfimg)
-{
+{*/
         /* section ignored */
-        return 0;
+/*        return 0;
 }
 
 static int
 elf_construct_shdr_hash(const Elf32_Shdr *elf_shdr, const void *elfimg)
-{
+{*/
         /* section ignored */
-        return 0;
+/*        return 0;
 }
 
 static int
 elf_construct_shdr_dynamic(const Elf32_Shdr *elf_shdr, const void *elfimg)
-{
+{*/
         /* section ignored */
-        return 0;
+/*        return 0;
 }
 
 static int
 elf_construct_shdr_note(const Elf32_Shdr *elf_shdr, const void *elfimg)
-{
+{*/
         /* section ignored */
-        return 0;
+/*        return 0;
 }
 
 static int
@@ -115,20 +115,16 @@ elf_construct_shdr(const Elf32_Shdr *elf_shdr, const void *elfimg)
 
         static size_t construct_shdr_len = sizeof(construct_shdr) /
                                            sizeof(construct_shdr[0]);
-
-/*        console_printf("%s:%x\n", __FILE__, __LINE__);*/
-
+*/
         /* some sanity checks */
-
+/*
         if (!(elf_shdr->sh_type < construct_shdr_len) ||
             !construct_shdr[elf_shdr->sh_type]) {
                 return -1;
         }
 
-/*        console_printf("%s:%x\n", __FILE__, __LINE__);*/
-
         return construct_shdr[elf_shdr->sh_type](elf_shdr, elfimg);
-}
+}*/
 
 /* program headers
  */

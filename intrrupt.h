@@ -26,7 +26,7 @@ void
 sti(void);
 
 void
-eio(unsigned char intno);
+eoi(unsigned char intno);
 
 #endif
 

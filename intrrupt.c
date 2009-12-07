@@ -17,6 +17,7 @@
  */
 
 #include "intrrupt.h"
+#include "ioports.h"
 
 /* clear interrupts */
 void

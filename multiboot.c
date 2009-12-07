@@ -25,6 +25,7 @@
 #include "pit.h"
 #include "physpage.h"
 #include "physmem.h"
+#include "elfldr.h"
 
 static int
 range_order(unsigned long beg1, unsigned long end1,
@@ -261,7 +262,7 @@ void
 multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info)
 {
-        unsigned long esp;
+/*        unsigned long esp;*/
 
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");

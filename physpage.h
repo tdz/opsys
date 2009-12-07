@@ -25,31 +25,31 @@ enum {
         PHYSPAGE_MASK  = PHYSPAGE_SIZE-1
 };
 
-static inline unsigned long
+static __inline__ unsigned long
 physpage_index(unsigned long addr)
 {
         return addr>>PHYSPAGE_SHIFT;
 }
 
-static inline unsigned long
+static __inline__ unsigned long
 physpage_offset(unsigned long index)
 {
         return index<<PHYSPAGE_SHIFT;
 }
 
-static inline unsigned long
-physpage_count(unsigned long count)
+static __inline__ unsigned long
+physpage_count(unsigned long bytes)
 {
-        return count ? 1+((count)>>PHYSPAGE_SHIFT) : 0;
+        return bytes ? 1+((bytes)>>PHYSPAGE_SHIFT) : 0;
 }
 
-static inline unsigned long
+static __inline__ unsigned long
 physpage_floor(unsigned long addr)
 {
         return addr & ~PHYSPAGE_MASK;
 }
 
-static inline unsigned long
+static __inline__ unsigned long
 physpage_ceil(unsigned long addr)
 {
         return ((addr>>PHYSPAGE_SHIFT)+1) << PHYSPAGE_SHIFT;

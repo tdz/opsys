@@ -1,7 +1,7 @@
 
 ARCH = i386
 
-CFLAGS = -m32
+CFLAGS = -m32 -Wall -ansi
 
 ASFLAGS = --32
 
@@ -23,7 +23,8 @@ CSOURCES = console.c \
            physmem.c \
            pit.c \
            string.c \
-           syscall.c
+           syscall.c \
+           virtmem.c
 
 .PHONY : all clean
 

@@ -17,6 +17,7 @@
  */
 
 #include "pit.h"
+#include "ioports.h"
 
 void
 pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode)

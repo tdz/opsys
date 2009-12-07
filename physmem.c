@@ -48,7 +48,7 @@ physmem_init(unsigned int physmap, unsigned long npages)
 }
 
 int
-physmem_add_area(unsigned long pgoffset,
+physmem_add_area(unsigned long pgindex,
                  unsigned long npages,
                  unsigned char flags)
 {
@@ -56,7 +56,7 @@ physmem_add_area(unsigned long pgoffset,
 
         /* FIXME: lock here */
 
-        physmap = g_physmap+pgoffset;
+        physmap = g_physmap+pgindex;
 
         while (npages-- && (physmap < (g_physmap+g_physmap_npages))) {
                 *(physmap++) |= (flags&0x1)<<7;
@@ -70,17 +70,17 @@ physmem_add_area(unsigned long pgoffset,
 unsigned long
 physmem_alloc(unsigned long npages)
 {
-        unsigned long pgoffset;
+        unsigned long pgindex;
         unsigned char *beg;
         const unsigned char *end;
 
         /* FIXME: lock here */
 
-        pgoffset = 0;
+        pgindex = 0;
         beg = g_physmap+1; /* first page not used */
         end = g_physmap+g_physmap_npages-npages;
 
-        while (!pgoffset && (beg < end)) {
+        while (!pgindex && (beg < end)) {
 
                 /* find next useable page */
                 for (; *beg && (beg < end); ++beg) {}
@@ -111,23 +111,24 @@ physmem_alloc(unsigned long npages)
                         for (beg2 = beg; beg2 < end2; ++beg2) {
                                 *beg2 = (PHYSMEM_FLAG_RESERVED<<7) + 1;
                         }
-                        pgoffset = beg-g_physmap;
+                        pgindex = beg-g_physmap;
                 }
         }
 
         /* FIXME: unlock here */
-        return pgoffset;
+
+        return pgindex;
 }
 
 int
-physmem_ref(unsigned pgoffset, unsigned long npages)
+physmem_ref(unsigned pgindex, unsigned long npages)
 {
         unsigned long i;
         unsigned char *physmap;
 
         /* FIXME: lock here */
 
-        physmap = g_physmap+pgoffset;
+        physmap = g_physmap+pgindex;
 
         /* check for allocation and max refcount */
         for (i = 0; i < npages; ++i) {
@@ -136,7 +137,7 @@ physmem_ref(unsigned pgoffset, unsigned long npages)
                 }
         }
 
-        physmap = g_physmap+pgoffset;
+        physmap = g_physmap+pgindex;
 
         /* increment refcount */
         for (i = 0; i < npages; ++i) {
@@ -149,13 +150,13 @@ physmem_ref(unsigned pgoffset, unsigned long npages)
 }
 
 void
-physmem_unref(unsigned pgoffset, unsigned long npages)
+physmem_unref(unsigned pgindex, unsigned long npages)
 {
         unsigned char *physmap;
 
         /* FIXME: lock here */
 
-        physmap = g_physmap+pgoffset;
+        physmap = g_physmap+pgindex;
 
         while (npages--) {
                 if ((*physmap) == ((PHYSMEM_FLAG_RESERVED<<7)|1)) {

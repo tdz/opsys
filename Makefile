@@ -1,7 +1,7 @@
 
 ARCH = i386
 
-CFLAGS = -m32 -Wall -ansi
+CFLAGS = -m32 -Wall -ansi -g3
 
 ASFLAGS = --32
 
@@ -21,9 +21,13 @@ CSOURCES = console.c \
            ioports.c \
            multiboot.c \
            physmem.c \
+           pde.c \
            pit.c \
+           pte.c \
            string.c \
            syscall.c \
+           task.c \
+           tcb.c \
            virtmem.c
 
 .PHONY : all clean

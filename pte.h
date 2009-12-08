@@ -16,44 +16,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PHYSPAGE_H
-#define PHYSPAGE_H
+#ifndef PTE_H
+#define PTE_H
 
 enum {
-        PHYSPAGE_SHIFT = 12,
-        PHYSPAGE_SIZE  = 1<<PHYSPAGE_SHIFT,
-        PHYSPAGE_MASK  = PHYSPAGE_SIZE-1
+        PTE_FLAG_PRESENT   = 1<<0,
+        PTE_FLAG_WRITEABLE = 1<<1,
+        PTE_FLAG_USERMODE  = 1<<2,
+        PTE_ALL_FLAGS      = PTE_FLAG_PRESENT|
+                             PTE_FLAG_WRITEABLE|
+                             PTE_FLAG_USERMODE
 };
 
-static __inline__ unsigned long
-physpage_index(unsigned long addr)
-{
-        return addr>>PHYSPAGE_SHIFT;
-}
+enum {
+        PTE_STATE_ACCESSED = 1<<5,
+        PTE_STATE_DIRTY    = 1<<6
+};
 
-static __inline__ unsigned long
-physpage_offset(unsigned long index)
-{
-        return index<<PHYSPAGE_SHIFT;
-}
+typedef unsigned long pt_entry;
 
-static __inline__ unsigned long
-physpage_count(unsigned long bytes)
-{
-        return bytes ? 1+((bytes)>>PHYSPAGE_SHIFT) : 0;
-}
+pt_entry
+pt_entry_create(unsigned long physaddr, unsigned long flags);
 
-static __inline__ unsigned long
-physpage_floor(unsigned long addr)
-{
-        return addr & ~PHYSPAGE_MASK;
-}
-
-static __inline__ unsigned long
-physpage_ceil(unsigned long addr)
-{
-        return ((addr>>PHYSPAGE_SHIFT)+1) << PHYSPAGE_SHIFT;
-}
+unsigned long
+pt_entry_get_address(pt_entry pte);
 
 #endif
 

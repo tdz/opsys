@@ -23,7 +23,7 @@
 #include "idt.h"
 #include "intrrupt.h"
 #include "pit.h"
-#include "physpage.h"
+#include "page.h"
 #include "physmem.h"
 #include "elfldr.h"
 
@@ -50,9 +50,9 @@ find_unused_area(const struct multiboot_header *mb_header,
         unsigned long kernel_pgindex, kernel_npages;
         unsigned long pgoffset;
 
-        kernel_pgindex = physpage_index(mb_header->load_addr);
-        kernel_npages = physpage_count(mb_header->bss_end_addr -
-                                       mb_header->load_addr);
+        kernel_pgindex = page_index(mb_header->load_addr);
+        kernel_npages = page_count(mb_header->bss_end_addr -
+                                   mb_header->load_addr);
 
         mmap_addr = mb_info->mmap_addr;
 
@@ -75,11 +75,11 @@ find_unused_area(const struct multiboot_header *mb_header,
 
                 /* area page index and length */
 
-                area_pgindex = physpage_index(
+                area_pgindex = page_index(
                         (((unsigned long long)mmap->base_addr_high)<<32) +
                                               mmap->base_addr_low);
 
-                area_npages = physpage_count(
+                area_npages = page_count(
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
@@ -113,11 +113,9 @@ find_unused_area(const struct multiboot_header *mb_header,
                                 unsigned long mod_pgindex;
                                 unsigned long mod_npages;
 
-                                mod_pgindex =
-                                        physpage_index(mod->mod_start);
-                                mod_npages =
-                                        physpage_count(mod->mod_end -
-                                                       mod->mod_start);
+                                mod_pgindex = page_index(mod->mod_start);
+                                mod_npages  = page_count(mod->mod_end -
+                                                         mod->mod_start);
 
                                 /* check intersection */
                                 if (range_order(mod_pgindex,
@@ -125,7 +123,7 @@ find_unused_area(const struct multiboot_header *mb_header,
                                                 pgindex,
                                                 pgindex+npages)) {
                                         /* no intersection, offset found */
-                                        pgoffset = physpage_offset(pgindex);
+                                        pgoffset = page_offset(pgindex);
                                 } else {
                                         pgindex = mod_pgindex+mod_npages;
                                 }
@@ -142,8 +140,8 @@ init_physmem(const struct multiboot_header *mb_header,
 {
         unsigned long physmap, npages;
 
-        npages = physpage_count((mb_info->mem_upper+1)<<10);
-        physmap = find_unused_area(mb_header, mb_info, npages>>PHYSPAGE_SHIFT);
+        npages  = page_count((mb_info->mem_upper+1)<<10);
+        physmap = find_unused_area(mb_header, mb_info, npages>>PAGE_SHIFT);
 
         console_printf("found phymap area at %x\n", (unsigned long)physmap);
 
@@ -156,8 +154,8 @@ init_physmap_kernel(const struct multiboot_header *mb_header)
 {
         unsigned long pgindex, npages;
 
-        pgindex = physpage_index(mb_header->load_addr);
-        npages = physpage_count(mb_header->bss_end_addr-mb_header->load_addr);
+        pgindex = page_index(mb_header->load_addr);
+        npages  = page_count(mb_header->bss_end_addr-mb_header->load_addr);
 
         return physmem_add_area(pgindex, npages, PHYSMEM_FLAG_RESERVED);
 }
@@ -181,11 +179,11 @@ init_physmap_areas(const struct multiboot_info *mb_info)
 
                 mmap = (const struct multiboot_mmap*)mmap_addr;
 
-                pgoffset = physpage_index(
+                pgoffset = page_index(
                         (((unsigned long long)mmap->base_addr_high)<<32) +
                                               mmap->base_addr_low);
 
-                npages = physpage_count(
+                npages = page_count(
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
@@ -220,8 +218,8 @@ init_physmap_modules(const struct multiboot_info *mb_info)
                 unsigned long pgoffset;
                 unsigned long npages;
 
-                pgoffset = physpage_index(mod->mod_start);
-                npages = physpage_count(mod->mod_end-mod->mod_start);
+                pgoffset = page_index(mod->mod_start);
+                npages   = page_count(mod->mod_end-mod->mod_start);
 
 /*                console_printf("%s:%x %x %x\n",
                                 __FILE__,
@@ -256,12 +254,65 @@ load_modules(const struct multiboot_info *mb_info)
         return 0;
 }
 
+#include "pte.h"
+#include "pde.h"
+#include "virtmem.h"
+#include "tcb.h"
+#include "task.h"
+
+static int
+build_init_task(void)
+{
+        int err;
+        struct page_directory *pd;
+        struct task *task;
+        unsigned long pgindex;
+        unsigned long npages;
+
+        /* create virtual address space */
+
+        if ( !(pd = page_directory_create()) ) {
+                err = -1;
+                goto err_page_directory_create;
+        }
+
+        /* populate kernel area */
+
+        pgindex = page_index(g_min_kernel_virtaddr);
+        npages  = page_count(g_max_kernel_virtaddr+g_min_kernel_virtaddr);
+
+        if ((err = page_directory_install_page_tables(pd, pgindex, npages)) < 0) {
+                goto err_page_directory_install_page_tables;
+        }
+
+        /* create thread (0:0) */
+
+        if ( !(task = task_lookup(0)) ) {
+                err = -1;
+                goto err_task_lookup;
+        }
+
+        /* load save registers in TCB 0 */
+
+
+        return 0;
+
+err_task_lookup:
+err_page_directory_install_page_tables:
+        page_directory_destroy(pd);
+err_page_directory_create:
+        return err;
+}
+
 unsigned long tickcounter = 0;
 
 void
 multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info)
 {
+/*        struct tcb tcb;
+        struct task task;*/
+
 /*        unsigned long esp;*/
 
         console_printf("%s...\n\t%s\n", "OS kernel booting",

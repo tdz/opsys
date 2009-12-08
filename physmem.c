@@ -19,7 +19,7 @@
 #include "stddef.h"
 #include "types.h"
 #include "string.h"
-#include "physpage.h"
+#include "page.h"
 #include "physmem.h"
 
 static unsigned char *g_physmap = NULL;
@@ -34,13 +34,13 @@ physmem_init(unsigned int physmap, unsigned long npages)
         g_physmap_npages = npages;
 
         /* add global variables of physmem */
-        physmem_add_area(((unsigned long)g_physmap)>>PHYSPAGE_SHIFT, 1,
+        physmem_add_area(((unsigned long)g_physmap)>>PAGE_SHIFT, 1,
                          PHYSMEM_FLAG_RESERVED);
-        physmem_add_area(g_physmap_npages>>PHYSPAGE_SHIFT, 1,
+        physmem_add_area(g_physmap_npages>>PAGE_SHIFT, 1,
                          PHYSMEM_FLAG_RESERVED);
 
         /* add physmap */
-        physmem_add_area(((unsigned long)g_physmap>>PHYSPAGE_SHIFT),
+        physmem_add_area(((unsigned long)g_physmap>>PAGE_SHIFT),
                          g_physmap_npages+1,
                          PHYSMEM_FLAG_RESERVED);
 

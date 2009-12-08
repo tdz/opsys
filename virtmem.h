@@ -73,5 +73,12 @@ page_directory_install_page_tables(struct page_directory *pd,
                                    unsigned long virt_pgindex,
                                    unsigned long npages);
 
+int
+page_directory_install_physical_pages_at(struct page_directory *pd,
+                                         unsigned long virt_pgindex,
+                                         unsigned long phys_pgindex,
+                                         unsigned long npages,
+                                         unsigned long flags);
+
 #endif
 

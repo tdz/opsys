@@ -285,6 +285,12 @@ build_init_task(void)
                 goto err_page_directory_install_page_tables;
         }
 
+        /* populate lowest 4 MiB */
+
+        if ((err = page_directory_install_physical_pages_at(pd, 1, 1, 1024)) < 0) {
+                goto err_page_directory_install_physical_pages_at;
+        }
+
         /* create thread (0:0) */
 
         if ( !(task = task_lookup(0)) ) {
@@ -292,12 +298,12 @@ build_init_task(void)
                 goto err_task_lookup;
         }
 
-        /* load save registers in TCB 0 */
-
+        /* save registers in TCB 0 */
 
         return 0;
 
 err_task_lookup:
+err_page_directory_install_physical_pages_at:
 err_page_directory_install_page_tables:
         page_directory_destroy(pd);
 err_page_directory_create:

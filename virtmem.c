@@ -20,10 +20,13 @@
 #include "types.h"
 #include "string.h"
 #include "page.h"
+#include "pagedir.h"
 #include "physmem.h"
 #include "pte.h"
 #include "pde.h"
 #include "virtmem.h"
+#include "tcb.h"
+#include "task.h"
 
 const unsigned long g_min_kernel_virtaddr = 0xc0000000;
 const unsigned long g_max_kernel_virtaddr = 0xffffffff;
@@ -212,11 +215,6 @@ page_directory_lookup_phys(const struct page_directory *pd,
         return (pt->entry[(virtaddr>>12)&0x3ff]&0xfffffc00) + (virtaddr&0x3ff);
 }
 
-#include "pte.h"
-#include "pde.h"
-#include "tcb.h"
-#include "task.h"
-
 int
 page_directory_install_page_tables(struct page_directory *pd,
                                    unsigned long virt_pgindex,
@@ -340,5 +338,129 @@ err_pd_entry_get_pgoffset:
 err_pd_entry_get_ptoffset:
 err_page_table_create:
         return err;
+}
+
+static unsigned long
+__page_directory_find_empty_page(const struct page_directory *pd)
+{
+        unsigned long virt_min_pgindex,
+                      virt_max_pgindex, virt_pgindex;
+
+        virt_min_pgindex = page_index(g_min_kernel_virtaddr +
+                                      MAXTASK*sizeof(struct task));
+        virt_max_pgindex = page_index(g_max_kernel_virtaddr);
+
+        for (virt_pgindex = virt_min_pgindex;
+             virt_pgindex < virt_max_pgindex;
+           ++virt_pgindex) {
+
+                unsigned long virt_pdindex;
+                const struct page_table *pt;
+
+                virt_pdindex = pagedir_index(page_offset(virt_pgindex));
+
+                pt = (struct page_table*)pd->ventry[virt_pdindex];
+
+                /* stop of page entry is empty */
+                if (!pt_entry_get_address(pt->entry[virt_pgindex&0x3ff])) {
+                        return virt_pgindex;
+                }
+        }
+
+        return 0;
+}
+
+static int
+__page_directory_install_physical_page_at(struct page_directory *pd,
+                                          unsigned long virt_pgindex,
+                                          unsigned long phys_pgindex,
+                                          unsigned long flags)
+{
+        unsigned long virt_pgoffset, virt_pdindex;
+        struct page_table *pt;
+        int err;
+
+        virt_pgoffset = page_offset(virt_pgindex);
+
+        virt_pdindex = pagedir_index(virt_pgoffset);
+
+        /* create new page table, if not yet present */
+        if (!pd->ventry[virt_pdindex]) {
+                unsigned long ventry_pgindex;
+
+                /* create new page table */
+                if ( !(pt = page_table_create()) ) {
+                        err = -1;
+                        goto err_pt;
+                }
+
+                /* and install in page directory */
+
+                ventry_pgindex = __page_directory_find_empty_page(pd);
+
+                if (!ventry_pgindex) {
+                        goto err___page_directory_find_empty_page;
+                }
+
+                err = __page_directory_install_physical_page_at(pd,
+                                ventry_pgindex,
+                                page_index((unsigned long)pt),
+                                PDE_FLAG_PRESENT|
+                                PDE_FLAG_WRITEABLE|
+                                PDE_FLAG_CACHED);
+
+                if (err) {
+                        goto err___page_directory_install_physical_page_at;
+                }
+
+                pd->ventry[virt_pdindex] = ventry_pgindex;
+        }
+
+        /* set page-table entry */
+
+        pt = (struct page_table*)pd->ventry[virt_pdindex];
+
+        if (!pt) {
+                err = -1;
+                goto err_pt;
+        }
+
+        pt->entry[virt_pgindex&PAGE_MASK] =
+                pt_entry_create(page_offset(phys_pgindex), flags);
+
+        return 0;
+
+err_pt:
+err___page_directory_install_physical_page_at:
+err___page_directory_find_empty_page:
+        return err;
+}
+
+int
+page_directory_install_physical_pages_at(struct page_directory *pd,
+                                         unsigned long virt_pgindex,
+                                         unsigned long phys_pgindex,
+                                         unsigned long npages,
+                                         unsigned long flags)
+{
+        int err;
+        unsigned long i;
+
+        for (i = 0; i < npages; ++i) {
+                err = __page_directory_install_physical_page_at(
+                                pd,
+                                virt_pgindex+i,
+                                phys_pgindex+i,
+                                flags);
+
+                if (err) {
+                        goto err___page_directory_install_physical_page_at;
+                }
+        }
+
+        return 0;
+
+err___page_directory_install_physical_page_at:
+        return err;        
 }
 

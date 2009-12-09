@@ -80,5 +80,19 @@ page_directory_install_physical_pages_at(struct page_directory *pd,
                                          unsigned long npages,
                                          unsigned long flags);
 
+enum virtmem_area {
+        VIRTMEM_AREA_LOW       = 0,
+        VIRTMEM_AREA_USER      = 1,
+        VIRTMEM_AREA_TASKSTATE = 2,
+        VIRTMEM_AREA_KERNEL    = 3
+};
+
+int
+page_directory_install_physical_pages_in_area(struct page_directory *pd,
+                                              enum virtmem_area area,
+                                              unsigned long phys_pgindex,
+                                              unsigned long npages,
+                                              unsigned long flags);
+
 #endif
 

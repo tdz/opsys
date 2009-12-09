@@ -35,7 +35,7 @@ enum {
 };
 
 enum {
-        PDE_STATE_ACCESSED = 1<<5,
+        PDE_STATE_ACCESSED = 1<<5
 };
 
 typedef unsigned long pd_entry;

@@ -51,7 +51,7 @@ find_unused_area(const struct multiboot_header *mb_header,
         unsigned long pgoffset;
 
         kernel_pgindex = page_index(mb_header->load_addr);
-        kernel_npages = page_count(mb_header->bss_end_addr -
+        kernel_npages = PAGE_COUNT(mb_header->bss_end_addr -
                                    mb_header->load_addr);
 
         mmap_addr = mb_info->mmap_addr;
@@ -79,7 +79,7 @@ find_unused_area(const struct multiboot_header *mb_header,
                         (((unsigned long long)mmap->base_addr_high)<<32) +
                                               mmap->base_addr_low);
 
-                area_npages = page_count(
+                area_npages = PAGE_COUNT(
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
@@ -114,7 +114,7 @@ find_unused_area(const struct multiboot_header *mb_header,
                                 unsigned long mod_npages;
 
                                 mod_pgindex = page_index(mod->mod_start);
-                                mod_npages  = page_count(mod->mod_end -
+                                mod_npages  = PAGE_COUNT(mod->mod_end -
                                                          mod->mod_start);
 
                                 /* check intersection */
@@ -140,7 +140,7 @@ init_physmem(const struct multiboot_header *mb_header,
 {
         unsigned long physmap, npages;
 
-        npages  = page_count((mb_info->mem_upper+1)<<10);
+        npages  = PAGE_COUNT((mb_info->mem_upper+1)<<10);
         physmap = find_unused_area(mb_header, mb_info, npages>>PAGE_SHIFT);
 
         console_printf("found phymap area at %x\n", (unsigned long)physmap);
@@ -155,7 +155,7 @@ init_physmap_kernel(const struct multiboot_header *mb_header)
         unsigned long pgindex, npages;
 
         pgindex = page_index(mb_header->load_addr);
-        npages  = page_count(mb_header->bss_end_addr-mb_header->load_addr);
+        npages  = PAGE_COUNT(mb_header->bss_end_addr-mb_header->load_addr);
 
         return physmem_add_area(pgindex, npages, PHYSMEM_FLAG_RESERVED);
 }
@@ -183,7 +183,7 @@ init_physmap_areas(const struct multiboot_info *mb_info)
                         (((unsigned long long)mmap->base_addr_high)<<32) +
                                               mmap->base_addr_low);
 
-                npages = page_count(
+                npages = PAGE_COUNT(
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
@@ -219,7 +219,7 @@ init_physmap_modules(const struct multiboot_info *mb_info)
                 unsigned long npages;
 
                 pgoffset = page_index(mod->mod_start);
-                npages   = page_count(mod->mod_end-mod->mod_start);
+                npages   = PAGE_COUNT(mod->mod_end-mod->mod_start);
 
 /*                console_printf("%s:%x %x %x\n",
                                 __FILE__,
@@ -276,18 +276,22 @@ build_init_task(void)
                 goto err_page_directory_create;
         }
 
-        /* populate kernel area */
+        /* build kernel area */
 
         pgindex = page_index(g_min_kernel_virtaddr);
-        npages  = page_count(g_max_kernel_virtaddr+g_min_kernel_virtaddr);
+        npages  = PAGE_COUNT(g_max_kernel_virtaddr+g_min_kernel_virtaddr);
 
         if ((err = page_directory_install_page_tables(pd, pgindex, npages)) < 0) {
                 goto err_page_directory_install_page_tables;
         }
 
-        /* populate lowest 4 MiB */
+        /* map lowest 4 MiB */
 
-        if ((err = page_directory_install_physical_pages_at(pd, 1, 1, 1024)) < 0) {
+        err = page_directory_install_physical_pages_at(pd, 1, 1, 1023,
+                                                       PDE_FLAG_PRESENT|
+                                                       PDE_FLAG_WRITEABLE|
+                                                       PDE_FLAG_CACHED);
+        if (err < 0) {
                 goto err_page_directory_install_physical_pages_at;
         }
 

@@ -59,7 +59,7 @@ page_directory_create()
         unsigned long pgindex;
         struct page_directory *pd;
 
-        pgindex = physmem_alloc(page_count(sizeof(*pd)));
+        pgindex = physmem_alloc(PAGE_COUNT(sizeof(*pd)));
 
         if (!pgindex) {
                 return NULL;
@@ -340,31 +340,88 @@ err_page_table_create:
         return err;
 }
 
+static const unsigned long g_task_state_npages =
+        PAGE_COUNT(MAXTASK*sizeof(struct task));
+
+static const unsigned long g_virtmem_area[4][2] =
+        {{1,    1023},      /* < 4 MiB */
+         {1024, 785408},    /* 4 MiB - 3 GiB */
+         {786432, PAGE_COUNT(MAXTASK*sizeof(struct task))}, /* > 3 GiB */
+         {786432+PAGE_COUNT(MAXTASK*sizeof(struct task)), 262144-PAGE_COUNT(MAXTASK*sizeof(struct task))}}; /* > 3 GiB */
+
+#include "minmax.h"
+
 static unsigned long
-__page_directory_find_empty_page(const struct page_directory *pd)
+__page_directory_check_empty_pages_at(const struct page_directory *pd,
+                                      unsigned long virt_pgindex,
+                                      unsigned long npages)
 {
-        unsigned long virt_min_pgindex,
-                      virt_max_pgindex, virt_pgindex;
+        unsigned long nempty;
+        const unsigned long *ventrybeg, *ventryend;
 
-        virt_min_pgindex = page_index(g_min_kernel_virtaddr +
-                                      MAXTASK*sizeof(struct task));
-        virt_max_pgindex = page_index(g_max_kernel_virtaddr);
+        nempty = 0;
 
-        for (virt_pgindex = virt_min_pgindex;
-             virt_pgindex < virt_max_pgindex;
-           ++virt_pgindex) {
+        ventrybeg = pd->ventry+pagedir_index(page_offset(virt_pgindex));
+        ventryend = pd->ventry+pagedir_index(page_offset(virt_pgindex+npages));
 
-                unsigned long virt_pdindex;
+        while (ventrybeg < ventryend) {
+
                 const struct page_table *pt;
+                const unsigned long *pebeg, *peend;
 
-                virt_pdindex = pagedir_index(page_offset(virt_pgindex));
+                pt = (const struct page_table*)(*ventrybeg);
 
-                pt = (struct page_table*)pd->ventry[virt_pdindex];
-
-                /* stop of page entry is empty */
-                if (!pt_entry_get_address(pt->entry[virt_pgindex&0x3ff])) {
-                        return virt_pgindex;
+                if (!pt) {
+                        nempty += 1024-(virt_pgindex&0x3ff);
                 }
+
+                /* count empty pages */
+
+                pebeg = pt->entry+(virt_pgindex&0x3ff);
+                peend = pebeg + minul(npages-nempty, 1024-(virt_pgindex&0x3ff));
+
+                while ((pebeg < peend) && !pt_entry_get_address(*pebeg)) {
+                        ++nempty;
+                        ++virt_pgindex;
+                        ++pebeg;
+                }
+
+                /* break if stopped early */
+                if (pebeg < peend) {
+                        break;
+                }
+
+                ++ventrybeg;
+        }
+
+        return nempty;
+}
+
+static unsigned long
+__page_directory_find_empty_pages(const struct page_directory *pd,
+                                  unsigned long virt_beg_pgindex,
+                                  unsigned long virt_end_pgindex,
+                                  unsigned long npages)
+{
+        /* FIXME: this function subject to integer overflow errors
+         */
+
+        /* find continuous area in virtual memory */
+
+        while ((virt_beg_pgindex < virt_end_pgindex) &&
+               (npages <= virt_end_pgindex-virt_beg_pgindex)) {
+
+                unsigned long nempty;
+
+                nempty = __page_directory_check_empty_pages_at(pd,
+                                                        virt_beg_pgindex,
+                                                        npages);
+                if (nempty == npages) {
+                        return virt_beg_pgindex;
+                }
+
+                /* goto page after non-empty one */
+                virt_beg_pgindex += nempty+1;
         }
 
         return 0;
@@ -385,6 +442,7 @@ __page_directory_install_physical_page_at(struct page_directory *pd,
         virt_pdindex = pagedir_index(virt_pgoffset);
 
         /* create new page table, if not yet present */
+
         if (!pd->ventry[virt_pdindex]) {
                 unsigned long ventry_pgindex;
 
@@ -396,7 +454,12 @@ __page_directory_install_physical_page_at(struct page_directory *pd,
 
                 /* and install in page directory */
 
-                ventry_pgindex = __page_directory_find_empty_page(pd);
+                ventry_pgindex =
+                        __page_directory_find_empty_pages(
+                                pd, g_virtmem_area[VIRTMEM_AREA_KERNEL][0],
+                                    g_virtmem_area[VIRTMEM_AREA_KERNEL][0] +
+                                    g_virtmem_area[VIRTMEM_AREA_KERNEL][1],
+                                    PAGE_COUNT(sizeof(*pt)) );
 
                 if (!ventry_pgindex) {
                         goto err___page_directory_find_empty_page;
@@ -452,7 +515,6 @@ page_directory_install_physical_pages_at(struct page_directory *pd,
                                 virt_pgindex+i,
                                 phys_pgindex+i,
                                 flags);
-
                 if (err) {
                         goto err___page_directory_install_physical_page_at;
                 }
@@ -462,5 +524,46 @@ page_directory_install_physical_pages_at(struct page_directory *pd,
 
 err___page_directory_install_physical_page_at:
         return err;        
+}
+
+int
+page_directory_install_physical_pages_in_area(struct page_directory *pd,
+                                              enum virtmem_area area,
+                                              unsigned long phys_pgindex,
+                                              unsigned long npages,
+                                              unsigned long flags)
+{
+        unsigned long virt_pgindex;
+        int err;
+
+        if (!(area < sizeof(g_virtmem_area)/sizeof(g_virtmem_area[0]))) {
+                return 0;
+        }
+
+        virt_pgindex = __page_directory_find_empty_pages(pd,
+                                        g_virtmem_area[area][0],
+                                        g_virtmem_area[area][0] +
+                                        g_virtmem_area[area][1],
+                                        npages);
+
+        if (!virt_pgindex) {
+                err = -1;
+                goto err___page_directory_find_empty_pages;
+        }
+
+        err = page_directory_install_physical_pages_at(pd,
+                                                       virt_pgindex,
+                                                       phys_pgindex,
+                                                       npages,
+                                                       flags);
+        if (err) {
+                goto err_page_directory_install_physical_page_at;
+        }
+
+        return 0;
+
+err___page_directory_find_empty_pages:
+err_page_directory_install_physical_page_at:
+        return err;
 }
 

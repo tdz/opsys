@@ -37,11 +37,8 @@ page_offset(unsigned long index)
         return index<<PAGE_SHIFT;
 }
 
-static __inline__ unsigned long
-page_count(unsigned long bytes)
-{
-        return bytes ? 1+((bytes)>>PAGE_SHIFT) : 0;
-}
+#define PAGE_COUNT(_bytes) \
+        (((_bytes)+(PAGE_SIZE-1))>>PAGE_SHIFT)
 
 static __inline__ unsigned long
 page_floor(unsigned long addr)

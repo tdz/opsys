@@ -28,11 +28,11 @@ struct page_table
         pt_entry entry[1024];
 };
 
-struct page_table *
-page_table_create(void);
+int
+page_table_init(struct page_table *pt);
 
 void
-page_table_destroy(struct page_table *pt);
+page_table_uninit(struct page_table *pt);
 
 struct page_directory
 {
@@ -40,11 +40,11 @@ struct page_directory
         unsigned long ventry[1024]; /* virtual addresses */
 };
 
-struct page_directory *
-page_directory_create(void);
+int
+page_directory_init(struct page_directory *pd);
 
 void
-page_directory_destroy(struct page_directory *pd);
+page_directory_uninit(struct page_directory *pd);
 
 unsigned long
 page_directory_alloc_pages(struct page_directory *pt, unsigned long npages);
@@ -65,8 +65,8 @@ page_directory_release_pages(struct page_directory *pt, unsigned long pgindex,
                                                         unsigned npages);
 
 unsigned long
-page_directory_lookup_phys(const struct page_directory *pt,
-                           unsigned long virtaddr);
+page_directory_lookup_physical_page(const struct page_directory *pt,
+                                    unsigned long virt_pgindex);
 
 int
 page_directory_install_page_tables(struct page_directory *pd,

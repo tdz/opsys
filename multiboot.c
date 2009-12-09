@@ -266,14 +266,21 @@ build_init_task(void)
         int err;
         struct page_directory *pd;
         struct task *task;
+        struct tcb *tcb;
         unsigned long pgindex;
         unsigned long npages;
 
         /* create virtual address space */
 
-        if ( !(pd = page_directory_create()) ) {
+        pd = (struct page_directory*)
+                page_offset(physmem_alloc_pages(PAGE_COUNT(sizeof(*pd))));
+
+        if (!pd) {
                 err = -1;
-                goto err_page_directory_create;
+                goto err_page_directory_alloc;
+        }
+        if ((err = page_directory_init(pd)) < 0) {
+                goto err_page_directory_init;
         }
 
         /* build kernel area */
@@ -295,22 +302,72 @@ build_init_task(void)
                 goto err_page_directory_install_physical_pages_at;
         }
 
-        /* create thread (0:0) */
+        /* add page directory to its own address space */
+        err = page_directory_install_physical_pages_in_area(pd,
+                                                VIRTMEM_AREA_KERNEL,
+                                                page_index((unsigned long)pd),
+                                                PAGE_COUNT(sizeof(*pd)),
+                                                PTE_FLAG_PRESENT|
+                                                PTE_FLAG_WRITEABLE);
+        if (err < 0) {
+                goto err_page_directory_install_physical_pages_in_area;
+        }
+
+        /* create task 0
+         */
 
         if ( !(task = task_lookup(0)) ) {
                 err = -1;
                 goto err_task_lookup;
         }
 
+        /* allocate memory for task */
+        if (!physmem_alloc_pages_at(page_index((unsigned long)task),
+                                    PAGE_COUNT(sizeof(*task)))) {
+                err = -1;
+                goto err_task_alloc;
+        }
+
+        if ((err = task_init(task)) < 0) {
+                goto err_task_init;
+        }
+
+        task->pd = pd;
+
+        /* create thread (0:0)
+         */
+
+        tcb = task_get_tcb(task, 0);
+
+        if (!tcb) {
+                err = -1;
+                goto err_task_get_thread;
+        }
+
+        if ((err = tcb_set_page_directory(tcb, pd)) < 0) {
+                goto err_tcb_set_page_directory;
+        }
+
         /* save registers in TCB 0 */
 
         return 0;
 
+err_tcb_set_page_directory:
+err_task_get_thread:
+        task_uninit(task);
+err_task_init:
+        physmem_unref_pages(page_index((unsigned long)task),
+                            PAGE_COUNT(sizeof(*task)));
+err_task_alloc:
 err_task_lookup:
+err_page_directory_install_physical_pages_in_area:
 err_page_directory_install_physical_pages_at:
 err_page_directory_install_page_tables:
-        page_directory_destroy(pd);
-err_page_directory_create:
+        page_directory_uninit(pd);
+err_page_directory_init:
+        physmem_unref_pages(page_index((unsigned long)pd),
+                            PAGE_COUNT(sizeof(*pd)));
+err_page_directory_alloc:
         return err;
 }
 

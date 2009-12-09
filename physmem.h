@@ -28,18 +28,21 @@ int
 physmem_init(unsigned int physmap, unsigned long npages);
 
 int
-physmem_add_area(unsigned long pgoffset,
+physmem_add_area(unsigned long pgindex,
                  unsigned long npages,
                  unsigned char flags);
 
 unsigned long
-physmem_alloc(unsigned long npages);
+physmem_alloc_pages(unsigned long npages);
+
+unsigned long
+physmem_alloc_pages_at(unsigned long pgindex, unsigned long npages);
 
 int
-physmem_ref(unsigned pgoffset, unsigned long npages);
+physmem_ref_pages(unsigned long pgindex, unsigned long npages);
 
 void
-physmem_unref(unsigned pgoffset, unsigned long npages);
+physmem_unref_pages(unsigned long pgindex, unsigned long npages);
 
 #endif
 

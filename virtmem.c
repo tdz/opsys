@@ -32,31 +32,28 @@ const unsigned long g_min_kernel_virtaddr = 0xc0000000;
 const unsigned long g_max_kernel_virtaddr = 0xffffffff;
 const unsigned long g_max_user_virtaddr   = 0xc0000000-1;
 
-struct page_table *
-page_table_create()
+int
+page_table_init(struct page_table *pt)
 {
-        struct page_directory *pt;
+        memset(pt, 0, sizeof(*pt));
 
-        pt = (struct page_directory *)page_offset(physmem_alloc(1));
-
-        if (!pt) {
-                return NULL;
-        }
-
-        return memset(pt, 0, sizeof(*pt));
+        return 0;
 }
 
 void
-page_table_destroy(struct page_table *pt)
+page_table_uninit(struct page_table *pt)
 {
-        physmem_unref(page_index((unsigned long)pt), 1);
+        return;
 }
 
-
-struct page_directory *
-page_directory_create()
+int
+page_directory_init(struct page_directory *pd)
 {
-        unsigned long pgindex;
+        memset(pd, 0, sizeof(*pd));
+
+        return 0;
+
+/*        unsigned long pgindex;
         struct page_directory *pd;
 
         pgindex = physmem_alloc(PAGE_COUNT(sizeof(*pd)));
@@ -67,13 +64,14 @@ page_directory_create()
 
         pd = (struct page_directory*)page_offset(pgindex);
 
-        return memset(pd, 0, sizeof(*pd));
+        return memset(pd, 0, sizeof(*pd));*/
 }
 
 void
-page_directory_destroy(struct page_directory *pd)
+page_directory_uninit(struct page_directory *pd)
 {
-        physmem_unref(page_index((unsigned long)pd), 1);
+        return;
+/*        physmem_unref(page_index((unsigned long)pd), 1);*/
 }
 
 static unsigned long
@@ -201,18 +199,19 @@ page_directory_release_pages(struct page_directory *pd, unsigned long pgindex,
 }
 
 unsigned long
-page_directory_lookup_phys(const struct page_directory *pd,
-                           unsigned long virtaddr)
+page_directory_lookup_physical_page(const struct page_directory *pd,
+                                    unsigned long virt_pgindex)
 {
         const struct page_table *pt;
 
-        pt = (const struct page_table*)(pd->ventry + (virtaddr>>22));
+        pt = (const struct page_table*)
+                pd->ventry[pagedir_index(page_offset(virt_pgindex))];
 
         if (!pt) {
                 return 0;
         }
 
-        return (pt->entry[(virtaddr>>12)&0x3ff]&0xfffffc00) + (virtaddr&0x3ff);
+        return (pt->entry[virt_pgindex&0x3ff]) >> 12;
 }
 
 int
@@ -237,9 +236,16 @@ page_directory_install_page_tables(struct page_directory *pd,
 
                 struct page_table *pt;
 
-                if ( !(pt = page_table_create()) ) {
+                pt = (struct page_table *)
+                        page_offset(physmem_alloc_pages(PAGE_COUNT(sizeof(*pt))));
+
+                if (!pt) {
                         err = -1;
-                        goto err_page_table_create;
+                        goto err_page_table_alloc;
+                }
+
+                if ( (err = page_table_init(pt)) < 0) {
+                        goto err_page_table_init;
                 }
 
                 pd->pentry[ptindex+i] = pd_entry_create((unsigned long)pt,
@@ -336,7 +342,8 @@ page_directory_install_page_tables(struct page_directory *pd,
 
 err_pd_entry_get_pgoffset:
 err_pd_entry_get_ptoffset:
-err_page_table_create:
+err_page_table_init:
+err_page_table_alloc:
         return err;
 }
 
@@ -446,10 +453,17 @@ __page_directory_install_physical_page_at(struct page_directory *pd,
         if (!pd->ventry[virt_pdindex]) {
                 unsigned long ventry_pgindex;
 
-                /* create new page table */
-                if ( !(pt = page_table_create()) ) {
+                pt = (struct page_table *)
+                        page_offset(physmem_alloc_pages(PAGE_COUNT(sizeof(*pt))));
+
+                if (!pt) {
                         err = -1;
-                        goto err_pt;
+                        goto err_page_table_alloc;
+                }
+
+                /* create new page table */
+                if ( (err = page_table_init(pt)) < 0) {
+                        goto err_page_table_init;
                 }
 
                 /* and install in page directory */
@@ -493,9 +507,11 @@ __page_directory_install_physical_page_at(struct page_directory *pd,
 
         return 0;
 
-err_pt:
+err_page_table_init:
+err_page_table_alloc:
 err___page_directory_install_physical_page_at:
 err___page_directory_find_empty_page:
+err_pt:
         return err;
 }
 

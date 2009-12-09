@@ -68,7 +68,7 @@ physmem_add_area(unsigned long pgindex,
 }
 
 unsigned long
-physmem_alloc(unsigned long npages)
+physmem_alloc_pages(unsigned long npages)
 {
         unsigned long pgindex;
         unsigned char *beg;
@@ -120,8 +120,40 @@ physmem_alloc(unsigned long npages)
         return pgindex;
 }
 
+unsigned long
+physmem_alloc_pages_at(unsigned long pgindex, unsigned long npages)
+{
+        unsigned char *beg;
+        const unsigned char *end;
+
+        /* FIXME: lock here */
+
+        beg = g_physmap+pgindex;
+        end = g_physmap+npages;
+
+        /* find next useable page */
+        for (; (beg < end) && !(*beg); ++beg) {}
+
+        /* stopped too early, pages already allocated */
+        if (beg < end) {
+                return 0;
+        }
+
+        /* range is empty */
+
+        beg = g_physmap+pgindex;
+
+        for (beg = g_physmap+pgindex; beg < end; ++beg) {
+                *beg = (PHYSMEM_FLAG_RESERVED<<7) + 1;
+        }
+
+        /* FIXME: unlock here */
+
+        return pgindex;
+}
+
 int
-physmem_ref(unsigned pgindex, unsigned long npages)
+physmem_ref_pages(unsigned long pgindex, unsigned long npages)
 {
         unsigned long i;
         unsigned char *physmap;
@@ -150,7 +182,7 @@ physmem_ref(unsigned pgindex, unsigned long npages)
 }
 
 void
-physmem_unref(unsigned pgindex, unsigned long npages)
+physmem_unref_pages(unsigned long pgindex, unsigned long npages)
 {
         unsigned char *physmap;
 

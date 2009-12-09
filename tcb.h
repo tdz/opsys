@@ -78,5 +78,8 @@ tcb_save(struct tcb *tcb);
 int
 tcb_load(const struct tcb *tcb);
 
+int
+tcb_set_page_directory(struct tcb *tcb, struct page_directory *pd);
+
 #endif
 

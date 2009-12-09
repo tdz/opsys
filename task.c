@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "stddef.h"
 #include "pte.h"
 #include "pde.h"
 #include "virtmem.h"
@@ -30,5 +31,25 @@ task_lookup(unsigned char taskid)
         offset = g_min_kernel_virtaddr+sizeof(struct task)*taskid;
 
         return (struct task*)offset;
+}
+
+int
+task_init(struct task *task)
+{
+        task->pd = NULL;
+
+        return 0;
+}
+
+void
+task_uninit(struct task *task)
+{
+        return;
+}
+
+struct tcb *
+task_get_tcb(struct task *task, unsigned char i)
+{
+        return i < 256 ? task->tcb+i : NULL;
 }
 

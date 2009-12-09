@@ -28,5 +28,14 @@ struct task
 struct task *
 task_lookup(unsigned char taskid);
 
+int
+task_init(struct task *task);
+
+void
+task_uninit(struct task *task);
+
+struct tcb *
+task_get_tcb(struct task *task, unsigned char i);
+
 #endif
 

@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "minmax.h"
 #include "stddef.h"
 #include "types.h"
 #include "string.h"
@@ -26,25 +27,14 @@ static unsigned char *g_physmap = NULL;
 static unsigned long  g_physmap_npages = 0;
 
 int
-physmem_init(unsigned int physmap, unsigned long npages)
+physmem_init(unsigned long physmap, unsigned long npages)
 {
         g_physmap = (unsigned char*)physmap;
 
         memset(g_physmap, 0, npages*sizeof(g_physmap[0]));
         g_physmap_npages = npages;
 
-        /* add global variables of physmem */
-        physmem_add_area(((unsigned long)g_physmap)>>PAGE_SHIFT, 1,
-                         PHYSMEM_FLAG_RESERVED);
-        physmem_add_area(g_physmap_npages>>PAGE_SHIFT, 1,
-                         PHYSMEM_FLAG_RESERVED);
-
-        /* add physmap */
-        physmem_add_area(((unsigned long)g_physmap>>PAGE_SHIFT),
-                         g_physmap_npages+1,
-                         PHYSMEM_FLAG_RESERVED);
-
-        return 0;
+        return physmem_add_self();
 }
 
 int
@@ -52,17 +42,41 @@ physmem_add_area(unsigned long pgindex,
                  unsigned long npages,
                  unsigned char flags)
 {
-        unsigned char *physmap;
+        unsigned char *beg;
+        const unsigned char *end;
 
         /* FIXME: lock here */
 
-        physmap = g_physmap+pgindex;
+        beg = g_physmap+pgindex;
+        end = beg+npages;
 
-        while (npages-- && (physmap < (g_physmap+g_physmap_npages))) {
-                *(physmap++) |= (flags&0x1)<<7;
+        while ((beg < end) && (beg < g_physmap+g_physmap_npages)) {
+                *beg |= (flags&PHYSMEM_ALL_FLAGS)<<7;
+                ++beg;
         }
 
+/*        console_printf(" %s %x %x\n", __FILE__, __LINE__, beg-g_physmap);*/
+
         /* FIXME: unlock here */
+
+        return 0;
+}
+
+int
+physmem_add_self()
+{
+        /* add global variables of physmem */
+        physmem_add_area(page_index((unsigned long)&g_physmap),
+                         PAGE_COUNT(sizeof(g_physmap)),
+                         PHYSMEM_FLAG_RESERVED);
+        physmem_add_area(page_index((unsigned long)&g_physmap_npages),
+                         PAGE_COUNT(sizeof(g_physmap_npages)),
+                         PHYSMEM_FLAG_RESERVED);
+
+        /* add physmap */
+        physmem_add_area(page_index((unsigned long)g_physmap),
+                         PAGE_COUNT(g_physmap_npages*sizeof(g_physmap[0])),
+                         PHYSMEM_FLAG_RESERVED);
 
         return 0;
 }
@@ -83,7 +97,7 @@ physmem_alloc_pages(unsigned long npages)
         while (!pgindex && (beg < end)) {
 
                 /* find next useable page */
-                for (; *beg && (beg < end); ++beg) {}
+                for (; (beg < end) && (*beg); ++beg) {}
 
                 /* end reached */
                 if (beg == end) {
@@ -111,6 +125,7 @@ physmem_alloc_pages(unsigned long npages)
                         for (beg2 = beg; beg2 < end2; ++beg2) {
                                 *beg2 = (PHYSMEM_FLAG_RESERVED<<7) + 1;
                         }
+
                         pgindex = beg-g_physmap;
                 }
         }

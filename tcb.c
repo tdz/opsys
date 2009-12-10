@@ -41,6 +41,11 @@ tcb_save(struct tcb *tcb)
 int
 tcb_load(const struct tcb *tcb)
 {
+        __asm__("movl %0, %%cr3\n\t"
+                        :
+                        : "r"(tcb->cr3)
+                        :);
+
         return 0;
 }
 

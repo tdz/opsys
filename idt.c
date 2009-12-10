@@ -76,6 +76,29 @@ keyboard_handler(unsigned long eip,
 }
 
 void
+page_fault_handler(unsigned long err,
+                   unsigned long eip,
+                   unsigned long cs,
+                   unsigned long eflags)
+{
+        unsigned long addr;
+
+        __asm__("pusha\n\t"
+                "movl %%cr2, %0\n\t"
+                        : "=r"(addr)
+                        :
+                        :);
+
+        console_printf("page fault at address %x, "
+                       "error: %x, "
+                       "eip: %x, "
+                       "cs: %x, "
+                       "eflags: %x\n", addr, err, eip, cs, eflags);
+
+        __asm__("popa\n\t");
+}
+
+void
 unhandled_irq_handler(unsigned long eip,
                       unsigned long cs,
                       unsigned long eflags)

@@ -1,7 +1,7 @@
 
 ARCH = i386
 
-CFLAGS = -m32 -Wall -ansi -g3
+CFLAGS = -m32 -Wall -ansi
 
 ASFLAGS = --32
 

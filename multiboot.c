@@ -279,6 +279,7 @@ build_init_task(void)
                 err = -1;
                 goto err_page_directory_alloc;
         }
+
         if ((err = page_directory_init(pd)) < 0) {
                 goto err_page_directory_init;
         }
@@ -312,6 +313,10 @@ build_init_task(void)
         if (err < 0) {
                 goto err_page_directory_install_physical_pages_in_area;
         }
+
+        return 0;
+
+        /* FIXME: enable pageing here, tasks need this !!! */
 
         /* create task 0
          */
@@ -377,6 +382,8 @@ void
 multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info)
 {
+        int err;
+
 /*        struct tcb tcb;
         struct task task;*/
 
@@ -396,6 +403,9 @@ multiboot_main(const struct multiboot_header *mb_header,
         } else {
                 /* FIXME: abort kernel */
         }
+
+        /* Lowest 1 MiB reserved for DMA */
+        physmem_add_area(0, 1024, PHYSMEM_FLAG_RESERVED);
 
         init_physmap_kernel(mb_header);
 
@@ -419,6 +429,10 @@ multiboot_main(const struct multiboot_header *mb_header,
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MODS) {
                 load_modules(mb_info);
         }
+
+        err = build_init_task();
+
+        console_printf("\nbuild_init_task err=%x\n", err);
 
 /*        sti();*/
 

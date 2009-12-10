@@ -40,6 +40,9 @@ page_offset(unsigned long index)
 #define PAGE_COUNT(_bytes) \
         (((_bytes)+(PAGE_SIZE-1))>>PAGE_SHIFT)
 
+#define PAGE_MEMORY(_npages) \
+        ((_npages)*PAGE_SIZE)
+
 static __inline__ unsigned long
 page_floor(unsigned long addr)
 {

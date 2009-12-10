@@ -40,7 +40,7 @@ pagedir_offset(unsigned long index)
 static __inline__ unsigned long
 pagedir_count(unsigned long bytes)
 {
-        return bytes ? 1+((bytes)>>PAGEDIR_SHIFT) : 0;
+        return (bytes+PAGEDIR_SIZE-1) >> PAGEDIR_SHIFT;
 }
 
 static __inline__ unsigned long

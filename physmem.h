@@ -20,17 +20,21 @@
 #define PHYSMEM_H
 
 enum {
-        PHYSMEM_FLAG_USEABLE  = 0, /* available for use */
-        PHYSMEM_FLAG_RESERVED = 1<<0 /* reserved by system */
+        PHYSMEM_FLAG_USEABLE  = 0,    /* available for use */
+        PHYSMEM_FLAG_RESERVED = 1<<0, /* reserved by system */
+        PHYSMEM_ALL_FLAGS     = PHYSMEM_FLAG_USEABLE|
+                                PHYSMEM_FLAG_RESERVED
 };
 
 int
-physmem_init(unsigned int physmap, unsigned long npages);
+physmem_init(unsigned long physmap, unsigned long npages);
 
 int
 physmem_add_area(unsigned long pgindex,
                  unsigned long npages,
                  unsigned char flags);
+int
+physmem_add_self(void);
 
 unsigned long
 physmem_alloc_pages(unsigned long npages);

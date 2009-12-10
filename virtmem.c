@@ -227,8 +227,8 @@ page_directory_install_page_tables(struct page_directory *pd,
         unsigned long virt_maxpg;
         unsigned long virt_minpt;
 
-        ptindex = virt_pgindex&0x3ff;
-        ptcount = (npages+1023) >> 10;
+        ptindex = pagedir_index(page_offset(virt_pgindex));
+        ptcount = pagedir_count(PAGE_MEMORY(npages));
 
         /* install physical pages */
 
@@ -240,7 +240,7 @@ page_directory_install_page_tables(struct page_directory *pd,
                         page_offset(physmem_alloc_pages(PAGE_COUNT(sizeof(*pt))));
 
                 if (!pt) {
-                        err = -1;
+                        err = -5;
                         goto err_page_table_alloc;
                 }
 
@@ -273,7 +273,7 @@ page_directory_install_page_tables(struct page_directory *pd,
                 ptoffset = pd_entry_get_address(pd->pentry[virt_minpt]);
 
                 if (!ptoffset) {
-                        err = -1;
+                        err = -2;
                         goto err_pd_entry_get_ptoffset;
                 }
 
@@ -290,7 +290,7 @@ page_directory_install_page_tables(struct page_directory *pd,
                                 pd_entry_get_address(pd->pentry[ptindex+i]);
 
                         if (!pgoffset) {
-                                err = -1;
+                                err = -3;
                                 goto err_pd_entry_get_pgoffset;
                         }
 
@@ -317,7 +317,7 @@ page_directory_install_page_tables(struct page_directory *pd,
                 ptoffset = pd_entry_get_address(pd->pentry[virt_minpt]);
 
                 if (!ptoffset) {
-                        err = -1;
+                        err = -4;
                         goto err_pd_entry_get_ptoffset;
                 }
 

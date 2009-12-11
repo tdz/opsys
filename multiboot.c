@@ -267,8 +267,6 @@ build_init_task(void)
         struct page_directory *pd;
         struct task *task;
         struct tcb *tcb;
-        unsigned long pgindex;
-        unsigned long npages;
 
         /* create virtual address space */
 
@@ -286,19 +284,15 @@ build_init_task(void)
 
         /* build kernel area */
 
-        pgindex = page_index(g_min_kernel_virtaddr);
-        npages  = PAGE_COUNT(g_max_kernel_virtaddr+g_min_kernel_virtaddr);
-
-        if ((err = page_directory_install_page_tables(pd, pgindex, npages)) < 0) {
+        if ((err = page_directory_init_kernel_page_tables(pd)) < 0) {
                 goto err_page_directory_install_page_tables;
         }
 
         /* map lowest 4 MiB */
 
         err = page_directory_install_physical_pages_at(pd, 1, 1, 1023,
-                                                       PDE_FLAG_PRESENT|
-                                                       PDE_FLAG_WRITEABLE|
-                                                       PDE_FLAG_CACHED);
+                                                       PTE_FLAG_PRESENT|
+                                                       PTE_FLAG_WRITEABLE);
         if (err < 0) {
                 goto err_page_directory_install_physical_pages_at;
         }
@@ -314,9 +308,25 @@ build_init_task(void)
                 goto err_page_directory_install_physical_pages_in_area;
         }
 
+        /* FIXME: enable paging here, tasks need this !!! */
+
+        console_printf("enabling paging\n");
+
+        {
+                unsigned long cr3 = ((unsigned long)pd->pentry)<<12;
+
+                __asm__("movl %0, %%cr3\n\t"
+                        "movl %%cr0, %%eax\n\t"
+                        "or $0x80000000, %%eax\n\t"
+                        "movl %%eax, %%cr0\n\t"
+                                :
+                                : "r" (cr3)
+                                : "eax");
+        }
+
+        console_printf("paging enabled\n");
         return 0;
 
-        /* FIXME: enable pageing here, tasks need this !!! */
 
         /* create task 0
          */
@@ -327,6 +337,7 @@ build_init_task(void)
         }
 
         /* allocate memory for task */
+        /* FIXME: do this in virtual memory */
         if (!physmem_alloc_pages_at(page_index((unsigned long)task),
                                     PAGE_COUNT(sizeof(*task)))) {
                 err = -1;
@@ -423,6 +434,8 @@ multiboot_main(const struct multiboot_header *mb_header,
         idt_install();
         idt_install_irq();
 
+        sti();
+
         /* setup PIT for system timer */
 /*        pit_install(0, 20, PIT_MODE_RATEGEN);*/
 
@@ -434,7 +447,8 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         console_printf("\nbuild_init_task err=%x\n", err);
 
-/*        sti();*/
+        return;
+
 
 /*        for (;;) {*/
 /*                __asm__("int $0x20\n\t");*/

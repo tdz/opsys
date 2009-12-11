@@ -19,14 +19,14 @@
 #include "pde.h"
 
 pd_entry
-pd_entry_create(unsigned long physaddr, unsigned long flags)
+pd_entry_create(unsigned long pgindex, unsigned long flags)
 {
-        return (physaddr&0xfffffc00) | (flags&PDE_ALL_FLAGS);
+        return (pgindex<<12) | (flags&PDE_ALL_FLAGS);
 }
 
 unsigned long
-pd_entry_get_address(pd_entry pde)
+pd_entry_get_page_index(pd_entry pde)
 {
-        return pde&0xfffffc00;
+        return pde>>12;
 }
 

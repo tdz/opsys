@@ -19,9 +19,20 @@
 #ifndef VIRTMEM_H
 #define VIRTMEM_H
 
-const unsigned long g_min_kernel_virtaddr;
-const unsigned long g_max_kernel_virtaddr;
-const unsigned long g_max_user_virtaddr;
+enum virtmem_area_name {
+        VIRTMEM_AREA_LOW       = 0,
+        VIRTMEM_AREA_USER      = 1,
+        VIRTMEM_AREA_TASKSTATE = 2,
+        VIRTMEM_AREA_KERNEL    = 3
+};
+
+struct virtmem_area
+{
+        unsigned long pgindex;
+        unsigned long npages;
+};
+
+const struct virtmem_area g_virtmem_area[4];
 
 struct page_table
 {
@@ -43,35 +54,11 @@ struct page_directory
 int
 page_directory_init(struct page_directory *pd);
 
+int
+page_directory_init_kernel_page_tables(struct page_directory *pd);
+
 void
 page_directory_uninit(struct page_directory *pd);
-
-unsigned long
-page_directory_alloc_pages(struct page_directory *pt, unsigned long npages);
-
-unsigned long
-page_directory_alloc_phys_pages(struct page_directory *pt,
-                                unsigned long phys_pgindex,
-                                unsigned long npages);
-
-unsigned long
-page_directory_alloc_phys_pages_at(struct page_directory *pt,
-                                   unsigned long virt_pgindex,
-                                   unsigned long phys_pgindex,
-                                   unsigned long npages);
-
-void
-page_directory_release_pages(struct page_directory *pt, unsigned long pgindex,
-                                                        unsigned npages);
-
-unsigned long
-page_directory_lookup_physical_page(const struct page_directory *pt,
-                                    unsigned long virt_pgindex);
-
-int
-page_directory_install_page_tables(struct page_directory *pd,
-                                   unsigned long virt_pgindex,
-                                   unsigned long npages);
 
 int
 page_directory_install_physical_pages_at(struct page_directory *pd,
@@ -80,19 +67,16 @@ page_directory_install_physical_pages_at(struct page_directory *pd,
                                          unsigned long npages,
                                          unsigned long flags);
 
-enum virtmem_area {
-        VIRTMEM_AREA_LOW       = 0,
-        VIRTMEM_AREA_USER      = 1,
-        VIRTMEM_AREA_TASKSTATE = 2,
-        VIRTMEM_AREA_KERNEL    = 3
-};
-
 int
 page_directory_install_physical_pages_in_area(struct page_directory *pd,
-                                              enum virtmem_area area,
+                                              enum virtmem_area_name area,
                                               unsigned long phys_pgindex,
                                               unsigned long npages,
                                               unsigned long flags);
+
+unsigned long
+page_directory_lookup_physical_page(const struct page_directory *pt,
+                                    unsigned long virt_pgindex);
 
 #endif
 

@@ -19,14 +19,14 @@
 #include "pte.h"
 
 pt_entry
-pt_entry_create(unsigned long physaddr, unsigned long flags)
+pt_entry_create(unsigned long pgindex, unsigned long flags)
 {
-        return (physaddr&0xfffffc00) | (flags&PTE_ALL_FLAGS);
+        return (pgindex<<12) | (flags&PTE_ALL_FLAGS);
 }
 
 unsigned long
-pt_entry_get_address(pt_entry pte)
+pt_entry_get_page_index(pt_entry pte)
 {
-        return pte&0xfffffc00;
+        return pte>>12;
 }
 

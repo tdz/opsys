@@ -41,10 +41,10 @@ enum {
 typedef unsigned long pd_entry;
 
 pd_entry
-pd_entry_create(unsigned long physaddr, unsigned long flags);
+pd_entry_create(unsigned long pgindex, unsigned long flags);
 
 unsigned long
-pd_entry_get_address(pd_entry pde);
+pd_entry_get_page_index(pd_entry pde);
 
 #endif
 

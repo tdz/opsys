@@ -36,10 +36,10 @@ enum {
 typedef unsigned long pt_entry;
 
 pt_entry
-pt_entry_create(unsigned long physaddr, unsigned long flags);
+pt_entry_create(unsigned long pgindex, unsigned long flags);
 
 unsigned long
-pt_entry_get_address(pt_entry pte);
+pt_entry_get_page_index(pt_entry pte);
 
 #endif
 

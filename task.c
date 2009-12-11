@@ -17,6 +17,7 @@
  */
 
 #include "stddef.h"
+#include "page.h"
 #include "pte.h"
 #include "pde.h"
 #include "virtmem.h"
@@ -28,7 +29,8 @@ task_lookup(unsigned char taskid)
 {
         unsigned long offset;
 
-        offset = g_min_kernel_virtaddr+sizeof(struct task)*taskid;
+        offset = page_offset(g_virtmem_area[VIRTMEM_AREA_TASKSTATE].pgindex) +
+                        sizeof(struct task)*taskid;
 
         return (struct task*)offset;
 }

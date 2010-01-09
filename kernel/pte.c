@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,13 +19,13 @@
 #include "pte.h"
 
 pt_entry
-pt_entry_create(unsigned long pgindex, unsigned long flags)
+pt_entry_create(unsigned long pfindex, unsigned long flags)
 {
-        return (pgindex<<12) | (flags&PTE_ALL_FLAGS);
+        return (pfindex<<12) | (flags&PTE_ALL_FLAGS);
 }
 
 unsigned long
-pt_entry_get_page_index(pt_entry pte)
+pt_entry_get_pageframe_index(pt_entry pte)
 {
         return pte>>12;
 }

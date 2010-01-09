@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,58 +16,55 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PAGE_H
-#define PAGE_H
+#ifndef PAGEFRAME_H
+#define PAGEFRAME_H
 
 enum {
-        PAGE_SHIFT = 12,
-        PAGE_SIZE  = 1<<PAGE_SHIFT,
-        PAGE_MASK  = PAGE_SIZE-1
+        PAGEFRAME_SHIFT = 12,
+        PAGEFRAME_SIZE  = 1<<PAGEFRAME_SHIFT,
+        PAGEFRAME_MASK  = PAGEFRAME_SIZE-1
 };
 
 static __inline__ unsigned long
-page_index(unsigned long addr)
+pageframe_index(unsigned long addr)
 {
-        return addr>>PAGE_SHIFT;
+        return addr>>PAGEFRAME_SHIFT;
 }
 
 static __inline__ unsigned long
-page_offset(unsigned long index)
+pageframe_offset(unsigned long index)
 {
-        return index<<PAGE_SHIFT;
+        return index<<PAGEFRAME_SHIFT;
 }
 
 static __inline__ void *
-page_address(unsigned long index)
+pageframe_address(unsigned long index)
 {
-        return (void*)page_offset(index);
+        return (void*)pageframe_offset(index);
 }
 
 static __inline__ unsigned long
-page_count(unsigned long bytes)
+pageframe_count(unsigned long bytes)
 {
-#define PAGE_COUNT(_bytes) \
-        (((_bytes)+(PAGE_SIZE-1))>>PAGE_SHIFT)
-
-        return PAGE_COUNT(bytes);
+        return (bytes+PAGEFRAME_SIZE-1)>>PAGEFRAME_SHIFT;
 }
 
 static __inline__ unsigned long
-page_memory(unsigned long npages)
+pageframe_memory(unsigned long nframes)
 {
-        return npages*PAGE_SIZE;
+        return nframes*PAGEFRAME_SIZE;
 }
 
 static __inline__ unsigned long
-page_floor(unsigned long addr)
+pageframe_floor(unsigned long addr)
 {
-        return addr & ~PAGE_MASK;
+        return addr & ~PAGEFRAME_MASK;
 }
 
 static __inline__ unsigned long
-page_ceil(unsigned long addr)
+pageframe_ceil(unsigned long addr)
 {
-        return ((addr>>PAGE_SHIFT)+1) << PAGE_SHIFT;
+        return ((addr>>PAGEFRAME_SHIFT)+1) << PAGEFRAME_SHIFT;
 }
 
 #endif

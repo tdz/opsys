@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,10 +41,10 @@ enum {
 typedef unsigned long pd_entry;
 
 pd_entry
-pd_entry_create(unsigned long pgindex, unsigned long flags);
+pd_entry_create(unsigned long pfindex, unsigned long flags);
 
 unsigned long
-pd_entry_get_page_index(pd_entry pde);
+pd_entry_get_pageframe_index(pd_entry pde);
 
 #endif
 

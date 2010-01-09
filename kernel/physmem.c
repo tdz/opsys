@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,26 +20,45 @@
 #include "stddef.h"
 #include "types.h"
 #include "string.h"
-#include "page.h"
+#include "pageframe.h"
 #include "physmem.h"
 
 static unsigned char *g_physmap = NULL;
-static unsigned long  g_physmap_npages = 0;
+static unsigned long  g_physmap_nframes = 0;
+
+static int
+physmem_add_self(void)
+{
+        /* add global variables of physmem */
+        physmem_add_area(pageframe_index((unsigned long)&g_physmap),
+                         pageframe_count(sizeof(g_physmap)),
+                         PHYSMEM_FLAG_RESERVED);
+        physmem_add_area(pageframe_index((unsigned long)&g_physmap_nframes),
+                         pageframe_count(sizeof(g_physmap_nframes)),
+                         PHYSMEM_FLAG_RESERVED);
+
+        /* add physmap */
+        physmem_add_area(pageframe_index((unsigned long)g_physmap),
+                         pageframe_count(g_physmap_nframes*sizeof(g_physmap[0])),
+                         PHYSMEM_FLAG_RESERVED);
+
+        return 0;
+}
 
 int
-physmem_init(unsigned long physmap, unsigned long npages)
+physmem_init(unsigned long physmap, unsigned long nframes)
 {
         g_physmap = (unsigned char*)physmap;
 
-        memset(g_physmap, 0, npages*sizeof(g_physmap[0]));
-        g_physmap_npages = npages;
+        memset(g_physmap, 0, nframes*sizeof(g_physmap[0]));
+        g_physmap_nframes = nframes;
 
         return physmem_add_self();
 }
 
 int
-physmem_add_area(unsigned long pgindex,
-                 unsigned long npages,
+physmem_add_area(unsigned long pfindex,
+                 unsigned long nframes,
                  unsigned char flags)
 {
         unsigned char *beg;
@@ -47,54 +66,33 @@ physmem_add_area(unsigned long pgindex,
 
         /* FIXME: lock here */
 
-        beg = g_physmap+pgindex;
-        end = beg+npages;
+        beg = g_physmap+pfindex;
+        end = beg+nframes;
 
-        while ((beg < end) && (beg < g_physmap+g_physmap_npages)) {
+        while ((beg < end) && (beg < g_physmap+g_physmap_nframes)) {
                 *beg |= (flags&PHYSMEM_ALL_FLAGS)<<7;
                 ++beg;
         }
-
-/*        console_printf(" %s %x %x\n", __FILE__, __LINE__, beg-g_physmap);*/
 
         /* FIXME: unlock here */
 
         return 0;
 }
 
-int
-physmem_add_self()
-{
-        /* add global variables of physmem */
-        physmem_add_area(page_index((unsigned long)&g_physmap),
-                         PAGE_COUNT(sizeof(g_physmap)),
-                         PHYSMEM_FLAG_RESERVED);
-        physmem_add_area(page_index((unsigned long)&g_physmap_npages),
-                         PAGE_COUNT(sizeof(g_physmap_npages)),
-                         PHYSMEM_FLAG_RESERVED);
-
-        /* add physmap */
-        physmem_add_area(page_index((unsigned long)g_physmap),
-                         PAGE_COUNT(g_physmap_npages*sizeof(g_physmap[0])),
-                         PHYSMEM_FLAG_RESERVED);
-
-        return 0;
-}
-
 unsigned long
-physmem_alloc_pages(unsigned long npages)
+physmem_alloc_frames(unsigned long nframes)
 {
-        unsigned long pgindex;
+        unsigned long pfindex;
         unsigned char *beg;
         const unsigned char *end;
 
         /* FIXME: lock here */
 
-        pgindex = 0;
+        pfindex = 0;
         beg = g_physmap+1; /* first page not used */
-        end = g_physmap+g_physmap_npages-npages;
+        end = g_physmap+g_physmap_nframes-nframes;
 
-        while (!pgindex && (beg < end)) {
+        while (!pfindex && (beg < end)) {
 
                 /* find next useable page */
                 for (; (beg < end) && (*beg); ++beg) {}
@@ -110,7 +108,7 @@ physmem_alloc_pages(unsigned long npages)
                         const unsigned char *end2;
 
                         beg2 = beg;
-                        end2 = beg+npages;
+                        end2 = beg+nframes;
 
                         /* check empty block */
                         for (; (beg2 < end2) && !(*beg2); ++beg2) {}
@@ -126,25 +124,25 @@ physmem_alloc_pages(unsigned long npages)
                                 *beg2 = (PHYSMEM_FLAG_RESERVED<<7) + 1;
                         }
 
-                        pgindex = beg-g_physmap;
+                        pfindex = beg-g_physmap;
                 }
         }
 
         /* FIXME: unlock here */
 
-        return pgindex;
+        return pfindex;
 }
 
 unsigned long
-physmem_alloc_pages_at(unsigned long pgindex, unsigned long npages)
+physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 {
         unsigned char *beg;
         const unsigned char *end;
 
         /* FIXME: lock here */
 
-        beg = g_physmap+pgindex;
-        end = g_physmap+npages;
+        beg = g_physmap+pfindex;
+        end = g_physmap+nframes;
 
         /* find next useable page */
         for (; (beg < end) && !(*beg); ++beg) {}
@@ -156,38 +154,38 @@ physmem_alloc_pages_at(unsigned long pgindex, unsigned long npages)
 
         /* range is empty */
 
-        beg = g_physmap+pgindex;
+        beg = g_physmap+pfindex;
 
-        for (beg = g_physmap+pgindex; beg < end; ++beg) {
+        for (beg = g_physmap+pfindex; beg < end; ++beg) {
                 *beg = (PHYSMEM_FLAG_RESERVED<<7) + 1;
         }
 
         /* FIXME: unlock here */
 
-        return pgindex;
+        return pfindex;
 }
 
 int
-physmem_ref_pages(unsigned long pgindex, unsigned long npages)
+physmem_ref_frames(unsigned long pfindex, unsigned long nframes)
 {
         unsigned long i;
         unsigned char *physmap;
 
         /* FIXME: lock here */
 
-        physmap = g_physmap+pgindex;
+        physmap = g_physmap+pfindex;
 
         /* check for allocation and max refcount */
-        for (i = 0; i < npages; ++i) {
+        for (i = 0; i < nframes; ++i) {
                 if (((*physmap) == 0xff) || !(*physmap)) {
                         return -1;
                 }
         }
 
-        physmap = g_physmap+pgindex;
+        physmap = g_physmap+pfindex;
 
         /* increment refcount */
-        for (i = 0; i < npages; ++i) {
+        for (i = 0; i < nframes; ++i) {
                 *physmap = (PHYSMEM_FLAG_RESERVED<<7) + ((*physmap)&0x7f) + 1;
                 ++physmap;
         }
@@ -197,15 +195,15 @@ physmem_ref_pages(unsigned long pgindex, unsigned long npages)
 }
 
 void
-physmem_unref_pages(unsigned long pgindex, unsigned long npages)
+physmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 {
         unsigned char *physmap;
 
         /* FIXME: lock here */
 
-        physmap = g_physmap+pgindex;
+        physmap = g_physmap+pfindex;
 
-        while (npages--) {
+        while (nframes--) {
                 if ((*physmap) == ((PHYSMEM_FLAG_RESERVED<<7)|1)) {
                         *physmap = PHYSMEM_FLAG_USEABLE<<7;
                 } else {

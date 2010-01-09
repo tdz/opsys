@@ -23,7 +23,7 @@
 #include "idt.h"
 #include "intrrupt.h"
 #include "pit.h"
-#include "page.h"
+#include "pageframe.h"
 #include "physmem.h"
 #include "elfldr.h"
 
@@ -43,24 +43,24 @@ range_order(unsigned long beg1, unsigned long end1,
 static unsigned long
 find_unused_area(const struct multiboot_header *mb_header,
                  const struct multiboot_info *mb_info,
-                 unsigned long npages)
+                 unsigned long nframes)
 {
         size_t i;
         unsigned long mmap_addr;
-        unsigned long kernel_pgindex, kernel_npages;
-        unsigned long pgoffset;
+        unsigned long kernel_pfindex, kernel_nframes;
+        unsigned long pfoffset;
 
-        kernel_pgindex = page_index(mb_header->load_addr);
-        kernel_npages = PAGE_COUNT(mb_header->bss_end_addr -
-                                   mb_header->load_addr);
+        kernel_pfindex = pageframe_index(mb_header->load_addr);
+        kernel_nframes = pageframe_count(mb_header->bss_end_addr -
+                                         mb_header->load_addr);
 
         mmap_addr = mb_info->mmap_addr;
 
-        for (pgoffset = 0, i = 0; !pgoffset && (i < mb_info->mmap_length);) {
+        for (pfoffset = 0, i = 0; !pfoffset && (i < mb_info->mmap_length);) {
                 const struct multiboot_mmap *mmap;
-                unsigned long area_pgindex;
-                unsigned long area_npages;
-                unsigned long pgindex;
+                unsigned long area_pfindex;
+                unsigned long area_nframes;
+                unsigned long pfindex;
 
                 mmap = (const struct multiboot_mmap*)mmap_addr;
 
@@ -75,34 +75,34 @@ find_unused_area(const struct multiboot_header *mb_header,
 
                 /* area page index and length */
 
-                area_pgindex = page_index(
+                area_pfindex = pageframe_index(
                         (((unsigned long long)mmap->base_addr_high)<<32) +
                                               mmap->base_addr_low);
 
-                area_npages = PAGE_COUNT(
+                area_nframes = pageframe_count(
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
                 /* area at address 0, or too small */
-                if (!area_pgindex || (area_npages < npages)) {
+                if (!area_pfindex || (area_nframes < nframes)) {
                         continue;
                 }
 
                 /* possible index */
-                pgindex = area_pgindex;
+                pfindex = area_pfindex;
 
                 /* check for intersection with kernel */
-                if (!range_order(kernel_pgindex,
-                                 kernel_pgindex+kernel_npages,
-                                 pgindex,
-                                 pgindex+npages)) {
-                        pgindex = kernel_pgindex+kernel_npages;
+                if (!range_order(kernel_pfindex,
+                                 kernel_pfindex+kernel_nframes,
+                                 pfindex,
+                                 pfindex+nframes)) {
+                        pfindex = kernel_pfindex+kernel_nframes;
                 }
 
                 /* check for intersection with modules */
 
-                while ( !pgoffset &&
-                       ((pgindex+npages) < (area_pgindex+area_npages)) ) {
+                while ( !pfoffset &&
+                       ((pfindex+nframes) < (area_pfindex+area_nframes)) ) {
 
                         size_t j;
                         const struct multiboot_module *mod;
@@ -110,54 +110,54 @@ find_unused_area(const struct multiboot_header *mb_header,
                         mod = (const struct multiboot_module*)mb_info->mods_addr;
 
                         for (j = 0; j < mb_info->mods_count; ++j, ++mod) {
-                                unsigned long mod_pgindex;
-                                unsigned long mod_npages;
+                                unsigned long mod_pfindex;
+                                unsigned long mod_nframes;
 
-                                mod_pgindex = page_index(mod->mod_start);
-                                mod_npages  = PAGE_COUNT(mod->mod_end -
-                                                         mod->mod_start);
+                                mod_pfindex = pageframe_index(mod->mod_start);
+                                mod_nframes = pageframe_count(mod->mod_end -
+                                                              mod->mod_start);
 
                                 /* check intersection */
-                                if (range_order(mod_pgindex,
-                                                mod_pgindex+mod_npages,
-                                                pgindex,
-                                                pgindex+npages)) {
+                                if (range_order(mod_pfindex,
+                                                mod_pfindex+mod_nframes,
+                                                pfindex,
+                                                pfindex+nframes)) {
                                         /* no intersection, offset found */
-                                        pgoffset = page_offset(pgindex);
+                                        pfoffset = pageframe_offset(pfindex);
                                 } else {
-                                        pgindex = mod_pgindex+mod_npages;
+                                        pfindex = mod_pfindex+mod_nframes;
                                 }
                         }
                 }
         }
 
-        return pgoffset;
+        return pfoffset;
 }
 
 static int
 init_physmem(const struct multiboot_header *mb_header,
              const struct multiboot_info *mb_info)
 {
-        unsigned long physmap, npages;
+        unsigned long physmap, nframes;
 
-        npages  = PAGE_COUNT((mb_info->mem_upper+1)<<10);
-        physmap = find_unused_area(mb_header, mb_info, npages>>PAGE_SHIFT);
+        nframes = pageframe_count((mb_info->mem_upper+1)<<10);
+        physmap = find_unused_area(mb_header, mb_info, nframes>>PAGEFRAME_SHIFT);
 
         console_printf("found phymap area at %x\n", (unsigned long)physmap);
 
         /* init memory manager */
-        return physmem_init(physmap, npages);
+        return physmem_init(physmap, nframes);
 }
 
 static int
 init_physmap_kernel(const struct multiboot_header *mb_header)
 {
-        unsigned long pgindex, npages;
+        unsigned long pfindex, nframes;
 
-        pgindex = page_index(mb_header->load_addr);
-        npages  = PAGE_COUNT(mb_header->bss_end_addr-mb_header->load_addr);
+        pfindex = pageframe_index(mb_header->load_addr);
+        nframes = pageframe_count(mb_header->bss_end_addr-mb_header->load_addr);
 
-        return physmem_add_area(pgindex, npages, PHYSMEM_FLAG_RESERVED);
+        return physmem_add_area(pfindex, nframes, PHYSMEM_FLAG_RESERVED);
 }
 
 static int
@@ -174,16 +174,16 @@ init_physmap_areas(const struct multiboot_info *mb_info)
 
         for (i = 0; i < mb_info->mmap_length;) {
                 const struct multiboot_mmap *mmap;
-                unsigned long pgoffset;
-                unsigned long npages;
+                unsigned long pfindex;
+                unsigned long nframes;
 
                 mmap = (const struct multiboot_mmap*)mmap_addr;
 
-                pgoffset = page_index(
+                pfindex = pageframe_index(
                         (((unsigned long long)mmap->base_addr_high)<<32) +
                                               mmap->base_addr_low);
 
-                npages = PAGE_COUNT(
+                nframes = pageframe_count(
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
@@ -194,8 +194,8 @@ init_physmap_areas(const struct multiboot_info *mb_info)
                                 (npages<<PHYSPAGE_SHIFT),
                                 mmap->type);*/
 
-                physmem_add_area(pgoffset,
-                                 npages,
+                physmem_add_area(pfindex,
+                                 nframes,
                                  mmap->type==1 ? PHYSMEM_FLAG_USEABLE
                                                : PHYSMEM_FLAG_RESERVED);
 
@@ -215,11 +215,11 @@ init_physmap_modules(const struct multiboot_info *mb_info)
         mod = (const struct multiboot_module*)mb_info->mods_addr;
 
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
-                unsigned long pgoffset;
-                unsigned long npages;
+                unsigned long pfindex;
+                unsigned long nframes;
 
-                pgoffset = page_index(mod->mod_start);
-                npages   = PAGE_COUNT(mod->mod_end-mod->mod_start);
+                pfindex = pageframe_index(mod->mod_start);
+                nframes = pageframe_count(mod->mod_end-mod->mod_start);
 
 /*                console_printf("%s:%x %x %x\n",
                                 __FILE__,
@@ -227,9 +227,7 @@ init_physmap_modules(const struct multiboot_info *mb_info)
                                 (pgoffset<<PHYSPAGE_SHIFT),
                                 (npages<<PHYSPAGE_SHIFT));*/
 
-                physmem_add_area(pgoffset,
-                                 npages,
-                                 PHYSMEM_FLAG_RESERVED);
+                physmem_add_area(pfindex, nframes, PHYSMEM_FLAG_RESERVED);
         }
 
         return 0;
@@ -270,7 +268,7 @@ build_init_task(void)
 
         /* create virtual address space */
 
-        pd = page_address(physmem_alloc_pages(PAGE_COUNT(sizeof(*pd))));
+        pd = pageframe_address(physmem_alloc_frames(pageframe_count(sizeof(*pd))));
 
         if (!pd) {
                 err = -1;
@@ -305,8 +303,8 @@ build_init_task(void)
         /* add page directory to its own address space */
         err = page_directory_install_physical_pages_in_area(pd,
                                                 VIRTMEM_AREA_KERNEL,
-                                                page_index((unsigned long)pd),
-                                                PAGE_COUNT(sizeof(*pd)),
+                                                pageframe_index((unsigned long)pd),
+                                                pageframe_count(sizeof(*pd)),
                                                 PTE_FLAG_PRESENT|
                                                 PTE_FLAG_WRITEABLE);
         if (err < 0) {
@@ -352,8 +350,8 @@ enablepaging:
 
         /* allocate memory for task */
         /* FIXME: do this in virtual memory */
-        if (!physmem_alloc_pages_at(page_index((unsigned long)task),
-                                    PAGE_COUNT(sizeof(*task)))) {
+        if (!physmem_alloc_frames_at(pageframe_index((unsigned long)task),
+                                     pageframe_count(sizeof(*task)))) {
                 err = -1;
                 goto err_task_alloc;
         }
@@ -386,8 +384,8 @@ err_tcb_set_page_directory:
 err_task_get_thread:
         task_uninit(task);
 err_task_init:
-        physmem_unref_pages(page_index((unsigned long)task),
-                            PAGE_COUNT(sizeof(*task)));
+        physmem_unref_frames(pageframe_index((unsigned long)task),
+                             pageframe_count(sizeof(*task)));
 err_task_alloc:
 err_task_lookup:
 err_page_directory_install_physical_pages_in_area:
@@ -396,8 +394,8 @@ err_page_directory_install_kernel_page_tables:
 err_page_directory_install_kernel_area_low:
         page_directory_uninit(pd);
 err_page_directory_init:
-        physmem_unref_pages(page_index((unsigned long)pd),
-                            PAGE_COUNT(sizeof(*pd)));
+        physmem_unref_frames(pageframe_index((unsigned long)pd),
+                             pageframe_count(sizeof(*pd)));
 err_page_directory_alloc:
         return err;
 }

@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,26 +27,24 @@ enum {
 };
 
 int
-physmem_init(unsigned long physmap, unsigned long npages);
+physmem_init(unsigned long physmap, unsigned long nframes);
 
 int
-physmem_add_area(unsigned long pgindex,
-                 unsigned long npages,
+physmem_add_area(unsigned long pfindex,
+                 unsigned long nframes,
                  unsigned char flags);
-int
-physmem_add_self(void);
 
 unsigned long
-physmem_alloc_pages(unsigned long npages);
+physmem_alloc_frames(unsigned long nframes);
 
 unsigned long
-physmem_alloc_pages_at(unsigned long pgindex, unsigned long npages);
+physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes);
 
 int
-physmem_ref_pages(unsigned long pgindex, unsigned long npages);
+physmem_ref_frames(unsigned long pfindex, unsigned long nframes);
 
 void
-physmem_unref_pages(unsigned long pgindex, unsigned long npages);
+physmem_unref_frames(unsigned long pfindex, unsigned long nframes);
 
 #endif
 

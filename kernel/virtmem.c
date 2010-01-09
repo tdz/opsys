@@ -20,11 +20,12 @@
 #include "types.h"
 #include "minmax.h"
 #include "string.h"
-#include "page.h"
-#include "pagedir.h"
+#include "pageframe.h"
 #include "physmem.h"
 #include "pte.h"
 #include "pde.h"
+#include "page.h"
+#include "pagedir.h"
 #include "virtmem.h"
 #include "tcb.h"
 #include "task.h"
@@ -74,11 +75,11 @@ page_directory_install_kernel_area_low(struct page_directory *pd)
         npages       = g_virtmem_area[VIRTMEM_AREA_LOW].npages;
 
         ptindex = pagedir_index(page_offset(virt_pgindex));
-        ptcount = pagedir_count(PAGE_MEMORY(npages));
+        ptcount = pagedir_count(page_memory(npages));
 
         for (i = 0; i < ptcount; ++i) {
                 pd->pentry[ptindex+i] = pd_entry_create(
-                                        page_index(pagedir_offset(ptindex+i)),
+                                        pageframe_index(pagedir_offset(ptindex+i)),
                                         PDE_FLAG_PRESENT|
                                         PDE_FLAG_WRITEABLE|
                                         PDE_FLAG_LARGEPAGE);
@@ -100,7 +101,7 @@ page_directory_install_kernel_page_tables(struct page_directory *pd)
         npages       = g_virtmem_area[VIRTMEM_AREA_KERNEL].npages;
 
         ptindex = pagedir_index(page_offset(virt_pgindex));
-        ptcount = pagedir_count(PAGE_MEMORY(npages));
+        ptcount = pagedir_count(page_memory(npages));
 
         /* allocate and install physical pages
          */
@@ -109,7 +110,7 @@ page_directory_install_kernel_page_tables(struct page_directory *pd)
 
                 struct page_table *pt;
 
-                pt = page_address(physmem_alloc_pages(PAGE_COUNT(sizeof(*pt))));
+                pt = pageframe_address(physmem_alloc_frames(pageframe_count(sizeof(*pt))));
 
                 if (!pt) {
                         err = -5;
@@ -121,7 +122,7 @@ page_directory_install_kernel_page_tables(struct page_directory *pd)
                 }
 
                 pd->pentry[ptindex+i] =
-                        pd_entry_create(page_index((unsigned long)pt),
+                        pd_entry_create(pageframe_index((unsigned long)pt),
                                         PDE_FLAG_PRESENT|
                                         PDE_FLAG_WRITEABLE|
                                         PDE_FLAG_CACHED);
@@ -140,7 +141,7 @@ page_directory_install_kernel_page_tables(struct page_directory *pd)
 
                 /* retrieve address of first available page table */
 
-                pt = page_address(pd_entry_get_page_index(pd->pentry[virt_minpt]));
+                pt = pageframe_address(pd_entry_get_pageframe_index(pd->pentry[virt_minpt]));
 
                 if (!pt) {
                         err = -2;
@@ -156,15 +157,15 @@ page_directory_install_kernel_page_tables(struct page_directory *pd)
 
                 for (; ptentrybeg < ptentryend; ++ptentrybeg, ++i) {
 
-                        unsigned long pgindex =
-                                pd_entry_get_page_index(pd->pentry[ptindex+i]);
+                        unsigned long pfindex =
+                                pd_entry_get_pageframe_index(pd->pentry[ptindex+i]);
 
-                        if (!pgindex) {
+                        if (!pfindex) {
                                 err = -3;
-                                goto err_pd_entry_get_page_index;
+                                goto err_pd_entry_get_pageframe_index;
                         }
 
-                        *ptentrybeg = pt_entry_create(pgindex,
+                        *ptentrybeg = pt_entry_create(pfindex,
                                                       PTE_FLAG_PRESENT|
                                                       PTE_FLAG_WRITEABLE);
                 }
@@ -182,7 +183,8 @@ page_directory_install_kernel_page_tables(struct page_directory *pd)
 
                 /* retrieve page-directory entry */
 
-                pt = page_address(pd_entry_get_page_index(pd->pentry[virt_minpt]));
+                pt = pageframe_address(
+                        pd_entry_get_pageframe_index(pd->pentry[virt_minpt]));
 
                 if (!pt) {
                         err = -4;
@@ -206,7 +208,7 @@ page_directory_install_kernel_page_tables(struct page_directory *pd)
 
         /* FIXME: write error handling */
 
-err_pd_entry_get_page_index:
+err_pd_entry_get_pageframe_index:
 err_pd_entry_get_ptoffset:
 err_pd_entry_get_address:
 err_page_table_init:
@@ -249,7 +251,7 @@ __page_directory_check_empty_pages_at(const struct page_directory *pd,
                 pebeg = pt->entry+(virt_pgindex&0x3ff);
                 peend = pebeg + minul(npages-nempty, 1024-(virt_pgindex&0x3ff));
 
-                while ((pebeg < peend) && !pt_entry_get_page_index(*pebeg)) {
+                while ((pebeg < peend) && !pt_entry_get_pageframe_index(*pebeg)) {
                         ++nempty;
                         ++virt_pgindex;
                         ++pebeg;
@@ -306,7 +308,7 @@ __page_directory_install_page_table(struct page_directory *pd,
         unsigned long virt_pgindex;
 
         pt = (struct page_table *)
-                page_offset(physmem_alloc_pages(PAGE_COUNT(sizeof(*pt))));
+                pageframe_offset(physmem_alloc_frames(pageframe_count(sizeof(*pt))));
 
         if (!pt) {
                 err = -1;
@@ -323,8 +325,8 @@ __page_directory_install_page_table(struct page_directory *pd,
         virt_pgindex = err =
                 page_directory_install_physical_pages_in_area(pd,
                         VIRTMEM_AREA_KERNEL,
-                        page_index((unsigned long)pt),
-                        PAGE_COUNT(sizeof(*pt)),
+                        pageframe_index((unsigned long)pt),
+                        pageframe_count(sizeof(*pt)),
                         flags);
 
         if (err < 0) {

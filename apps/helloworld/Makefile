@@ -1,7 +1,7 @@
 
 ARCH = i386
 
-CFLAGS = -m32 -I../..
+CFLAGS = -m32 -I../../kernel
 
 ASFLAGS = --32
 

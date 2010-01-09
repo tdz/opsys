@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,12 @@ static __inline__ unsigned long
 page_offset(unsigned long index)
 {
         return index<<PAGE_SHIFT;
+}
+
+static __inline__ void *
+page_address(unsigned long index)
+{
+        return (void*)page_offset(index);
 }
 
 #define PAGE_COUNT(_bytes) \

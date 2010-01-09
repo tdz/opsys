@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -270,8 +270,7 @@ build_init_task(void)
 
         /* create virtual address space */
 
-        pd = (struct page_directory*)
-                page_offset(physmem_alloc_pages(PAGE_COUNT(sizeof(*pd))));
+        pd = page_address(physmem_alloc_pages(PAGE_COUNT(sizeof(*pd))));
 
         if (!pd) {
                 err = -1;
@@ -284,8 +283,14 @@ build_init_task(void)
 
         /* build kernel area */
 
-        if ((err = page_directory_init_kernel_page_tables(pd)) < 0) {
-                goto err_page_directory_install_page_tables;
+        if ((err = page_directory_install_kernel_area_low(pd)) < 0) {
+                goto err_page_directory_install_kernel_area_low;
+        }
+
+        goto enablepaging;
+
+        if ((err = page_directory_install_kernel_page_tables(pd)) < 0) {
+                goto err_page_directory_install_kernel_page_tables;
         }
 
         /* map lowest 4 MiB */
@@ -310,12 +315,21 @@ build_init_task(void)
 
         /* FIXME: enable paging here, tasks need this !!! */
 
+enablepaging:
+
         console_printf("enabling paging\n");
 
         {
-                unsigned long cr3 = ((unsigned long)pd->pentry)<<12;
+                unsigned long cr3 = ((unsigned long)pd->pentry)&(~0xfff);
+                console_printf("cr3 = %x %x\n", cr3, 1);
 
-                __asm__("movl %0, %%cr3\n\t"
+                __asm__(/* set CR4.PSE */
+                        "movl %%cr4, %%eax\n\t"
+                        "or $0x10, %%eax\n\t"
+                        "movl %%eax, %%cr4\n\t"
+                        /* set CR3 */
+                        "movl %0, %%cr3\n\t"
+                        /* set CR0.PG */
                         "movl %%cr0, %%eax\n\t"
                         "or $0x80000000, %%eax\n\t"
                         "movl %%eax, %%cr0\n\t"
@@ -378,7 +392,8 @@ err_task_alloc:
 err_task_lookup:
 err_page_directory_install_physical_pages_in_area:
 err_page_directory_install_physical_pages_at:
-err_page_directory_install_page_tables:
+err_page_directory_install_kernel_page_tables:
+err_page_directory_install_kernel_area_low:
         page_directory_uninit(pd);
 err_page_directory_init:
         physmem_unref_pages(page_index((unsigned long)pd),

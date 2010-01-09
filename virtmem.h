@@ -54,11 +54,14 @@ struct page_directory
 int
 page_directory_init(struct page_directory *pd);
 
-int
-page_directory_init_kernel_page_tables(struct page_directory *pd);
-
 void
 page_directory_uninit(struct page_directory *pd);
+
+int
+page_directory_install_kernel_area_low(struct page_directory *pd);
+
+int
+page_directory_install_kernel_page_tables(struct page_directory *pd);
 
 int
 page_directory_install_physical_pages_at(struct page_directory *pd,

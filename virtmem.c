@@ -63,9 +63,33 @@ page_directory_init(struct page_directory *pd)
 
         return 0;
 }
+#include "console.h"
+int
+page_directory_install_kernel_area_low(struct page_directory *pd)
+{
+        unsigned long ptindex, ptcount, i;
+        unsigned long virt_pgindex, npages;
+
+        virt_pgindex = g_virtmem_area[VIRTMEM_AREA_LOW].pgindex;
+        npages       = g_virtmem_area[VIRTMEM_AREA_LOW].npages;
+
+        ptindex = pagedir_index(page_offset(virt_pgindex));
+        ptcount = pagedir_count(PAGE_MEMORY(npages));
+
+        for (i = 0; i < ptcount; ++i) {
+                pd->pentry[ptindex+i] = pd_entry_create(
+                                        page_index(pagedir_offset(ptindex+i)),
+                                        PDE_FLAG_PRESENT|
+                                        PDE_FLAG_WRITEABLE|
+                                        PDE_FLAG_LARGEPAGE);
+                console_printf("pentry %x %x\n", ptindex+i, pd->pentry[ptindex+i]);
+        }
+
+        return 0;
+}
 
 int
-page_directory_init_kernel_page_tables(struct page_directory *pd)
+page_directory_install_kernel_page_tables(struct page_directory *pd)
 {
         unsigned long ptindex, ptcount, i;
         int err;
@@ -85,8 +109,7 @@ page_directory_init_kernel_page_tables(struct page_directory *pd)
 
                 struct page_table *pt;
 
-                pt = (struct page_table *)
-                        page_offset(physmem_alloc_pages(PAGE_COUNT(sizeof(*pt))));
+                pt = page_address(physmem_alloc_pages(PAGE_COUNT(sizeof(*pt))));
 
                 if (!pt) {
                         err = -5;
@@ -117,9 +140,7 @@ page_directory_init_kernel_page_tables(struct page_directory *pd)
 
                 /* retrieve address of first available page table */
 
-                pt = (struct page_table *)
-                        page_offset(
-                                pd_entry_get_page_index(pd->pentry[virt_minpt]));
+                pt = page_address(pd_entry_get_page_index(pd->pentry[virt_minpt]));
 
                 if (!pt) {
                         err = -2;
@@ -161,9 +182,7 @@ page_directory_init_kernel_page_tables(struct page_directory *pd)
 
                 /* retrieve page-directory entry */
 
-                pt = (struct page_table*)
-                        page_offset(
-                                pd_entry_get_page_index(pd->pentry[virt_minpt]));
+                pt = page_address(pd_entry_get_page_index(pd->pentry[virt_minpt]));
 
                 if (!pt) {
                         err = -4;

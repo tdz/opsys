@@ -53,7 +53,7 @@ int
 tcb_set_page_directory(struct tcb *tcb, struct page_directory *pd)
 {
         unsigned long phys_pgindex;
-        
+
         phys_pgindex = page_directory_lookup_physical_page(pd,
                                         page_index((unsigned long)pd));
 

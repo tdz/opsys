@@ -25,7 +25,7 @@
 #include "pte.h"
 #include "pde.h"
 #include "page.h"
-#include "pagedir.h"
+#include "pagetbl.h"
 #include "virtmem.h"
 #include "tcb.h"
 #include "task.h"
@@ -133,7 +133,7 @@ __page_directory_map_pageframe_at(struct page_directory *pd,
 
         /* get page table */
 
-        ptindex = pagedir_index(page_offset(pgindex));
+        ptindex = pagetable_index(page_offset(pgindex));
 
         pt = pageframe_address(pd_entry_get_pageframe_index(pd->pentry[ptindex]));
 
@@ -206,7 +206,7 @@ __page_directory_install_page_tables_at(struct page_directory *pd,
 
                 /* retrieve address of target page table in kernel area */
 
-                ptindex_tgt = pagedir_index(page_offset(pgindex_tgt));
+                ptindex_tgt = pagetable_index(page_offset(pgindex_tgt));
 
                 pt = pageframe_address(pd_entry_get_pageframe_index(pd->pentry[ptindex_tgt]));
 
@@ -262,8 +262,8 @@ page_directory_install_kernel_area_low(struct page_directory *pd)
         pgindex = g_virtmem_area[VIRTMEM_AREA_LOW].pgindex;
         pgcount = g_virtmem_area[VIRTMEM_AREA_LOW].npages;
 
-        ptindex = pagedir_index(page_offset(pgindex));
-        ptcount = pagedir_count(page_memory(pgcount));
+        ptindex = pagetable_index(page_offset(pgindex));
+        ptcount = pagetable_count(page_memory(pgcount));
 
         /* create page tables for low area */
 
@@ -305,8 +305,8 @@ __page_directory_check_empty_pages_at(const struct page_directory *pd,
 
         nempty = 0;
 
-        ventrybeg = pd->ventry+pagedir_index(page_offset(pgindex));
-        ventryend = pd->ventry+pagedir_index(page_offset(pgindex+npages));
+        ventrybeg = pd->ventry + pagetable_index(page_offset(pgindex));
+        ventryend = pd->ventry + pagetable_index(page_offset(pgindex+npages));
 
         while (ventrybeg < ventryend) {
 
@@ -378,7 +378,7 @@ page_directory_lookup_physical_page(const struct page_directory *pd,
         const struct page_table *pt;
 
         pt = (const struct page_table*)
-                pd->ventry[pagedir_index(page_offset(virt_pgindex))];
+                pd->ventry[pagetable_index(page_offset(virt_pgindex))];
 
         if (!pt) {
                 return 0;

@@ -16,50 +16,45 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PAGEDIR_H
-#define PAGEDIR_H
-
 enum {
-        PAGEDIR_SHIFT = 22,
-        PAGEDIR_SIZE  = 1<<PAGEDIR_SHIFT,
-        PAGEDIR_MASK  = PAGEDIR_SIZE-1
+        PAGETABLE_SHIFT = 22,
+        PAGETABLE_SIZE  = 1<<PAGETABLE_SHIFT,
+        PAGETABLE_MASK  = PAGETABLE_SIZE-1
 };
 
 static __inline__ unsigned long
-pagedir_index(unsigned long addr)
+pagetable_index(unsigned long addr)
 {
-        return addr>>PAGEDIR_SHIFT;
+        return addr>>PAGETABLE_SHIFT;
 }
 
 static __inline__ unsigned long
-pagedir_offset(unsigned long index)
+pagetable_offset(unsigned long index)
 {
-        return index<<PAGEDIR_SHIFT;
+        return index<<PAGETABLE_SHIFT;
 }
 
 static __inline__ void *
-pagedir_address(unsigned long index)
+pagetable_address(unsigned long index)
 {
-        return (void*)pagedir_offset(index);
+        return (void*)pagetable_offset(index);
 }
 
 static __inline__ unsigned long
-pagedir_count(unsigned long bytes)
+pagetable_count(unsigned long bytes)
 {
-        return (bytes+PAGEDIR_SIZE-1) >> PAGEDIR_SHIFT;
+        return (bytes+PAGETABLE_SIZE-1) >> PAGETABLE_SHIFT;
 }
 
 static __inline__ unsigned long
-pagedir_floor(unsigned long addr)
+pagetable_floor(unsigned long addr)
 {
-        return addr & ~PAGEDIR_MASK;
+        return addr & ~PAGETABLE_MASK;
 }
 
 static __inline__ unsigned long
-pagedir_ceil(unsigned long addr)
+pagetable_ceil(unsigned long addr)
 {
-        return ((addr>>PAGEDIR_SHIFT)+1) << PAGEDIR_SHIFT;
+        return ((addr>>PAGETABLE_SHIFT)+1) << PAGETABLE_SHIFT;
 }
-
-#endif
 

@@ -285,36 +285,6 @@ build_init_task(void)
                 goto err_page_directory_install_kernel_area_low;
         }
 
-        goto enablepaging;
-
-        if ((err = page_directory_install_kernel_page_tables(pd)) < 0) {
-                goto err_page_directory_install_kernel_page_tables;
-        }
-
-        /* map lowest 4 MiB */
-
-        err = page_directory_install_physical_pages_at(pd, 1, 1, 1023,
-                                                       PTE_FLAG_PRESENT|
-                                                       PTE_FLAG_WRITEABLE);
-        if (err < 0) {
-                goto err_page_directory_install_physical_pages_at;
-        }
-
-        /* add page directory to its own address space */
-        err = page_directory_install_physical_pages_in_area(pd,
-                                                VIRTMEM_AREA_KERNEL,
-                                                pageframe_index((unsigned long)pd),
-                                                pageframe_count(sizeof(*pd)),
-                                                PTE_FLAG_PRESENT|
-                                                PTE_FLAG_WRITEABLE);
-        if (err < 0) {
-                goto err_page_directory_install_physical_pages_in_area;
-        }
-
-        /* FIXME: enable paging here, tasks need this !!! */
-
-enablepaging:
-
         console_printf("enabling paging\n");
 
         {
@@ -388,9 +358,6 @@ err_task_init:
                              pageframe_count(sizeof(*task)));
 err_task_alloc:
 err_task_lookup:
-err_page_directory_install_physical_pages_in_area:
-err_page_directory_install_physical_pages_at:
-err_page_directory_install_kernel_page_tables:
 err_page_directory_install_kernel_area_low:
         page_directory_uninit(pd);
 err_page_directory_init:
@@ -408,19 +375,8 @@ multiboot_main(const struct multiboot_header *mb_header,
 {
         int err;
 
-/*        struct tcb tcb;
-        struct task task;*/
-
-/*        unsigned long esp;*/
-
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");
-
-/*        console_printf("Multiboot magic %x\n", mb_header->magic);
-
-        console_printf("%x %x %x\n", mb_header->load_addr,
-                                     mb_header->load_end_addr,
-                                     mb_header->bss_end_addr);*/
 
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
                 init_physmem(mb_header, mb_info);

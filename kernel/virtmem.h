@@ -60,23 +60,6 @@ page_directory_uninit(struct page_directory *pd);
 int
 page_directory_install_kernel_area_low(struct page_directory *pd);
 
-int
-page_directory_install_kernel_page_tables(struct page_directory *pd);
-
-int
-page_directory_install_physical_pages_at(struct page_directory *pd,
-                                         unsigned long virt_pgindex,
-                                         unsigned long phys_pgindex,
-                                         unsigned long npages,
-                                         unsigned long flags);
-
-int
-page_directory_install_physical_pages_in_area(struct page_directory *pd,
-                                              enum virtmem_area_name area,
-                                              unsigned long phys_pgindex,
-                                              unsigned long npages,
-                                              unsigned long flags);
-
 unsigned long
 page_directory_lookup_physical_page(const struct page_directory *pt,
                                     unsigned long virt_pgindex);

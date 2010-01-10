@@ -44,20 +44,6 @@ const struct virtmem_area g_virtmem_area[4] = {
 };
 
 int
-page_table_init(struct page_table *pt)
-{
-        memset(pt, 0, sizeof(*pt));
-
-        return 0;
-}
-
-void
-page_table_uninit(struct page_table *pt)
-{
-        return;
-}
-
-int
 page_directory_init(struct page_directory *pd)
 {
         memset(pd, 0, sizeof(*pd));

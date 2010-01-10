@@ -21,6 +21,7 @@ CSOURCES = console.c \
            ioports.c \
            multiboot.c \
            physmem.c \
+           pagetbl.c \
            pde.c \
            pit.c \
            pte.c \

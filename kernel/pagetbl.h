@@ -58,3 +58,14 @@ pagetable_ceil(unsigned long addr)
         return ((addr>>PAGETABLE_SHIFT)+1) << PAGETABLE_SHIFT;
 }
 
+struct page_table
+{
+        pte_type entry[1024]; /* page-table entries */
+};
+
+int
+page_table_init(struct page_table *pt);
+
+void
+page_table_uninit(struct page_table *pt);
+

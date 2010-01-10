@@ -34,21 +34,10 @@ struct virtmem_area
 
 const struct virtmem_area g_virtmem_area[4];
 
-struct page_table
-{
-        pte_type entry[1024];
-};
-
-int
-page_table_init(struct page_table *pt);
-
-void
-page_table_uninit(struct page_table *pt);
-
 struct page_directory
 {
         pde_type      pentry[1024]; /* page-directory entries */
-        unsigned long ventry[1024]; /* virtual addresses */
+        unsigned long ventry[1024]; /* TODO: reimpl routines that need this, then remove */
 };
 
 int

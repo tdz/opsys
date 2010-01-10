@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ __page_directory_alloc_page_table_at(struct page_directory *pd,
         unsigned long pfindex;
         int err;
 
-        if (pd_entry_get_pageframe_index(pd->pentry[ptindex])) {
+        if (pde_get_pageframe_index(pd->pentry[ptindex])) {
                 return 0; /* page table already exists */
         }
 
@@ -94,7 +94,7 @@ __page_directory_alloc_page_table_at(struct page_directory *pd,
                 goto err_page_table_init;
         }
 
-        pd->pentry[ptindex] = pd_entry_create(pfindex, flags);
+        pd->pentry[ptindex] = pde_create(pfindex, flags);
 
         return 0;
 
@@ -135,7 +135,7 @@ __page_directory_map_pageframe_at(struct page_directory *pd,
 
         ptindex = pagetable_index(page_offset(pgindex));
 
-        pt = pageframe_address(pd_entry_get_pageframe_index(pd->pentry[ptindex]));
+        pt = pageframe_address(pde_get_pageframe_index(pd->pentry[ptindex]));
 
         if (!pt) {
                 /* no page table present */
@@ -151,14 +151,14 @@ __page_directory_map_pageframe_at(struct page_directory *pd,
 
         /* unref old page frame */
 
-        if (pt_entry_get_pageframe_index(pt->entry[pgindex&0x3ff])) {
+        if (pte_get_pageframe_index(pt->entry[pgindex&0x3ff])) {
                 physmem_unref_frames(
-                        pt_entry_get_pageframe_index(
+                        pte_get_pageframe_index(
                                 pt->entry[pgindex&0x3ff]), 1);
         }
 
         /* update page table entry */
-        pt->entry[pgindex&0x3ff] = pt_entry_create(pfindex, flags);
+        pt->entry[pgindex&0x3ff] = pte_create(pfindex, flags);
 
         return 0;
 
@@ -208,7 +208,7 @@ __page_directory_install_page_tables_at(struct page_directory *pd,
 
                 ptindex_tgt = pagetable_index(page_offset(pgindex_tgt));
 
-                pt = pageframe_address(pd_entry_get_pageframe_index(pd->pentry[ptindex_tgt]));
+                pt = pageframe_address(pde_get_pageframe_index(pd->pentry[ptindex_tgt]));
 
                 if (!pt) {
                         err = -2;
@@ -222,18 +222,18 @@ __page_directory_install_page_tables_at(struct page_directory *pd,
 
                         unsigned long pfindex;
 
-                        if (pt_entry_get_pageframe_index(pt->entry[j])) {
+                        if (pte_get_pageframe_index(pt->entry[j])) {
                                 continue; /* entry not empty, try next one */
                         }
 
-                        pfindex = pd_entry_get_pageframe_index(pd->pentry[ptindex]);
+                        pfindex = pde_get_pageframe_index(pd->pentry[ptindex]);
 
                         if (!pfindex) {
                                 err = -3;
                                 goto err_pd_entry_get_pageframe_index;
                         }
 
-                        pt->entry[j] = pt_entry_create(pfindex, flags);
+                        pt->entry[j] = pte_create(pfindex, flags);
 
                         --ptcount;
                         ++ptindex;
@@ -251,7 +251,6 @@ err_pd_entry_get_address:
         return err;
 }
 
-#include "console.h"
 int
 page_directory_install_kernel_area_low(struct page_directory *pd)
 {
@@ -324,7 +323,7 @@ __page_directory_check_empty_pages_at(const struct page_directory *pd,
                 pebeg = pt->entry+(pgindex&0x3ff);
                 peend = pebeg + minul(npages-nempty, 1024-(pgindex&0x3ff));
 
-                while ((pebeg < peend) && !pt_entry_get_pageframe_index(*pebeg)) {
+                while ((pebeg < peend) && !pte_get_pageframe_index(*pebeg)) {
                         ++nempty;
                         ++pgindex;
                         ++pebeg;

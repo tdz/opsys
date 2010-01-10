@@ -18,14 +18,14 @@
 
 #include "pte.h"
 
-pt_entry
-pt_entry_create(unsigned long pfindex, unsigned long flags)
+pte_type
+pte_create(unsigned long pfindex, unsigned long flags)
 {
         return (pfindex<<12) | (flags&PTE_ALL_FLAGS);
 }
 
 unsigned long
-pt_entry_get_pageframe_index(pt_entry pte)
+pte_get_pageframe_index(pte_type pte)
 {
         return pte>>12;
 }

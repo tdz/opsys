@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ const struct virtmem_area g_virtmem_area[4];
 
 struct page_table
 {
-        pt_entry entry[1024];
+        pte_type entry[1024];
 };
 
 int
@@ -47,7 +47,7 @@ page_table_uninit(struct page_table *pt);
 
 struct page_directory
 {
-        pd_entry      pentry[1024]; /* physical addresses */
+        pde_type      pentry[1024]; /* page-directory entries */
         unsigned long ventry[1024]; /* virtual addresses */
 };
 

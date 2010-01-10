@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PDE_H
-#define PDE_H
-
 enum {
         PDE_FLAG_PRESENT   = 1<<0,
         PDE_FLAG_WRITEABLE = 1<<1,
@@ -38,13 +35,11 @@ enum {
         PDE_STATE_ACCESSED = 1<<5
 };
 
-typedef unsigned long pd_entry;
+typedef unsigned long pde_type;
 
-pd_entry
-pd_entry_create(unsigned long pfindex, unsigned long flags);
+pde_type
+pde_create(unsigned long pfindex, unsigned long flags);
 
 unsigned long
-pd_entry_get_pageframe_index(pd_entry pde);
-
-#endif
+pde_get_pageframe_index(pde_type pde);
 

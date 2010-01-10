@@ -18,14 +18,14 @@
 
 #include "pde.h"
 
-pd_entry
-pd_entry_create(unsigned long pfindex, unsigned long flags)
+pde_type
+pde_create(unsigned long pfindex, unsigned long flags)
 {
         return (pfindex<<12) | (flags&PDE_ALL_FLAGS);
 }
 
 unsigned long
-pd_entry_get_pageframe_index(pd_entry pde)
+pde_get_pageframe_index(pde_type pde)
 {
         return pde>>12;
 }

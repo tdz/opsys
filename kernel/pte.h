@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PTE_H
-#define PTE_H
-
 enum {
         PTE_FLAG_PRESENT   = 1<<0,
         PTE_FLAG_WRITEABLE = 1<<1,
@@ -33,13 +30,11 @@ enum {
         PTE_STATE_DIRTY    = 1<<6
 };
 
-typedef unsigned long pt_entry;
+typedef unsigned long pte_type;
 
-pt_entry
-pt_entry_create(unsigned long pfindex, unsigned long flags);
+pte_type
+pte_create(unsigned long pfindex, unsigned long flags);
 
 unsigned long
-pt_entry_get_pageframe_index(pt_entry pte);
-
-#endif
+pte_get_pageframe_index(pte_type pte);
 

@@ -254,6 +254,7 @@ load_modules(const struct multiboot_info *mb_info)
 
 #include "pte.h"
 #include "pde.h"
+#include "pagedir.h"
 #include "virtmem.h"
 #include "tcb.h"
 #include "task.h"
@@ -281,8 +282,8 @@ build_init_task(void)
 
         /* build kernel area */
 
-        if ((err = page_directory_install_kernel_area_low(pd)) < 0) {
-                goto err_page_directory_install_kernel_area_low;
+        if ((err = virtmem_install_kernel_area_low(pd)) < 0) {
+                goto err_virtmem_install_kernel_area_low;
         }
 
         console_printf("enabling paging\n");
@@ -358,7 +359,7 @@ err_task_init:
                              pageframe_count(sizeof(*task)));
 err_task_alloc:
 err_task_lookup:
-err_page_directory_install_kernel_area_low:
+err_virtmem_install_kernel_area_low:
         page_directory_uninit(pd);
 err_page_directory_init:
         physmem_unref_frames(pageframe_index((unsigned long)pd),

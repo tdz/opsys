@@ -20,7 +20,9 @@
 #include "string.h"
 #include "page.h"
 #include "pte.h"
+#include "pagetbl.h"
 #include "pde.h"
+#include "pagedir.h"
 #include "virtmem.h"
 #include "tcb.h"
 
@@ -54,7 +56,7 @@ tcb_set_page_directory(struct tcb *tcb, struct page_directory *pd)
 {
         unsigned long phys_pgindex;
 
-        phys_pgindex = page_directory_lookup_physical_page(pd,
+        phys_pgindex = virtmem_lookup_physical_page(pd,
                                         page_index((unsigned long)pd));
 
         tcb->cr3 = (phys_pgindex<<12) | (tcb->cr3&0xfff);

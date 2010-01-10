@@ -34,24 +34,12 @@ struct virtmem_area
 
 const struct virtmem_area g_virtmem_area[4];
 
-struct page_directory
-{
-        pde_type      pentry[1024]; /* page-directory entries */
-        unsigned long ventry[1024]; /* TODO: reimpl routines that need this, then remove */
-};
-
 int
-page_directory_init(struct page_directory *pd);
-
-void
-page_directory_uninit(struct page_directory *pd);
-
-int
-page_directory_install_kernel_area_low(struct page_directory *pd);
+virtmem_install_kernel_area_low(struct page_directory *pd);
 
 unsigned long
-page_directory_lookup_physical_page(const struct page_directory *pt,
-                                    unsigned long virt_pgindex);
+virtmem_lookup_physical_page(const struct page_directory *pt,
+                             unsigned long virt_pgindex);
 
 #endif
 

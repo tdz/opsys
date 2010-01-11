@@ -108,6 +108,37 @@ virtmem_install_kernel_area_low(struct page_directory *pd)
 }
 
 unsigned long
+virtmem_alloc_pages(struct page_directory *pd, unsigned long npages,
+                    struct virtmem_area *area,
+                    unsigned int pteflags)
+{
+        int err;
+        unsigned long pgindex;
+
+        pgindex = page_directory_find_empty_pages(pd, npages,
+                                                  area->pgindex,
+                                                  area->npages);
+        if (!pgindex) {
+                err = -1;
+                goto err_page_directory_find_empty_pages;
+        }
+
+        err = page_directory_alloc_pages_at(pd, pgindex, npages, pteflags);
+
+        if (err < 0) {
+                goto err_page_directory_alloc_pages_at;
+        }
+
+        return pgindex;
+
+err_page_directory_alloc_pages_at:
+err_page_directory_find_empty_pages:
+        return 0;
+}
+
+
+
+unsigned long
 virtmem_lookup_physical_page(const struct page_directory *pd,
                                     unsigned long virt_pgindex)
 {

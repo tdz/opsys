@@ -18,6 +18,8 @@
 
 #include "types.h"
 #include "string.h"
+#include "pageframe.h"
+#include "physmem.h"
 #include "pte.h"
 #include "pagetbl.h"
 
@@ -33,5 +35,22 @@ void
 page_table_uninit(struct page_table *pt)
 {
         return;
+}
+
+int
+page_table_alloc_pages_at(struct page_table *pt, unsigned long pgindex,
+                                                 unsigned long pgcount,
+                                                 unsigned int flags)
+{
+        while (pgcount) {
+                unsigned long pfindex = physmem_alloc_frames(1);
+
+                pt->entry[pgindex] = pte_create(pfindex, flags);
+
+                ++pgindex;
+                --pgcount;
+        }
+
+        return 0;
 }
 

@@ -69,3 +69,8 @@ page_table_init(struct page_table *pt);
 void
 page_table_uninit(struct page_table *pt);
 
+int
+page_table_alloc_pages_at(struct page_table *pt, unsigned long pgindex,
+                                                 unsigned long pgcount,
+                                                 unsigned int flags);
+

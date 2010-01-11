@@ -45,6 +45,11 @@ int
 virtmem_install_kernel_area_low(struct page_directory *pd);
 
 unsigned long
+virtmem_alloc_pages(struct page_directory *pd, unsigned long npages,
+                    struct virtmem_area *area,
+                    unsigned int pteflags);
+
+unsigned long
 virtmem_lookup_physical_page(const struct page_directory *pt,
                              unsigned long virt_pgindex);
 

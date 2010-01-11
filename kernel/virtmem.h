@@ -16,21 +16,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef VIRTMEM_H
-#define VIRTMEM_H
-
 enum virtmem_area_name {
         VIRTMEM_AREA_LOW       = 0,
         VIRTMEM_AREA_USER      = 1,
         VIRTMEM_AREA_TASKSTATE = 2,
-        VIRTMEM_AREA_KERNEL    = 3
+        VIRTMEM_AREA_KERNEL    = 3,
+        LAST_VIRTMEM_AREA      = 4
 };
 
 enum virtmem_area_flags {
-        VIRTMEM_AREA_FLAG_EMPTY    = 0,
-        VIRTMEM_AREA_FLAG_KERNEL   = 1<<1,
-        VIRTMEM_AREA_FLAG_IDENTITY = 1<<2,
-        VIRTMEM_AREA_FLAG_USER     = 1<<3
+        VIRTMEM_AREA_FLAG_EMPTY      = 0,
+        VIRTMEM_AREA_FLAG_KERNEL     = 1<<1,
+        VIRTMEM_AREA_FLAG_IDENTITY   = 1<<2,
+        VIRTMEM_AREA_FLAG_PAGETABLES = 1<<3,
+        VIRTMEM_AREA_FLAG_USER       = 1<<4
 };
 
 struct virtmem_area
@@ -40,7 +39,7 @@ struct virtmem_area
         unsigned long flags;
 };
 
-const struct virtmem_area g_virtmem_area[4];
+const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA];
 
 int
 virtmem_install_kernel_area_low(struct page_directory *pd);
@@ -48,6 +47,4 @@ virtmem_install_kernel_area_low(struct page_directory *pd);
 unsigned long
 virtmem_lookup_physical_page(const struct page_directory *pt,
                              unsigned long virt_pgindex);
-
-#endif
 

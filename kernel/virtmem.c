@@ -37,7 +37,9 @@ const struct virtmem_area g_virtmem_area[] = {
         /* low kernel virtual memory: <4 MiB */
         {.pgindex = 1,
          .npages  = 1023,
-         .flags   = VIRTMEM_AREA_FLAG_KERNEL|VIRTMEM_AREA_FLAG_IDENTITY},
+         .flags   = VIRTMEM_AREA_FLAG_KERNEL|
+                    VIRTMEM_AREA_FLAG_IDENTITY|
+                    VIRTMEM_AREA_FLAG_PAGETABLES},
         /* user virtual memory: 4 MiB - 3 GiB */
         {.pgindex = 1024,
          .npages  = 785408,
@@ -49,7 +51,7 @@ const struct virtmem_area g_virtmem_area[] = {
         /* high kernel virtual memory: >3 GiB */
         {.pgindex = 786432+PAGE_COUNT(MAXTASK*sizeof(struct task)),
          .npages  = 262144-PAGE_COUNT(MAXTASK*sizeof(struct task)),
-         .flags   = VIRTMEM_AREA_FLAG_KERNEL}
+         .flags   = VIRTMEM_AREA_FLAG_KERNEL|VIRTMEM_AREA_FLAG_PAGETABLES}
 };
 
 int
@@ -67,7 +69,7 @@ virtmem_install_kernel_area_low(struct page_directory *pd)
 
                 unsigned long ptindex, ptcount;
 
-                if (!(beg->flags&VIRTMEM_AREA_FLAG_KERNEL)) {
+                if (!(beg->flags&VIRTMEM_AREA_FLAG_PAGETABLES)) {
                         continue;
                 }
 

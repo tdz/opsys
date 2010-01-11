@@ -26,10 +26,18 @@ enum virtmem_area_name {
         VIRTMEM_AREA_KERNEL    = 3
 };
 
+enum virtmem_area_flags {
+        VIRTMEM_AREA_FLAG_EMPTY    = 0,
+        VIRTMEM_AREA_FLAG_KERNEL   = 1<<1,
+        VIRTMEM_AREA_FLAG_IDENTITY = 1<<2,
+        VIRTMEM_AREA_FLAG_USER     = 1<<3
+};
+
 struct virtmem_area
 {
         unsigned long pgindex;
         unsigned long npages;
+        unsigned long flags;
 };
 
 const struct virtmem_area g_virtmem_area[4];

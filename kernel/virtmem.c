@@ -33,57 +33,75 @@
 
 #define MAXTASK 1024
 
-const struct virtmem_area g_virtmem_area[4] = {
+const struct virtmem_area g_virtmem_area[] = {
         /* low kernel virtual memory: <4 MiB */
-        {.pgindex = 1,                                              .npages = 1023},
+        {.pgindex = 1,
+         .npages  = 1023,
+         .flags   = VIRTMEM_AREA_FLAG_KERNEL|VIRTMEM_AREA_FLAG_IDENTITY},
         /* user virtual memory: 4 MiB - 3 GiB */
-        {.pgindex = 1024,                                           .npages = 785408},
+        {.pgindex = 1024,
+         .npages  = 785408,
+         .flags   = VIRTMEM_AREA_FLAG_USER},
         /* task state memory: >3 GiB */
-        {.pgindex = 786432,                                         .npages = PAGE_COUNT(MAXTASK*sizeof(struct task))},
-        /* high kernel virtual memory: > 3 GiB */
-        {.pgindex = 786432+PAGE_COUNT(MAXTASK*sizeof(struct task)), .npages = 262144-PAGE_COUNT(MAXTASK*sizeof(struct task))}
+        {.pgindex = 786432,
+         .npages  = PAGE_COUNT(MAXTASK*sizeof(struct task)),
+         .flags   = VIRTMEM_AREA_FLAG_KERNEL},
+        /* high kernel virtual memory: >3 GiB */
+        {.pgindex = 786432+PAGE_COUNT(MAXTASK*sizeof(struct task)),
+         .npages  = 262144-PAGE_COUNT(MAXTASK*sizeof(struct task)),
+         .flags   = VIRTMEM_AREA_FLAG_KERNEL}
 };
 
 int
 virtmem_install_kernel_area_low(struct page_directory *pd)
 {
-        unsigned long ptindex, ptcount;
-        unsigned long pgindex, pgcount;
         int err;
+        const struct virtmem_area *beg, *end;
 
-        pgindex = g_virtmem_area[VIRTMEM_AREA_LOW].pgindex;
-        pgcount = g_virtmem_area[VIRTMEM_AREA_LOW].npages;
+        beg = g_virtmem_area;
+        end = beg + sizeof(g_virtmem_area)/sizeof(g_virtmem_area[0]);
 
-        ptindex = pagetable_index(page_offset(pgindex));
-        ptcount = pagetable_count(page_memory(pgcount));
+        /* install page tables in all kernel areas */
 
-        /* create page tables for low area */
+        for (err = 0; (beg < end) && !(err < 0); ++beg) {
 
-        err = page_directory_alloc_page_tables_at(pd,
-                                                  ptindex,
-                                                  ptcount,
-                                                  PDE_FLAG_PRESENT|
-                                                  PDE_FLAG_WRITEABLE);
-        if (err < 0) {
-                goto err_page_directory_alloc_page_tables_at;
+                unsigned long ptindex, ptcount;
+
+                if (!(beg->flags&VIRTMEM_AREA_FLAG_KERNEL)) {
+                        continue;
+                }
+
+                ptindex = pagetable_index(page_offset(beg->pgindex));
+                ptcount = pagetable_count(page_memory(beg->npages));
+
+                /* create page tables for low area */
+
+                err = page_directory_alloc_page_tables_at(pd,
+                                                          ptindex,
+                                                          ptcount,
+                                                          PDE_FLAG_PRESENT|
+                                                          PDE_FLAG_WRITEABLE);
         }
 
-        /* create identity mapping for low area */
+        /* create identity mapping for all identity areas */
 
-        err = page_directory_map_pageframes_at(pd,
-                                               pgindex,
-                                               pgindex,
-                                               pgcount,
-                                               PTE_FLAG_PRESENT|
-                                               PTE_FLAG_WRITEABLE);
-        if (err < 0) {
-                goto err_page_directory_map_pageframes_at;
+        beg = g_virtmem_area;
+        end = beg + sizeof(g_virtmem_area)/sizeof(g_virtmem_area[0]);
+
+        for (; (beg < end) && !(err < 0); ++beg) {
+
+                if (!(beg->flags&VIRTMEM_AREA_FLAG_IDENTITY)) {
+                        continue;
+                }
+
+                err = page_directory_map_pageframes_at(pd,
+                                                       beg->pgindex,
+                                                       beg->pgindex,
+                                                       beg->npages,
+                                                       PTE_FLAG_PRESENT|
+                                                       PTE_FLAG_WRITEABLE);
         }
 
-        return 0;
-
-err_page_directory_alloc_page_tables_at:
-err_page_directory_map_pageframes_at:
         return err;
 }
 

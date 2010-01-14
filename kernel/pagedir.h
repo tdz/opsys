@@ -18,9 +18,8 @@
 
 struct page_directory
 {
-        pde_type      pentry[1024]; /* page-directory entries */
-        unsigned long ventry[1024]; /* TODO: reimpl routines that need this, then remove */
-};
+        volatile pde_type      pentry[1024]; /* page-directory entries */
+} __attribute__ (( aligned(4096) ));
 
 int
 page_directory_init(struct page_directory *pd);
@@ -29,59 +28,40 @@ void
 page_directory_uninit(struct page_directory *pd);
 
 int
-page_directory_alloc_page_table_at(struct page_directory *pd,
-                                   unsigned long ptindex,
+page_directory_install_page_table(struct page_directory *pd,
+                                  unsigned long pfindex,
+                                  unsigned long index,
+                                  unsigned int flags);
+
+int
+page_directory_install_page_tables(struct page_directory *pd,
+                                   unsigned long pfindex,
+                                   unsigned long index,
+                                   unsigned long count,
                                    unsigned int flags);
 
 int
-page_directory_alloc_page_tables_at(struct page_directory *pd,
-                                    unsigned long ptindex,
-                                    unsigned long ptcount,
-                                    unsigned int flags);
+page_directory_uninstall_page_table(struct page_directory *pd,
+                                    unsigned long index);
 
 int
-page_directory_map_pageframe_at(struct page_directory *pd,
-                                unsigned long pfindex,
-                                unsigned long pgindex,
-                                unsigned int flags);
+page_directory_uninstall_page_tables(struct page_directory *pd,
+                                     unsigned long index,
+                                     unsigned long count);
+
+
+
 
 int
-page_directory_map_pageframes_at(struct page_directory *pd,
+page_directory_map_page_frame_at_nopg(struct page_directory *pd,
                                  unsigned long pfindex,
                                  unsigned long pgindex,
-                                 unsigned long count,
                                  unsigned int flags);
 
 int
-page_directory_unmap_page(struct page_directory *pd,
-                          unsigned long pgindex);
-
-int
-page_directory_unmap_pages(struct page_directory *pd,
-                           unsigned long pgindex,
-                           unsigned long pgcount);
-
-int
-page_directory_install_page_tables_at(struct page_directory *pd,
-                                      unsigned long pgindex_tgt,
-                                      unsigned long ptindex,
-                                      unsigned long ptcount,
-                                      unsigned int flags);
-
-unsigned long
-page_directory_check_empty_pages_at(const struct page_directory *pd,
-                                    unsigned long pgindex,
-                                    unsigned long npages);
-
-unsigned long
-page_directory_find_empty_pages(const struct page_directory *pd,
-                                unsigned long npages,
-                                unsigned long pgindex,
-                                unsigned long pgcount);
-
-int
-page_directory_alloc_pages_at(struct page_directory *pd,
-                              unsigned long pgindex,
-                              unsigned long pgcount,
-                              unsigned int pteflags);
+page_directory_map_page_frames_at_nopg(struct page_directory *pd,
+                                  unsigned long pfindex,
+                                  unsigned long pgindex,
+                                  unsigned long count,
+                                  unsigned int flags);
 

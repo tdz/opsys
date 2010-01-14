@@ -253,8 +253,11 @@ load_modules(const struct multiboot_info *mb_info)
 }
 
 #include "pte.h"
+#include "pagetbl.h"
 #include "pde.h"
 #include "pagedir.h"
+#include "page.h"
+#include "mmu.h"
 #include "virtmem.h"
 #include "tcb.h"
 #include "task.h"
@@ -263,18 +266,15 @@ static int
 build_init_task(void)
 {
         int err;
+        static struct page_directory init_pd;
         struct page_directory *pd;
         struct task *task;
         struct tcb *tcb;
+        unsigned long cr3;
+
+        pd = &init_pd;
 
         /* create virtual address space */
-
-        pd = pageframe_address(physmem_alloc_frames(pageframe_count(sizeof(*pd))));
-
-        if (!pd) {
-                err = -1;
-                goto err_page_directory_alloc;
-        }
 
         if ((err = page_directory_init(pd)) < 0) {
                 goto err_page_directory_init;
@@ -282,32 +282,49 @@ build_init_task(void)
 
         /* build kernel area */
 
-        if ((err = virtmem_install_kernel_area_low(pd)) < 0) {
-                goto err_virtmem_install_kernel_area_low;
+        if ((err = virtmem_install(pd)) < 0) {
+                goto err_virtmem_install;
         }
 
         console_printf("enabling paging\n");
 
-        {
-                unsigned long cr3 = ((unsigned long)pd->pentry)&(~0xfff);
-                console_printf("cr3 = %x %x\n", cr3, 1);
+        cr3 = ((unsigned long)pd->pentry)&(~0xfff);
+        console_printf("cr3 = %x %x\n", cr3, 1);
 
-                __asm__(/* set CR4.PSE */
-                        "movl %%cr4, %%eax\n\t"
-                        "or $0x10, %%eax\n\t"
-                        "movl %%eax, %%cr4\n\t"
-                        /* set CR3 */
-                        "movl %0, %%cr3\n\t"
-                        /* set CR0.PG */
-                        "movl %%cr0, %%eax\n\t"
-                        "or $0x80000000, %%eax\n\t"
-                        "movl %%eax, %%cr0\n\t"
-                                :
-                                : "r" (cr3)
-                                : "eax");
+        mmu_load(cr3);
+        mmu_enable_paging();
+
+        console_printf("paging enabled.\n");
+
+        /* test allocation */
+        {
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+                int *addr = page_address(virtmem_alloc_pages_in_area(
+                                        pd,
+                                        2,
+                                        g_virtmem_area+VIRTMEM_AREA_USER,
+                                        PTE_FLAG_PRESENT|
+                                        PTE_FLAG_WRITEABLE));
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+
+                if (!addr) {
+                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
+                }
+
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+                console_printf("alloced addr=%x.\n", addr);
+
+                console_printf("%s:%x pde=%x.\n",
+                               __FILE__,
+                               __LINE__,
+                               pd->pentry[1/*pagetable_index((unsigned long)addr)*/]);
+
+                console_printf("%s:%x %x.\n", __FILE__, __LINE__, addr[1024]);
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+
+                memset(addr, 0, 2*PAGE_SIZE);
         }
 
-        console_printf("paging enabled\n");
         return 0;
 
 
@@ -359,7 +376,7 @@ err_task_init:
                              pageframe_count(sizeof(*task)));
 err_task_alloc:
 err_task_lookup:
-err_virtmem_install_kernel_area_low:
+err_virtmem_install:
         page_directory_uninit(pd);
 err_page_directory_init:
         physmem_unref_frames(pageframe_index((unsigned long)pd),

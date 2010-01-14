@@ -37,20 +37,84 @@ page_table_uninit(struct page_table *pt)
         return;
 }
 
+#include "console.h"
+
 int
-page_table_alloc_pages_at(struct page_table *pt, unsigned long pgindex,
-                                                 unsigned long pgcount,
-                                                 unsigned int flags)
+page_table_map_page_frame(struct page_table *pt,
+                          unsigned long pfindex,
+                          unsigned long index,
+                          int flags)
 {
-        while (pgcount) {
-                unsigned long pfindex = physmem_alloc_frames(1);
+        int err;
 
-                pt->entry[pgindex] = pte_create(pfindex, flags);
+        console_printf("%s:%x pt=%x pfindex=%x index=%x flags=%x.\n",
+                       __FILE__,
+                       __LINE__, pt, pfindex, index, flags);
 
-                ++pgindex;
-                --pgcount;
+        /* ref new page frame */
+
+        if ((err = physmem_ref_frames(pfindex, 1)) < 0) {
+                goto err_physmem_ref_frames;
         }
 
+        /* unref old page frame */
+
+        if (pte_get_pageframe_index(pt->entry[index])) {
+                physmem_unref_frames(
+                        pte_get_pageframe_index(pt->entry[index]), 1);
+        }
+
+        /* update page table entry */
+        pt->entry[index] = pte_create(pfindex, flags);
+
         return 0;
+
+err_physmem_ref_frames:
+        return err;
+}
+
+int
+page_table_map_page_frames(struct page_table *pt,
+                           unsigned long pfindex,
+                           unsigned long index,
+                           unsigned long count,
+                           int flags)
+{
+        int err;
+
+        for (err = 0; count && !(err < 0); --count, ++index, ++pfindex) {
+                err = page_table_map_page_frame(pt, pfindex, index, flags);
+        }
+
+        return err;
+}
+
+int
+page_table_unmap_page_frame(struct page_table *pt, unsigned long index)
+{
+        /* unref page frame */
+
+        if (pte_get_pageframe_index(pt->entry[index])) {
+                physmem_unref_frames(
+                        pte_get_pageframe_index(pt->entry[index]), 1);
+        }
+
+        /* clear page table entry */
+        pt->entry[index] = pte_create(0, 0);
+
+        return 0;
+}
+
+int
+page_table_unmap_page_frames(struct page_table *pt, unsigned long index,
+                                                    unsigned long count)
+{
+        int err;
+
+        for (err = 0; count && !(err < 0); --count, ++index) {
+                err = page_table_unmap_page_frame(pt, index);
+        }
+
+        return err;
 }
 

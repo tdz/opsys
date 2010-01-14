@@ -132,6 +132,7 @@ handle_interrupt13:
 
 handle_interrupt14:
         call page_fault_handler
+        hlt
         iret
 
 handle_interrupt15:

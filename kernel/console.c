@@ -128,7 +128,7 @@ console_printf(const char *str, ...)
                         crt_write(crt_getaddress(row, col), strbeg, len, 0x07);
                         crt_setpos(row, col+len);
                         crt_getpos(&row, &col);
-                        crt_setpos(row+1, 0);
+                        crt_setpos((row+1)%25, 0);
 
                         strbeg = str+1;
 

@@ -41,9 +41,10 @@ pagetable_address(unsigned long index)
 }
 
 static __inline__ unsigned long
-pagetable_count(unsigned long bytes)
+pagetable_count(unsigned long addr, unsigned long bytes)
 {
-        return (bytes+PAGETABLE_SIZE-1) >> PAGETABLE_SHIFT;
+        return bytes ? 1+pagetable_index(addr+bytes-1)-pagetable_index(addr)
+                     : 0;
 }
 
 static __inline__ unsigned long
@@ -60,7 +61,7 @@ pagetable_ceil(unsigned long addr)
 
 struct page_table
 {
-        pte_type entry[1024]; /* page-table entries */
+        volatile pte_type entry[1024]; /* page-table entries */
 };
 
 int
@@ -70,7 +71,22 @@ void
 page_table_uninit(struct page_table *pt);
 
 int
-page_table_alloc_pages_at(struct page_table *pt, unsigned long pgindex,
-                                                 unsigned long pgcount,
-                                                 unsigned int flags);
+page_table_map_page_frame(struct page_table *pt,
+                          unsigned long pfindex,
+                          unsigned long index,
+                          int flags);
+
+int
+page_table_map_page_frames(struct page_table *pt,
+                           unsigned long pfindex,
+                           unsigned long index,
+                           unsigned long count,
+                           int flags);
+
+int
+page_table_unmap_page_frame(struct page_table *pt, unsigned long index);
+
+int
+page_table_unmap_page_frames(struct page_table *pt, unsigned long index,
+                                                    unsigned long count);
 

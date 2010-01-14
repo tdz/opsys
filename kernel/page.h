@@ -43,13 +43,14 @@ page_address(unsigned long index)
         return (void*)page_offset(index);
 }
 
-static __inline__ unsigned long
-page_count(unsigned long bytes)
-{
-#define PAGE_COUNT(_bytes) \
+#define PAGE_SPAN(_bytes) \
         (((_bytes)+(PAGE_SIZE-1))>>PAGE_SHIFT)
 
-        return PAGE_COUNT(bytes);
+static __inline__ unsigned long
+page_count(unsigned long addr, unsigned long bytes)
+{
+        return bytes ? 1 + page_index(addr+bytes-1) - page_index(addr)
+                     : 0;
 }
 
 static __inline__ unsigned long

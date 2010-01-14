@@ -262,6 +262,8 @@ load_modules(const struct multiboot_info *mb_info)
 #include "tcb.h"
 #include "task.h"
 
+#include "string.h"
+
 static int
 build_init_task(void)
 {
@@ -270,7 +272,6 @@ build_init_task(void)
         struct page_directory *pd;
         struct task *task;
         struct tcb *tcb;
-        unsigned long cr3;
 
         pd = &init_pd;
 
@@ -288,39 +289,42 @@ build_init_task(void)
 
         console_printf("enabling paging\n");
 
-        cr3 = ((unsigned long)pd->pentry)&(~0xfff);
-        console_printf("cr3 = %x %x\n", cr3, 1);
-
-        mmu_load(cr3);
+        mmu_load(((unsigned long)pd->entry)&(~0xfff));
         mmu_enable_paging();
 
         console_printf("paging enabled.\n");
 
         /* test allocation */
         {
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
                 int *addr = page_address(virtmem_alloc_pages_in_area(
                                         pd,
                                         2,
                                         g_virtmem_area+VIRTMEM_AREA_USER,
                                         PTE_FLAG_PRESENT|
                                         PTE_FLAG_WRITEABLE));
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
 
                 if (!addr) {
                         console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
                 }
 
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
                 console_printf("alloced addr=%x.\n", addr);
 
-                console_printf("%s:%x pde=%x.\n",
-                               __FILE__,
-                               __LINE__,
-                               pd->pentry[1/*pagetable_index((unsigned long)addr)*/]);
+                memset(addr, 0, 2*PAGE_SIZE);
+        }
 
-                console_printf("%s:%x %x.\n", __FILE__, __LINE__, addr[1024]);
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
+        {
+                int *addr = page_address(virtmem_alloc_pages_in_area(
+                                        pd,
+                                        2,
+                                        g_virtmem_area+VIRTMEM_AREA_USER,
+                                        PTE_FLAG_PRESENT|
+                                        PTE_FLAG_WRITEABLE));
+
+                if (!addr) {
+                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
+                }
+
+                console_printf("alloced addr=%x.\n", addr);
 
                 memset(addr, 0, 2*PAGE_SIZE);
         }

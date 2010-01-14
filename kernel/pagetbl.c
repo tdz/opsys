@@ -37,8 +37,6 @@ page_table_uninit(struct page_table *pt)
         return;
 }
 
-#include "console.h"
-
 int
 page_table_map_page_frame(struct page_table *pt,
                           unsigned long pfindex,
@@ -46,10 +44,6 @@ page_table_map_page_frame(struct page_table *pt,
                           int flags)
 {
         int err;
-
-        console_printf("%s:%x pt=%x pfindex=%x index=%x flags=%x.\n",
-                       __FILE__,
-                       __LINE__, pt, pfindex, index, flags);
 
         /* ref new page frame */
 

@@ -45,10 +45,6 @@ page_directory_install_page_table(struct page_directory *pd,
 {
         int err;
 
-        console_printf("%s:%x pd=%x pfindex=%x index=%x flags=%x.\n",
-                       __FILE__,
-                       __LINE__, pd, pfindex, index, flags);
-
         /* ref new page table's page frame */
 
         if ((err = physmem_ref_frames(pfindex, 1)) < 0) {
@@ -57,13 +53,13 @@ page_directory_install_page_table(struct page_directory *pd,
 
         /* unref old page table's page frame */
 
-        if (pde_get_pageframe_index(pd->pentry[index])) {
+        if (pde_get_pageframe_index(pd->entry[index])) {
                 physmem_unref_frames(
-                        pde_get_pageframe_index(pd->pentry[index]), 1);
+                        pde_get_pageframe_index(pd->entry[index]), 1);
         }
 
         /* update page directory entry */
-        pd->pentry[index] = pde_create(pfindex, flags);
+        pd->entry[index] = pde_create(pfindex, flags);
 
         return 0;
 
@@ -96,13 +92,13 @@ page_directory_uninstall_page_table(struct page_directory *pd,
 {
         /* unref page frame of page-table */
 
-        if (pde_get_pageframe_index(pd->pentry[index])) {
+        if (pde_get_pageframe_index(pd->entry[index])) {
                 physmem_unref_frames(
-                        pde_get_pageframe_index(pd->pentry[index]), 1);
+                        pde_get_pageframe_index(pd->entry[index]), 1);
         }
 
         /* clear page directory entry */
-        pd->pentry[index] = pde_create(0, 0);
+        pd->entry[index] = pde_create(0, 0);
 
         return 0;
 }
@@ -116,65 +112,6 @@ page_directory_uninstall_page_tables(struct page_directory *pd,
 
         for (err = 0; count && !(err < 0); --count, ++index) {
                 err = page_directory_uninstall_page_table(pd, index);
-        }
-
-        return err;
-}
-
-
-/* TODO: suspicious below */
-
-#include "minmax.h"
-#include "page.h"
-#include "pte.h"
-#include "pagetbl.h"
-
-
-int
-page_directory_map_page_frame_at_nopg(struct page_directory *pd,
-                                 unsigned long pfindex,
-                                 unsigned long pgindex,
-                                 unsigned int flags)
-{
-        unsigned long ptindex;
-        int err;
-        struct page_table *pt;
-
-        /* get page table */
-
-        ptindex = pagetable_index(page_offset(pgindex));
-
-        pt = pageframe_address(pde_get_pageframe_index(pd->pentry[ptindex]));
-
-        if (!pt) {
-                /* no page table present */
-                err = -2;
-                goto err_nopagetable;
-        }
-
-        return page_table_map_page_frame(pt, pfindex, pgindex&0x3ff, flags);
-
-err_nopagetable:
-        return err;
-}
-
-int
-page_directory_map_page_frames_at_nopg(struct page_directory *pd,
-                                  unsigned long pfindex,
-                                  unsigned long pgindex,
-                                  unsigned long count,
-                                  unsigned int flags)
-{
-        int err = 0;
-
-        while (count && !(err < 0)) {
-                err = page_directory_map_page_frame_at_nopg(pd,
-                                                       pfindex,
-                                                       pgindex,
-                                                       flags);
-                ++pgindex;
-                ++pfindex;
-                --count;
         }
 
         return err;

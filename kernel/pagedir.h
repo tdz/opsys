@@ -18,7 +18,7 @@
 
 struct page_directory
 {
-        volatile pde_type      pentry[1024]; /* page-directory entries */
+        volatile pde_type entry[1024]; /* page-directory entries */
 } __attribute__ (( aligned(4096) ));
 
 int
@@ -48,20 +48,4 @@ int
 page_directory_uninstall_page_tables(struct page_directory *pd,
                                      unsigned long index,
                                      unsigned long count);
-
-
-
-
-int
-page_directory_map_page_frame_at_nopg(struct page_directory *pd,
-                                 unsigned long pfindex,
-                                 unsigned long pgindex,
-                                 unsigned int flags);
-
-int
-page_directory_map_page_frames_at_nopg(struct page_directory *pd,
-                                  unsigned long pfindex,
-                                  unsigned long pgindex,
-                                  unsigned long count,
-                                  unsigned int flags);
 

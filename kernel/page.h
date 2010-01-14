@@ -32,15 +32,15 @@ page_index(unsigned long addr)
 }
 
 static __inline__ unsigned long
-page_offset(unsigned long index)
+page_offset(unsigned long pgindex)
 {
-        return index<<PAGE_SHIFT;
+        return pgindex<<PAGE_SHIFT;
 }
 
 static __inline__ void *
-page_address(unsigned long index)
+page_address(unsigned long pgindex)
 {
-        return (void*)page_offset(index);
+        return (void*)page_offset(pgindex);
 }
 
 #define PAGE_SPAN(_bytes) \

@@ -35,9 +35,9 @@ pagetable_offset(unsigned long index)
 }
 
 static __inline__ void *
-pagetable_address(unsigned long index)
+pagetable_address(unsigned long ptindex)
 {
-        return (void*)pagetable_offset(index);
+        return (void*)pagetable_offset(ptindex);
 }
 
 static __inline__ unsigned long
@@ -57,6 +57,12 @@ static __inline__ unsigned long
 pagetable_ceil(unsigned long addr)
 {
         return ((addr>>PAGETABLE_SHIFT)+1) << PAGETABLE_SHIFT;
+}
+
+static __inline__ unsigned long
+pagetable_page_index(unsigned long pgindex)
+{
+        return pgindex&0x3ff;
 }
 
 struct page_table

@@ -252,11 +252,11 @@ load_modules(const struct multiboot_info *mb_info)
         return 0;
 }
 
+#include "page.h"
 #include "pte.h"
 #include "pagetbl.h"
 #include "pde.h"
 #include "pagedir.h"
-#include "page.h"
 #include "mmu.h"
 #include "virtmem.h"
 #include "tcb.h"
@@ -287,11 +287,11 @@ build_init_task(void)
                 goto err_virtmem_install;
         }
 
-        console_printf("enabling paging\n");
+        /* enable paging */
 
+        console_printf("enabling paging\n");
         mmu_load(((unsigned long)pd->entry)&(~0xfff));
         mmu_enable_paging();
-
         console_printf("paging enabled.\n");
 
         /* test allocation */

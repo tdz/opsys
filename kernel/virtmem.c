@@ -84,7 +84,9 @@ virtmem_map_page_frame_at_nopg(struct page_directory *pd,
                 goto err_nopagetable;
         }
 
-        return page_table_map_page_frame(pt, pfindex, pgindex&0x3ff, flags);
+        return page_table_map_page_frame(pt,
+                                         pfindex,
+                                         pagetable_page_index(pgindex), flags);
 
 err_nopagetable:
         return err;
@@ -374,7 +376,9 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
                 pfindex = pde_get_pageframe_index(pd->entry[ptindex]);
 
                 if (!pfindex) {
-                        nempty += minul(pgcount, 1024-(pgindex&0x3ff));
+                        nempty +=
+                                minul(pgcount,
+                                      1024-pagetable_page_index(pgindex));
                 } else {
 
                         unsigned long ptpgindex;
@@ -393,7 +397,7 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
 
                         /* count empty pages */
 
-                        for (i = 0;
+                        for (i = pagetable_page_index(pgindex);
                              pgcount
                              && (i < sizeof(pt->entry)/sizeof(pt->entry[0]))
                              && (!pte_get_pageframe_index(pt->entry[i]));
@@ -519,7 +523,7 @@ virtmem_alloc_pages_at(struct page_directory *pd, unsigned long pgindex,
 
                 __asm__("mfence\n\t");
 
-                for (j = pgindex&0x3ff;
+                for (j = pagetable_page_index(pgindex);
                      pgcount
                      && (j < sizeof(pt->entry)/sizeof(pt->entry[0]))
                      && !(err < 0);

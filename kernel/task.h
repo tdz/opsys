@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,9 +15,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef TASK_H
-#define TASK_H
 
 struct task
 {
@@ -36,6 +33,4 @@ task_uninit(struct task *task);
 
 struct tcb *
 task_get_tcb(struct task *task, unsigned char i);
-
-#endif
 

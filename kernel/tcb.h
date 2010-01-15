@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,9 +15,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef TCB_H
-#define TCB_H
 
 struct tcb
 {
@@ -80,6 +77,4 @@ tcb_load(const struct tcb *tcb);
 
 int
 tcb_set_page_directory(struct tcb *tcb, struct page_directory *pd);
-
-#endif
 

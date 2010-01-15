@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PAGEFRAME_H
-#define PAGEFRAME_H
-
 enum {
         PAGEFRAME_SHIFT = 12,
         PAGEFRAME_SIZE  = 1<<PAGEFRAME_SHIFT,
@@ -66,6 +63,4 @@ pageframe_ceil(unsigned long addr)
 {
         return ((addr>>PAGEFRAME_SHIFT)+1) << PAGEFRAME_SHIFT;
 }
-
-#endif
 

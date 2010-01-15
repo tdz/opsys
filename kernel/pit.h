@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PIT_H
-#define PIT_H
-
 enum pit_mode {
         PIT_MODE_TERMINAL = 0x00,
         PIT_MODE_ONESHOT  = 0x01,
@@ -30,6 +27,4 @@ enum pit_mode {
 
 void
 pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode);
-
-#endif
 

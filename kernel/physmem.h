@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PHYSMEM_H
-#define PHYSMEM_H
-
 enum {
         PHYSMEM_FLAG_USEABLE  = 0,    /* available for use */
         PHYSMEM_FLAG_RESERVED = 1<<0, /* reserved by system */
@@ -45,6 +42,4 @@ physmem_ref_frames(unsigned long pfindex, unsigned long nframes);
 
 void
 physmem_unref_frames(unsigned long pfindex, unsigned long nframes);
-
-#endif
 

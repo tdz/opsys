@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef IOPORTS_H
-#define IOPORTS_H
-
 void
 io_outb(unsigned short port, unsigned char byte);
 
@@ -32,6 +29,4 @@ io_inb(unsigned short port, unsigned char *byte);
 void
 io_inb_index(unsigned short iport, unsigned char index,
              unsigned short dport, unsigned char *byte);
-
-#endif
 

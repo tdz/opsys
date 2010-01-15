@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PAGE_H
-#define PAGE_H
-
 enum {
         PAGE_SHIFT = 12,
         PAGE_SIZE  = 1<<PAGE_SHIFT,
@@ -70,6 +67,4 @@ page_ceil(unsigned long addr)
 {
         return ((addr>>PAGE_SHIFT)+1) << PAGE_SHIFT;
 }
-
-#endif
 

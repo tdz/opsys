@@ -20,7 +20,7 @@
 #define ELFLDR_H
 
 int
-elf_exec(const void *elfimg);
+elf_exec(struct page_directory *pd, const unsigned char *elfimg);
 
 #endif
 

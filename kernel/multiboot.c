@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "stddef.h"
 #include "types.h"
 #include "multiboot.h"
 #include "console.h"
@@ -25,6 +26,11 @@
 #include "pit.h"
 #include "pageframe.h"
 #include "physmem.h"
+
+#include "pde.h"
+#include "pagedir.h"
+#include "virtmem.h"
+
 #include "elfldr.h"
 
 static int
@@ -242,11 +248,13 @@ load_modules(const struct multiboot_info *mb_info)
         mod = (const struct multiboot_module*)mb_info->mods_addr;
 
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
+                extern struct page_directory *g_current_pd;
+
 /*                console_printf("found module at %x, size=%x\n",
                                 mod->mod_start,
                                 mod->mod_end-mod->mod_start);*/
 
-                elf_exec((const void*)mod->mod_start);
+                elf_exec(g_current_pd, (const void*)mod->mod_start);
         }
 
         return 0;
@@ -254,50 +262,51 @@ load_modules(const struct multiboot_info *mb_info)
 
 #include "page.h"
 #include "pte.h"
-#include "pagetbl.h"
+/*#include "pagetbl.h"
 #include "pde.h"
-#include "pagedir.h"
+#include "pagedir.h"*/
 #include "mmu.h"
-#include "virtmem.h"
+/*#include "virtmem.h"*/
 #include "tcb.h"
 #include "task.h"
 
 #include "string.h"
+
+struct page_directory *g_current_pd = NULL;
 
 static int
 build_init_task(void)
 {
         int err;
         static struct page_directory init_pd;
-        struct page_directory *pd;
         struct task *task;
         struct tcb *tcb;
 
-        pd = &init_pd;
+        g_current_pd = &init_pd;
 
         /* create virtual address space */
 
-        if ((err = page_directory_init(pd)) < 0) {
+        if ((err = page_directory_init(g_current_pd)) < 0) {
                 goto err_page_directory_init;
         }
 
         /* build kernel area */
 
-        if ((err = virtmem_install(pd)) < 0) {
+        if ((err = virtmem_install(g_current_pd)) < 0) {
                 goto err_virtmem_install;
         }
 
         /* enable paging */
 
         console_printf("enabling paging\n");
-        mmu_load(((unsigned long)pd->entry)&(~0xfff));
+        mmu_load(((unsigned long)g_current_pd->entry)&(~0xfff));
         mmu_enable_paging();
         console_printf("paging enabled.\n");
 
         /* test allocation */
         {
                 int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        pd,
+                                        g_current_pd,
                                         2,
                                         g_virtmem_area+VIRTMEM_AREA_USER,
                                         PTE_FLAG_PRESENT|
@@ -314,8 +323,8 @@ build_init_task(void)
 
         {
                 int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        pd,
-                                        2,
+                                        g_current_pd,
+                                        1023,
                                         g_virtmem_area+VIRTMEM_AREA_USER,
                                         PTE_FLAG_PRESENT|
                                         PTE_FLAG_WRITEABLE));
@@ -326,7 +335,7 @@ build_init_task(void)
 
                 console_printf("alloced addr=%x.\n", addr);
 
-                memset(addr, 0, 2*PAGE_SIZE);
+                memset(addr, 0, 1023*PAGE_SIZE);
         }
 
         return 0;
@@ -352,7 +361,7 @@ build_init_task(void)
                 goto err_task_init;
         }
 
-        task->pd = pd;
+        task->pd = g_current_pd;
 
         /* create thread (0:0)
          */
@@ -364,7 +373,7 @@ build_init_task(void)
                 goto err_task_get_thread;
         }
 
-        if ((err = tcb_set_page_directory(tcb, pd)) < 0) {
+        if ((err = tcb_set_page_directory(tcb, g_current_pd)) < 0) {
                 goto err_tcb_set_page_directory;
         }
 
@@ -381,10 +390,10 @@ err_task_init:
 err_task_alloc:
 err_task_lookup:
 err_virtmem_install:
-        page_directory_uninit(pd);
+        page_directory_uninit(g_current_pd);
 err_page_directory_init:
-        physmem_unref_frames(pageframe_index((unsigned long)pd),
-                             pageframe_count(sizeof(*pd)));
+        physmem_unref_frames(pageframe_index((unsigned long)g_current_pd),
+                             pageframe_count(sizeof(*g_current_pd)));
 err_page_directory_alloc:
         return err;
 }
@@ -406,7 +415,7 @@ multiboot_main(const struct multiboot_header *mb_header,
                 /* FIXME: abort kernel */
         }
 
-        /* Lowest 1 MiB reserved for DMA */
+        /* lowest 4 MiB reserved for DMA, kernel, etc */
         physmem_add_area(0, 1024, PHYSMEM_FLAG_RESERVED);
 
         init_physmap_kernel(mb_header);
@@ -430,13 +439,16 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* setup PIT for system timer */
 /*        pit_install(0, 20, PIT_MODE_RATEGEN);*/
 
-        if (mb_info->flags&MULTIBOOT_INFO_FLAG_MODS) {
-                load_modules(mb_info);
+        if ((err = build_init_task()) < 0) {
+                console_printf("build_init_task: %x\n", err);
+                return;
         }
-
-        err = build_init_task();
-
-        console_printf("\nbuild_init_task err=%x\n", err);
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+        if (mb_info->flags&MULTIBOOT_INFO_FLAG_MODS) {
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+                load_modules(mb_info);
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+        }
 
         return;
 

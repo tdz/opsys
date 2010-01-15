@@ -444,10 +444,112 @@ virtmem_find_empty_pages(const struct page_directory *pd,
         return 0;
 }
 
-static int
-virtmem_alloc_pages_at(struct page_directory *pd, unsigned long pgindex,
-                                                  unsigned long pgcount,
-                                                  unsigned int pteflags)
+int
+virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
+                                                     unsigned long pgindex,
+                                                     unsigned long pgcount,
+                                                     unsigned int pteflags)
+{
+        unsigned long ptindex, ptcount;
+        unsigned long i;
+        int err;
+
+        ptindex = pagetable_index(page_offset(pgindex));
+        ptcount = pagetable_count(page_offset(pgindex), page_memory(pgcount));
+
+        for (err = 0, i = 0; (i < ptcount) && !(err < 0); ++i) {
+
+                unsigned long ptpfindex;
+                unsigned long ptpgindex;
+                struct page_table *pt;
+                size_t j;
+
+                ptpfindex = pde_get_pageframe_index(pd->entry[ptindex+i]);
+
+                if (!ptpfindex) {
+
+                        /* allocate and map page-table page frames */
+
+                        ptpfindex = physmem_alloc_frames(
+                                pageframe_count(sizeof(struct page_table)));
+
+                        if (!ptpfindex) {
+                                err = -1;
+                                break;
+                        }
+
+                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+
+                        if (!ptpgindex) {
+                                err = -1;
+                                break;
+                        }
+
+                        /* init and install page table */
+
+                        pt = page_address(ptpgindex);
+
+                        if ((err = page_table_init(pt)) < 0) {
+                                break;
+                        }
+
+                        __asm__("mfence\n\t");
+
+                        err = page_directory_install_page_table(pd,
+                                                        ptpfindex,
+                                                        ptindex+i,
+                                                        PDE_FLAG_PRESENT|
+                                                        PDE_FLAG_WRITEABLE);
+                        if (err < 0) {
+                                break;
+                        }
+
+                        mmu_flush_tlb();
+
+                } else {
+
+                        /* map page-table page frames */
+
+                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+
+                        if (!ptpgindex) {
+                                err = -1;
+                                break;
+                        }
+
+                        pt = page_address(ptpgindex);
+                }
+
+                /* allocate pages within page table */
+
+                __asm__("mfence\n\t");
+
+                for (j = pagetable_page_index(pgindex);
+                     pgcount
+                     && (j < sizeof(pt->entry)/sizeof(pt->entry[0]))
+                     && !(err < 0);
+                   --pgcount, ++j, ++pgindex, ++pfindex) {
+                        err = page_table_map_page_frame(pt,
+                                                        pfindex, j,
+                                                        pteflags);
+                        if (err < 0) {
+                                break;
+                        }
+                }
+
+                /* unmap page table */
+                virtmem_uninstall_page_tmp(ptpgindex);
+        }
+
+        mmu_flush_tlb();
+
+        return err;
+}
+
+int
+virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
+                                               unsigned long pgcount,
+                                               unsigned int pteflags)
 {
         unsigned long ptindex, ptcount;
         unsigned long i;
@@ -567,7 +669,7 @@ virtmem_alloc_pages_in_area(struct page_directory *pd, unsigned long npages,
                 goto err_page_directory_find_empty_pages;
         }
 
-        err = virtmem_alloc_pages_at(pd, pgindex, npages, pteflags);
+        err = virtmem_alloc_pages(pd, pgindex, npages, pteflags);
 
         if (err < 0) {
                 goto err_page_directory_alloc_pages_at;

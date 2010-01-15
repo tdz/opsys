@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,14 +26,19 @@ _start:
         .align 4
 
 multiboot_header:
-        .long 0x1BADB002 # MULTIBOOT_HEADER_MAGIC
-        .long 0x00000003 # MULTIBOOT_HEADER_FLAGS
-        .long -(0x1BADB002+0x00000003)
+        .long 0x1badb002 /* MULTIBOOT_HEADER_MAGIC */
+        .long 0x00000003 /* MULTIBOOT_HEADER_FLAG_ALIGNED|
+                            MULTIBOOT_HEADER_FLAG_MEMINFO */
+        .long -(0x1badb002+0x00000003)
         .long multiboot_header
         .long _start
         .long _edata
         .long _end
         .long multiboot_entry
+        .long 1
+        .long 80
+        .long 50
+        .long 0
 
 multiboot_entry:
 	movl $(stack+4096), %esp
@@ -41,7 +46,7 @@ multiboot_entry:
 	pushl $0
 	popf
 
-        # Call C main function for multiboot
+        /* call C main function for multiboot */
 
 	pushl %ebx
 	pushl $multiboot_header

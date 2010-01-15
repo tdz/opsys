@@ -1,6 +1,6 @@
 /*
  *  oskernel - A small experimental operating-system kernel
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,6 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+enum {
+        MULTIBOOT_HEADER_MAGIC = 0x1badb002
+};
+
+enum {
+        MULTIBOOT_HEADER_FLAG_ALIGNED = 1<<0,
+        MULTIBOOT_HEADER_FLAG_MEMINFO = 1<<1,
+        MULTIBOOT_HEADER_FLAG_VIDMODE = 1<<2,
+        MULTIBOOT_HEADER_FLAG_BINAOUT = 1<<16
+};
+
 struct multiboot_header
 {
         unsigned long magic;
@@ -26,6 +37,10 @@ struct multiboot_header
         unsigned long load_end_addr;
         unsigned long bss_end_addr;
         unsigned long entry_addr;
+        unsigned long mode_type;
+        unsigned long width;
+        unsigned long height;
+        unsigned long depth;
 };
 
 struct aout_symbol_table

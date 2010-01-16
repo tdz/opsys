@@ -3,7 +3,7 @@ SRCDIR = src
 
 .PHONY = all clean image
 
-all:
+all: clean
 	$(MAKE) -C $(SRCDIR) all
 
 clean:

@@ -17,6 +17,7 @@
  */
 
 #include "stddef.h"
+#include "errno.h"
 #include "types.h"
 #include "multiboot.h"
 #include "console.h"
@@ -345,7 +346,7 @@ build_init_task(void)
          */
 
         if ( !(task = task_lookup(0)) ) {
-                err = -1;
+                err = -ENOMEM;
                 goto err_task_lookup;
         }
 
@@ -353,7 +354,7 @@ build_init_task(void)
         /* FIXME: do this in virtual memory */
         if (!physmem_alloc_frames_at(pageframe_index((unsigned long)task),
                                      pageframe_count(sizeof(*task)))) {
-                err = -1;
+                err = -ENOMEM;
                 goto err_task_alloc;
         }
 
@@ -369,7 +370,7 @@ build_init_task(void)
         tcb = task_get_tcb(task, 0);
 
         if (!tcb) {
-                err = -1;
+                err = -ENOMEM;
                 goto err_task_get_thread;
         }
 

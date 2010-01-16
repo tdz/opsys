@@ -16,8 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "stddef.h"
 #include "types.h"
+#include "errno.h"
+#include "stddef.h"
 #include "minmax.h"
 #include "string.h"
 #include "pageframe.h"
@@ -80,7 +81,7 @@ virtmem_map_page_frame_at_nopg(struct page_directory *pd,
 
         if (!pt) {
                 /* no page table present */
-                err = -2;
+                err = -ENOMEM;
                 goto err_nopagetable;
         }
 
@@ -127,7 +128,7 @@ virtmem_alloc_page_table_nopg(struct page_directory *pd, unsigned long ptindex,
         pfindex = physmem_alloc_frames(pageframe_count(sizeof(struct page_table)));
 
         if (!pfindex) {
-                err = -1;
+                err = -ENOMEM;
                 goto err_physmem_alloc_frames;
         }
 
@@ -474,7 +475,7 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
                                 pageframe_count(sizeof(struct page_table)));
 
                         if (!ptpfindex) {
-                                err = -1;
+                                err = -ENOMEM;
                                 break;
                         }
 
@@ -575,14 +576,14 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                                 pageframe_count(sizeof(struct page_table)));
 
                         if (!ptpfindex) {
-                                err = -1;
+                                err = -ENOMEM;
                                 break;
                         }
 
                         ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
 
                         if (!ptpgindex) {
-                                err = -1;
+                                err = -EBUSY;
                                 break;
                         }
 
@@ -614,7 +615,7 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                         ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
 
                         if (!ptpgindex) {
-                                err = -1;
+                                err = -EBUSY;
                                 break;
                         }
 
@@ -665,7 +666,7 @@ virtmem_alloc_pages_in_area(struct page_directory *pd, unsigned long npages,
         pgindex = virtmem_find_empty_pages(pd, npages, area->pgindex,
                                                        area->npages);
         if (!pgindex) {
-                err = -1;
+                err = -ENOMEM;
                 goto err_page_directory_find_empty_pages;
         }
 

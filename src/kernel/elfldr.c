@@ -18,6 +18,7 @@
 
 #include <elf.h>
 #include "types.h"
+#include "errno.h"
 
 #include "pageframe.h"
 
@@ -111,7 +112,7 @@ elf_exec(struct page_directory *pd, const unsigned char *elfimg)
             (elf_ehdr->e_version != EV_CURRENT) ||
             (!elf_ehdr->e_entry) ||
             (!elf_ehdr->e_phoff)) {
-                return -1;
+                return -ENOEXEC;
         }
 
         /* construct sections from program headers */

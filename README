@@ -8,6 +8,6 @@ or at 'http://www.gnu.org/licenses/gpl.html'.
 
 The file `res/genimage/opsyshdd.img.base' contains binary code of the GNU
 GRand Unified Bootloader (GRUB). GRUB is free software under the terms of
-the GNU General Public License, version 2 or later. For more inforamtion
+the GNU General Public License, version 2 or later. For more information
 about GRUB, have a look at 'http://www.gnu.org/software/grub/'.
 

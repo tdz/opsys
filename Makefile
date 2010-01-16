@@ -1,14 +1,11 @@
 
-KERNELDIR = kernel
-APPSDIR = apps
+SRCDIR = src
 
-.PHONY = all clean kernel apps
+.PHONY = all clean
 
 all:
-	$(MAKE) -C $(KERNELDIR) all
-	$(MAKE) -C $(APPSDIR) all
+	$(MAKE) -C $(SRCDIR) all
 
 clean:
-	$(MAKE) -C $(KERNELDIR) clean
-	$(MAKE) -C $(APPSDIR) clean
+	$(MAKE) -C $(SRCDIR) clean
 

@@ -40,10 +40,8 @@ clean :
 	rm -fr oskernel
 	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 
-
-oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+oskernel : clean $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	ld $(LDFLAGS) -melf_i386 -Ttext=$(RELOC_ADDR) -o $@ $?
-
 
 %.S.o : %.S
 	as $(ASFLAGS) -march=$(ARCH) -o $@ $<

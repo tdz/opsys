@@ -414,6 +414,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 init_physmem(mb_header, mb_info);
         } else {
                 /* FIXME: abort kernel */
+                console_printf("no memory information given.\n");
+                return;
         }
 
         /* lowest 4 MiB reserved for DMA, kernel, etc */

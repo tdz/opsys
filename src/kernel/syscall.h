@@ -1,5 +1,5 @@
 /*
- *  oskernel - A small experimental operating-system kernel
+ *  opsys - A small, experimental operating system
  *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -16,11 +16,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+enum {
+        SYSCALL_TASK_QUIT = 0,
+        SYSCALL_CRT_WRITE,
+        SYSCALL_CRT_GETSIZE,
+        SYSCALL_CRT_GETPOS,
+        SYSCALL_CRT_SETPOS
+};
+
+int
+syscall_task_quit(void);
+
 int
 syscall_crt_write(const void *buf, unsigned long count, unsigned char attr);
 
 int
-syscall_crt_getmaxpos(unsigned short *row, unsigned short *col);
+syscall_crt_getsize(unsigned short *row, unsigned short *col);
 
 int
 syscall_crt_getpos(unsigned short *row, unsigned short *col);

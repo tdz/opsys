@@ -1,5 +1,5 @@
 /*
- *  oskernel - A small experimental operating-system kernel
+ *  opsys - A small, experimental operating system
  *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify

@@ -1,5 +1,5 @@
 /*
- *  oskernel - A small experimental operating-system kernel
+ *  opsys - A small, experimental operating system
  *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -19,6 +19,12 @@
 #include "types.h"
 #include "syscall.h"
 #include "crt.h"
+
+int
+syscall_task_quit()
+{
+
+}
 
 int
 syscall_crt_write(const void *buf, unsigned long count, unsigned char attr)

@@ -22,7 +22,7 @@
 #include "console.h"
 #include "gdt.h"
 #include "idt.h"
-#include "intrrupt.h"
+#include "interupt.h"
 #include "pit.h"
 #include "pageframe.h"
 #include "physmem.h"

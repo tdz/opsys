@@ -19,7 +19,7 @@
 #include "types.h"
 #include "syscall.h"
 #include "idt.h"
-#include "intrrupt.h"
+#include "interupt.h"
 
 enum {
         IDT_FLAG_SEGINMEM = 0x80,
@@ -113,15 +113,15 @@ default_handler(unsigned long eip,
                 unsigned long cs,
                 unsigned long eflags)
 {
-        console_printf("unknown interrupt eip=%x cs=%x eflags=%x\n", eip,
-                                                                     cs,
-                                                                     eflags);
+        console_printf("unknown interupt eip=%x cs=%x eflags=%x\n", eip,
+                                                                    cs,
+                                                                    eflags);
 }
 
 void
-unhandled_interrupt_handler(unsigned long eip,
-                            unsigned long cs,
-                            unsigned long eflags)
+unhandled_interupt_handler(unsigned long eip,
+                           unsigned long cs,
+                           unsigned long eflags)
 {
         console_printf("unhandled exception eip=%x cs=%x eflags=%x\n", eip,
                                                                        cs,
@@ -150,38 +150,48 @@ invalid_opcode_handler(unsigned long eip,
                                                                   eflags);
 }
 
-void handle_interrupt0(void);
-void handle_interrupt1(void);
-void handle_interrupt2(void);
-void handle_interrupt3(void);
-void handle_interrupt4(void);
-void handle_interrupt5(void);
-void handle_interrupt6(void);
-void handle_interrupt7(void);
-void handle_interrupt8(void);
-void handle_interrupt9(void);
-void handle_interrupt10(void);
-void handle_interrupt11(void);
-void handle_interrupt12(void);
-void handle_interrupt13(void);
-void handle_interrupt14(void);
-void handle_interrupt15(void);
-void handle_interrupt16(void);
-void handle_interrupt17(void);
-void handle_interrupt18(void);
-void handle_interrupt19(void);
-void handle_interrupt20(void);
-void handle_interrupt21(void);
-void handle_interrupt22(void);
-void handle_interrupt23(void);
-void handle_interrupt24(void);
-void handle_interrupt25(void);
-void handle_interrupt26(void);
-void handle_interrupt27(void);
-void handle_interrupt28(void);
-void handle_interrupt29(void);
-void handle_interrupt30(void);
-void handle_interrupt31(void);
+void
+syscall_handler(unsigned long eip,
+                unsigned long cs,
+                unsigned long eflags)
+{
+        console_printf("system call eip=%x cs=%x eflags=%x\n", eip,
+                                                                     cs,
+                                                                     eflags);
+}
+
+void handle_interupt0(void);
+void handle_interupt1(void);
+void handle_interupt2(void);
+void handle_interupt3(void);
+void handle_interupt4(void);
+void handle_interupt5(void);
+void handle_interupt6(void);
+void handle_interupt7(void);
+void handle_interupt8(void);
+void handle_interupt9(void);
+void handle_interupt10(void);
+void handle_interupt11(void);
+void handle_interupt12(void);
+void handle_interupt13(void);
+void handle_interupt14(void);
+void handle_interupt15(void);
+void handle_interupt16(void);
+void handle_interupt17(void);
+void handle_interupt18(void);
+void handle_interupt19(void);
+void handle_interupt20(void);
+void handle_interupt21(void);
+void handle_interupt22(void);
+void handle_interupt23(void);
+void handle_interupt24(void);
+void handle_interupt25(void);
+void handle_interupt26(void);
+void handle_interupt27(void);
+void handle_interupt28(void);
+void handle_interupt29(void);
+void handle_interupt30(void);
+void handle_interupt31(void);
 
 void handle_irq0(void);
 void handle_irq1(void);
@@ -200,8 +210,10 @@ void handle_irq13(void);
 void handle_irq14(void);
 void handle_irq15(void);
 
-void handle_unknown_interrupt(void);
-void handle_invalid_opcode_interrupt(void);
+void handle_interupt128(void);
+
+void handle_unknown_interupt(void);
+void handle_invalid_opcode_interupt(void);
 
 static struct idt_entry g_idt[256];
 
@@ -218,45 +230,45 @@ idt_init(void)
         size_t i;
 
         for (i = 0; i < sizeof(g_idt)/sizeof(g_idt[0]); ++i) {
-                IDT_ENTRY_INIT(i, handle_unknown_interrupt);
+                IDT_ENTRY_INIT(i, handle_unknown_interupt);
         }
 
-        /* System interrupts */
+        /* System interupts */
 
-        IDT_ENTRY_INIT(0x00, handle_interrupt0);
-        IDT_ENTRY_INIT(0x01, handle_interrupt1);
-        IDT_ENTRY_INIT(0x02, handle_interrupt2);
-        IDT_ENTRY_INIT(0x03, handle_interrupt3);
-        IDT_ENTRY_INIT(0x04, handle_interrupt4);
-        IDT_ENTRY_INIT(0x05, handle_interrupt5);
-        IDT_ENTRY_INIT(0x06, handle_interrupt6);
-        IDT_ENTRY_INIT(0x07, handle_interrupt7);
-        IDT_ENTRY_INIT(0x08, handle_interrupt8);
-        IDT_ENTRY_INIT(0x09, handle_interrupt9);
-        IDT_ENTRY_INIT(0x0a, handle_interrupt10);
-        IDT_ENTRY_INIT(0x0b, handle_interrupt11);
-        IDT_ENTRY_INIT(0x0c, handle_interrupt12);
-        IDT_ENTRY_INIT(0x0d, handle_interrupt13);
-        IDT_ENTRY_INIT(0x0e, handle_interrupt14);
-        IDT_ENTRY_INIT(0x0f, handle_interrupt15);
-        IDT_ENTRY_INIT(0x10, handle_interrupt16);
-        IDT_ENTRY_INIT(0x11, handle_interrupt17);
-        IDT_ENTRY_INIT(0x12, handle_interrupt18);
-        IDT_ENTRY_INIT(0x13, handle_interrupt19);
-        IDT_ENTRY_INIT(0x14, handle_interrupt20);
-        IDT_ENTRY_INIT(0x15, handle_interrupt21);
-        IDT_ENTRY_INIT(0x16, handle_interrupt22);
-        IDT_ENTRY_INIT(0x17, handle_interrupt23);
-        IDT_ENTRY_INIT(0x18, handle_interrupt24);
-        IDT_ENTRY_INIT(0x19, handle_interrupt25);
-        IDT_ENTRY_INIT(0x1a, handle_interrupt26);
-        IDT_ENTRY_INIT(0x1b, handle_interrupt27);
-        IDT_ENTRY_INIT(0x1c, handle_interrupt28);
-        IDT_ENTRY_INIT(0x1d, handle_interrupt29);
-        IDT_ENTRY_INIT(0x1e, handle_interrupt30);
-        IDT_ENTRY_INIT(0x1f, handle_interrupt31);
+        IDT_ENTRY_INIT(0x00, handle_interupt0);
+        IDT_ENTRY_INIT(0x01, handle_interupt1);
+        IDT_ENTRY_INIT(0x02, handle_interupt2);
+        IDT_ENTRY_INIT(0x03, handle_interupt3);
+        IDT_ENTRY_INIT(0x04, handle_interupt4);
+        IDT_ENTRY_INIT(0x05, handle_interupt5);
+        IDT_ENTRY_INIT(0x06, handle_interupt6);
+        IDT_ENTRY_INIT(0x07, handle_interupt7);
+        IDT_ENTRY_INIT(0x08, handle_interupt8);
+        IDT_ENTRY_INIT(0x09, handle_interupt9);
+        IDT_ENTRY_INIT(0x0a, handle_interupt10);
+        IDT_ENTRY_INIT(0x0b, handle_interupt11);
+        IDT_ENTRY_INIT(0x0c, handle_interupt12);
+        IDT_ENTRY_INIT(0x0d, handle_interupt13);
+        IDT_ENTRY_INIT(0x0e, handle_interupt14);
+        IDT_ENTRY_INIT(0x0f, handle_interupt15);
+        IDT_ENTRY_INIT(0x10, handle_interupt16);
+        IDT_ENTRY_INIT(0x11, handle_interupt17);
+        IDT_ENTRY_INIT(0x12, handle_interupt18);
+        IDT_ENTRY_INIT(0x13, handle_interupt19);
+        IDT_ENTRY_INIT(0x14, handle_interupt20);
+        IDT_ENTRY_INIT(0x15, handle_interupt21);
+        IDT_ENTRY_INIT(0x16, handle_interupt22);
+        IDT_ENTRY_INIT(0x17, handle_interupt23);
+        IDT_ENTRY_INIT(0x18, handle_interupt24);
+        IDT_ENTRY_INIT(0x19, handle_interupt25);
+        IDT_ENTRY_INIT(0x1a, handle_interupt26);
+        IDT_ENTRY_INIT(0x1b, handle_interupt27);
+        IDT_ENTRY_INIT(0x1c, handle_interupt28);
+        IDT_ENTRY_INIT(0x1d, handle_interupt29);
+        IDT_ENTRY_INIT(0x1e, handle_interupt30);
+        IDT_ENTRY_INIT(0x1f, handle_interupt31);
 
-        /* hardware interrupts */
+        /* hardware interupts */
 
         IDT_ENTRY_INIT(0x20, handle_irq0);
         IDT_ENTRY_INIT(0x21, handle_irq1);
@@ -274,6 +286,8 @@ idt_init(void)
         IDT_ENTRY_INIT(0x2d, handle_irq13);
         IDT_ENTRY_INIT(0x2e, handle_irq14);
         IDT_ENTRY_INIT(0x2f, handle_irq15);
+
+        IDT_ENTRY_INIT(0x80, handle_interupt128);
 }
 
 struct idt_register

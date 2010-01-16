@@ -16,24 +16,24 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "intrrupt.h"
+#include "interupt.h"
 #include "ioports.h"
 
-/* clear interrupts */
+/* clear interupts */
 void
 cli()
 {
         __asm__("cli\n\t");
 }
 
-/* set interrupts */
+/* set interupts */
 void
 sti()
 {
         __asm__("sti\n\t");
 }
 
-/* signal end of interrupt to PIC */
+/* signal end of interupt to PIC */
 void
 eoi(unsigned char intno)
 {

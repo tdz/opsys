@@ -17,7 +17,7 @@ CSOURCES = console.c \
            elfldr.c \
            gdt.c \
            idt.c \
-           intrrupt.c \
+           interupt.c \
            ioports.c \
            multiboot.c \
            physmem.c \

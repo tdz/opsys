@@ -20,6 +20,7 @@
 #include "errno.h"
 #include "stddef.h"
 #include "minmax.h"
+#include "membar.h"
 #include "string.h"
 #include "pageframe.h"
 #include "physmem.h"
@@ -316,8 +317,6 @@ virtmem_install_page_frame_tmp(unsigned long pfindex)
 
         physmem_ref_frames(pfindex, 1);
 
-        __asm__("mfence\n\t");
-
         *pte = pte_create(pfindex, PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
 
         pgindex = virtmem_get_page_tmp(pte-ptebeg);
@@ -343,7 +342,8 @@ virtmem_uninstall_page_tmp(unsigned long pgindex)
 
         index = virtmem_get_index_tmp(pgindex);
 
-        __asm__("mfence\n\t");
+        /* finish access before unmapping page */
+        rwmembar();
 
         /* remove mapping */
         if ((err = page_table_unmap_page_frame(pt, index)) < 0) {
@@ -494,8 +494,6 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
                                 break;
                         }
 
-                        __asm__("mfence\n\t");
-
                         err = page_directory_install_page_table(pd,
                                                         ptpfindex,
                                                         ptindex+i,
@@ -522,8 +520,6 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
                 }
 
                 /* allocate pages within page table */
-
-                __asm__("mfence\n\t");
 
                 for (j = pagetable_page_index(pgindex);
                      pgcount
@@ -595,8 +591,6 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                                 break;
                         }
 
-                        __asm__("mfence\n\t");
-
                         err = page_directory_install_page_table(pd,
                                                         ptpfindex,
                                                         ptindex+i,
@@ -623,8 +617,6 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                 }
 
                 /* allocate pages within page table */
-
-                __asm__("mfence\n\t");
 
                 for (j = pagetable_page_index(pgindex);
                      pgcount

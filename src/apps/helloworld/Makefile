@@ -1,13 +1,10 @@
 
-ARCH = i386
+topdir = ../../..
+include ../../variables.mk
+include ../../flags.mk
 
-CFLAGS = -m32 -I../../kernel
-
-ASFLAGS = --32
-
-LDFLAGS = -nostdlib -static
-
-RELOC_ADDR = 0x2000000
+include ../variables.mk
+include ../flags.mk
 
 ASMSOURCES = start.S
 
@@ -21,14 +18,8 @@ clean :
 	rm -fr helloworld
 	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 
-
 helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -melf_i386 -Ttext=$(RELOC_ADDR) -o $@ $?
+	ld $(LDFLAGS) -o $@ $?
 
-
-%.S.o : %.S
-	as $(ASFLAGS) -march=$(ARCH) -o $@ $<
-
-%.o : %.c
-	gcc $(CFLAGS) -march=$(ARCH) -c -o $@ $<
+include ../../rules.mk
 

@@ -1,13 +1,10 @@
 
-ARCH = i386
+topdir = ../..
+include ../variables.mk
+include ../flags.mk
 
-CFLAGS = -m32 -Wall -ansi
-
-ASFLAGS = --32
-
-LDFLAGS = -nostdlib -static
-
-RELOC_ADDR = 0x100000
+# kernel resides at 1 MiB
+reloc_addr = 0x100000
 
 ASMSOURCES = idt.S \
              multiboot.S
@@ -32,6 +29,8 @@ CSOURCES = console.c \
            tcb.c \
            virtmem.c
 
+LDFLAGS += -Ttext=$(reloc_addr)
+
 .PHONY : all clean
 
 all : oskernel
@@ -41,11 +40,7 @@ clean :
 	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -melf_i386 -Ttext=$(RELOC_ADDR) -o $@ $?
+	ld $(LDFLAGS) -o $@ $?
 
-%.S.o : %.S
-	as $(ASFLAGS) -march=$(ARCH) -o $@ $<
-
-%.o : %.c
-	gcc $(CFLAGS) -march=$(ARCH) -c -o $@ $<
+include ../rules.mk
 

@@ -11,6 +11,8 @@ include ../flags.mk
 
 CSOURCES = main.c
 
+CPPFLAGS += -I$(includedir)/opsys
+
 .PHONY : all clean
 
 all : helloworld

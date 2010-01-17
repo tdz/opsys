@@ -10,6 +10,8 @@ ASMSOURCES = start.S
 
 CSOURCES = syscall.c
 
+CPPFLAGS += -I$(includedir)/opsys
+
 .PHONY : all clean
 
 all : libopsys.a

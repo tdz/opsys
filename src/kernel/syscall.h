@@ -28,7 +28,7 @@ int
 syscall_task_quit(void);
 
 int
-syscall_crt_write(const void *buf, unsigned long count, unsigned char attr);
+syscall_crt_write(const char *buf, size_t buflen, unsigned char attr);
 
 int
 syscall_crt_getsize(unsigned short *row, unsigned short *col);

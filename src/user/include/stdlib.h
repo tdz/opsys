@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,21 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-.text
+#ifndef STDLIB_H
+#define STDLIB_H
 
-.global _start
-.global exit
+void
+exit(int status) __attribute__((noreturn));
 
-_start:
-/*        int $0x80
-        ret*/
-        pushl $0 /* TODO: push argv */
-        pushl $0 /* TODO: push argc */
-        call main
-        pushl %eax /* push exit status */
-exit:
-        /* when we call here, the exit status should be on the stack already */
-        pushl $0 /* push exit system-call number */
-        int $0x80
-        ret
+#endif
 

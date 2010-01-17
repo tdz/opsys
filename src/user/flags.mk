@@ -1,5 +1,5 @@
 
 # some default flags needed in all makefiles
 
-CPPFLAGS += -I$(srcdir)/kernel
+CPPFLAGS += -I$(srcdir)/kernel -I$(includedir)
 

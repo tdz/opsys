@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,21 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-.text
+#ifndef STDARG_H
+#define STDARG_H
 
-.global _start
-.global exit
+#define va_list                 void*
 
-_start:
-/*        int $0x80
-        ret*/
-        pushl $0 /* TODO: push argv */
-        pushl $0 /* TODO: push argc */
-        call main
-        pushl %eax /* push exit status */
-exit:
-        /* when we call here, the exit status should be on the stack already */
-        pushl $0 /* push exit system-call number */
-        int $0x80
-        ret
+#define va_start(__ap, __arg)   ((__ap) = ((char*)&(__arg))+sizeof(__arg))
+
+#define va_arg(__ap, __type)    (*((__type*)(__ap)));   \
+                                {char *cp = (__ap);     \
+                                 cp += sizeof(__type);  \
+                                 (__ap) = cp;}
+
+#define va_end(__ap)
+
+#endif
 

@@ -17,16 +17,13 @@
  */
 
 #include <types.h>
-
-void exit(int) __attribute__((noreturn));
-
-void
-crt_write(const char *str, size_t len);
+#include <stdlib.h>
+#include <syscall.h>
 
 int
 main(int argc, char **argv)
 {
-        crt_write("Hello world", 11);
+        syscall_crt_write("Hello world", 11, 0);
 
         exit(0);
 }

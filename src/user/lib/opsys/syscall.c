@@ -17,16 +17,20 @@
  */
 
 #include <types.h>
+#include <syscall.h>
 
-void
-crt_write(const char *str, size_t len)
+int
+syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
 {
-        __asm__("pushl %1\n\t" /* push len */
-                "pushl %0\n\t" /* push str */
+        __asm__("pushl %2\n\t" /* push attr */
+                "pushl %1\n\t" /* push buflen */
+                "pushl %0\n\t" /* push buf */
                 "pushl $1\n\t" /* push syscall number */
                 "int $0x80\n\t"
                 "addl $12, %%esp\n\t" /* restore stack pointer */
                         :
-                        : "r"(str), "r"(len));
+                        : "r"(buf), "r"(buflen), "r"((int)attr));
+
+        return 0;
 }
 

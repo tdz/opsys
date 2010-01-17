@@ -3,3 +3,5 @@
 
 libdir = $(srcdir)/user/lib
 
+includedir = $(srcdir)/user/include
+

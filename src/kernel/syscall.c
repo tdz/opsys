@@ -27,7 +27,7 @@ syscall_task_quit()
 }
 
 int
-syscall_crt_write(const void *buf, unsigned long count, unsigned char attr)
+syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
 {
         unsigned short row, col;
         volatile unsigned char *vidmem;
@@ -35,7 +35,7 @@ syscall_crt_write(const void *buf, unsigned long count, unsigned char attr)
         crt_getpos(&row, &col);
         vidmem = crt_getaddress(row, col);
 
-        return crt_write(vidmem, buf, (size_t)count, attr);
+        return crt_write(vidmem, buf, buflen, attr);
 }
 
 int

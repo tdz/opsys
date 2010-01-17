@@ -156,8 +156,8 @@ syscall_handler(unsigned long eip,
                 unsigned long eflags)
 {
         console_printf("system call eip=%x cs=%x eflags=%x\n", eip,
-                                                                     cs,
-                                                                     eflags);
+                                                               cs,
+                                                               eflags);
 }
 
 void handle_interupt0(void);

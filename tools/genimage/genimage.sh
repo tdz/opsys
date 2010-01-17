@@ -41,7 +41,7 @@ mount -oloop,offset=32256 $imgfile $imgpath || exit 1
 
 cp $basedir/menu.lst $imgpath/boot/grub/
 cp $srcdir/kernel/oskernel $imgpath/
-cp $srcdir/apps/helloworld/helloworld $imgpath/
+cp $srcdir/user/apps/helloworld/helloworld $imgpath/
 
 umount $imgpath && rm -fr $imgpath
 

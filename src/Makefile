@@ -1,17 +1,14 @@
 
 KERNELDIR = kernel
-LIBDIR = lib
-APPSDIR = apps
+USERDIR = user
 
 .PHONY = all clean
 
 all:
 	$(MAKE) -C $(KERNELDIR) all
-	$(MAKE) -C $(LIBDIR) all
-	$(MAKE) -C $(APPSDIR) all
+	$(MAKE) -C $(USERDIR) all
 
 clean:
 	$(MAKE) -C $(KERNELDIR) clean
-	$(MAKE) -C $(LIBDIR) clean
-	$(MAKE) -C $(APPSDIR) clean
+	$(MAKE) -C $(USERDIR) clean
 

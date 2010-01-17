@@ -3,5 +3,3 @@
 
 CPPFLAGS += -I$(srcdir)/kernel
 
-LDFLAGS += -Ttext=$(reloc_addr)
-

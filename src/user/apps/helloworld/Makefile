@@ -1,12 +1,13 @@
 
-topdir = ../../..
+topdir = ../../../..
+include ../../../variables.mk
+include ../../../flags.mk
+
 include ../../variables.mk
 include ../../flags.mk
 
 include ../variables.mk
 include ../flags.mk
-
-ASMSOURCES = start.S
 
 CSOURCES = main.c
 
@@ -19,7 +20,7 @@ clean :
 	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 
 helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -o $@ $?
+	ld $(LDFLAGS) -o $@ $? $(LDADD)
 
-include ../../rules.mk
+include ../../../rules.mk
 

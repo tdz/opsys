@@ -16,43 +16,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "syscall.h"
-#include "crt.h"
+#include <types.h>
 
-int
-syscall_task_quit()
+void
+crt_write(const char *str, size_t len)
 {
-        return 0;
-}
-
-int
-syscall_crt_write(const void *buf, unsigned long count, unsigned char attr)
-{
-        unsigned short row, col;
-        volatile unsigned char *vidmem;
-
-        crt_getpos(&row, &col);
-        vidmem = crt_getaddress(row, col);
-
-        return crt_write(vidmem, buf, (size_t)count, attr);
-}
-
-int
-syscall_crt_getmaxpos(unsigned short *row, unsigned short *col)
-{
-        return 0;
-}
-
-int
-syscall_crt_getpos(unsigned short *row, unsigned short *col)
-{
-        return 0;
-}
-
-int
-syscall_crt_setpos(unsigned short row, unsigned short col)
-{
-        return 0;
+        __asm__("pushl %1\n\t" /* push len */
+                "pushl %0\n\t" /* push str */
+                "pushl $1\n\t" /* push syscall number */
+                "int $0x80\n\t"
+                "addl $12, %%esp\n\t" /* restore stack pointer */
+                        :
+                        : "r"(str), "r"(len));
 }
 

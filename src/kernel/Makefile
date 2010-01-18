@@ -3,19 +3,13 @@ topdir = ../..
 include ../variables.mk
 include ../flags.mk
 
-# kernel resides at 1 MiB
-reloc_addr = 0x100000
+archdir = ./arch
 
-ASMSOURCES = idt.S \
-             multiboot.S
+ASMSOURCES =
 
 CSOURCES = console.c \
            crt.c \
            elfldr.c \
-           gdt.c \
-           idt.c \
-           interupt.c \
-           ioports.c \
            multiboot.c \
            physmem.c \
            pagedir.c \
@@ -29,18 +23,23 @@ CSOURCES = console.c \
            tcb.c \
            virtmem.c
 
-LDFLAGS += -Ttext=$(reloc_addr)
+LDFLAGS += -Ttext=$(reloc_addr) -L$(archdir)/$(target_cpu)
+
+CPPFLAGS += -I$(archdir)/$(target_cpu)
 
 .PHONY : all clean
 
-all : oskernel
+all : libkernel.a
+	make -C $(archdir) all
 
 clean :
-	rm -fr oskernel
+	make -C $(archdir) clean
+	rm -fr libkernel.a
 	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 
-oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -o $@ $?
+libkernel.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+	ar rcs $@ $?
+	ranlib $@
 
 include ../rules.mk
 

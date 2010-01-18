@@ -21,10 +21,13 @@
 imgfile=opsyshdd.img
 basedir=$PWD
 srcdir=$PWD
+arch=`uname -m`
 
 while [ $# -gt 0 ]
 do
         case "$1" in
+                -a) arch="$2"
+                        ;;
                 -b) basedir="$2"
                         ;;
                 -i) imagefile="$2"
@@ -40,7 +43,7 @@ imgpath=`mktemp -td genimage.XXXXXXXXXX` || exit 1
 mount -oloop,offset=32256 $imgfile $imgpath || exit 1
 
 cp $basedir/menu.lst $imgpath/boot/grub/
-cp $srcdir/kernel/oskernel $imgpath/
+cp $srcdir/kernel/arch/$arch/oskernel $imgpath/
 cp $srcdir/user/apps/helloworld/helloworld $imgpath/
 
 umount $imgpath && rm -fr $imgpath

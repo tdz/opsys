@@ -34,7 +34,9 @@
 #include "tcb.h"
 #include "task.h"
 
-#define MAXTASK 1024
+enum {
+        MAXTASK = 1024
+};
 
 const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
         {/* low kernel virtual memory: <4 MiB */

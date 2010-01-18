@@ -58,8 +58,9 @@ find_unused_area(const struct multiboot_header *mb_header,
         unsigned long pfoffset;
 
         kernel_pfindex = pageframe_index(mb_header->load_addr);
-        kernel_nframes = pageframe_count(mb_header->bss_end_addr -
-                                         mb_header->load_addr);
+        kernel_nframes = pageframe_span(mb_header->load_addr,
+                                        mb_header->bss_end_addr -
+                                        mb_header->load_addr+1);
 
         mmap_addr = mb_info->mmap_addr;
 
@@ -145,15 +146,18 @@ static int
 init_physmem(const struct multiboot_header *mb_header,
              const struct multiboot_info *mb_info)
 {
-        unsigned long physmap, nframes;
+        unsigned long physmap, pfcount;
 
-        nframes = pageframe_count((mb_info->mem_upper+1)<<10);
-        physmap = find_unused_area(mb_header, mb_info, nframes>>PAGEFRAME_SHIFT);
+        pfcount = pageframe_count((mb_info->mem_upper+1)<<10);
+
+        physmap = find_unused_area(mb_header,
+                                   mb_info,
+                                   pfcount>>PAGEFRAME_SHIFT);
 
         console_printf("found phymap area at %x\n", (unsigned long)physmap);
 
         /* init memory manager */
-        return physmem_init(physmap, nframes);
+        return physmem_init(physmap, pfcount);
 }
 
 static int
@@ -177,8 +181,6 @@ init_physmap_areas(const struct multiboot_info *mb_info)
 
         /* add memory areas */
 
-/*        console_printf("mmap_length=%x\n", mb_info->mmap_length);*/
-
         for (i = 0; i < mb_info->mmap_length;) {
                 const struct multiboot_mmap *mmap;
                 unsigned long pfindex;
@@ -193,13 +195,6 @@ init_physmap_areas(const struct multiboot_info *mb_info)
                 nframes = pageframe_count(
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
-
-/*                console_printf("%s:%x %x %x %x\n",
-                                __FILE__,
-                                __LINE__,
-                                (pgoffset<<PHYSPAGE_SHIFT),
-                                (npages<<PHYSPAGE_SHIFT),
-                                mmap->type);*/
 
                 physmem_add_area(pfindex,
                                  nframes,
@@ -228,12 +223,6 @@ init_physmap_modules(const struct multiboot_info *mb_info)
                 pfindex = pageframe_index(mod->mod_start);
                 nframes = pageframe_count(mod->mod_end-mod->mod_start);
 
-/*                console_printf("%s:%x %x %x\n",
-                                __FILE__,
-                                __LINE__,
-                                (pgoffset<<PHYSPAGE_SHIFT),
-                                (npages<<PHYSPAGE_SHIFT));*/
-
                 physmem_add_area(pfindex, nframes, PHYSMEM_FLAG_RESERVED);
         }
 
@@ -251,10 +240,6 @@ load_modules(const struct multiboot_info *mb_info)
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
                 extern struct page_directory *g_current_pd;
 
-/*                console_printf("found module at %x, size=%x\n",
-                                mod->mod_start,
-                                mod->mod_end-mod->mod_start);*/
-
                 elf_exec(g_current_pd, (const void*)mod->mod_start);
         }
 
@@ -263,11 +248,7 @@ load_modules(const struct multiboot_info *mb_info)
 
 #include "page.h"
 #include "pte.h"
-/*#include "pagetbl.h"
-#include "pde.h"
-#include "pagedir.h"*/
 #include "mmu.h"
-/*#include "virtmem.h"*/
 #include "tcb.h"
 #include "task.h"
 
@@ -446,7 +427,7 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_printf("build_init_task: %x\n", err);
                 return;
         }
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MODS) {
                 console_printf("%s:%x.\n", __FILE__, __LINE__);
                 load_modules(mb_info);

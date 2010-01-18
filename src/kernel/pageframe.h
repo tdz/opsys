@@ -47,6 +47,13 @@ pageframe_count(unsigned long bytes)
 }
 
 static __inline__ unsigned long
+pageframe_span(unsigned long addr, unsigned long bytes)
+{
+        return bytes ? 1+pageframe_index(addr+bytes-1)-pageframe_index(addr)
+                     : 0;
+}
+
+static __inline__ unsigned long
 pageframe_memory(unsigned long nframes)
 {
         return nframes*PAGEFRAME_SIZE;

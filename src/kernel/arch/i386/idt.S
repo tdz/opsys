@@ -276,6 +276,23 @@ handle_irq15:
         iret
 
 handle_interupt128:
-        call syscall_handler
+        /* read sysno from stack */
+        movl %esp, %eax
+        addl $12, %eax
+        movl (%eax), %eax
+        /* compare sysno to length of entry table */
+        cmp entry_table_length, %eax
+        jnl handle_interrupt128_err_sysno
+        /* call system-call handler */
+        movl $4, %ecx
+        mull %ecx
+        movl $entry_table, %edx
+        add %eax, %edx
+        call *(%edx)
+        iret
+handle_interrupt128_err_sysno:
+        /* invalid sysno, return -ENOSYS */
+        movl $81, %eax
+        neg %eax
         iret
 

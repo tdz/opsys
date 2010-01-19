@@ -22,15 +22,21 @@
 int
 syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
 {
-        __asm__("pushl %2\n\t" /* push attr */
-                "pushl %1\n\t" /* push buflen */
-                "pushl %0\n\t" /* push buf */
-                "pushl $1\n\t" /* push syscall number */
-                "int $0x80\n\t"
-                "addl $12, %%esp\n\t" /* restore stack pointer */
-                        :
-                        : "r"(buf), "r"(buflen), "r"((int)attr));
+        int res;
 
-        return 0;
+        __asm__("pushl %4\n\t" /* push attr */
+                "pushl %3\n\t" /* push buflen */
+                "pushl %2\n\t" /* push buf */
+                "pushl %1\n\t" /* push syscall number */
+                "int $0x80\n\t"
+                "addl $16, %%esp\n\t" /* restore stack pointer */
+                        : "=a"(res) /* save result from %eax */
+                        : "r"(SYSCALL_CRT_WRITE),
+                          "r"(buf),
+                          "r"(buflen),
+                          "r"((int)attr)
+                        : "ecx", "edx");
+
+        return res;
 }
 

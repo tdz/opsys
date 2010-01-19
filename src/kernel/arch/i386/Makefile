@@ -9,10 +9,12 @@ include ../../../flags.mk
 # kernel resides at 1 MiB
 reloc_addr = 0x100000
 
-ASMSOURCES = idt.S \
+ASMSOURCES = entry.S \
+             idt.S \
              multiboot.S
 
-CSOURCES = gdt.c \
+CSOURCES = entry.c \
+           gdt.c \
            idt.c \
            interupt.c \
            ioports.c

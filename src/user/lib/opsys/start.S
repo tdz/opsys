@@ -22,15 +22,17 @@
 .global exit
 
 _start:
-/*        int $0x80
-        ret*/
         pushl $0 /* TODO: push argv */
         pushl $0 /* TODO: push argc */
         call main
         pushl %eax /* push exit status */
 exit:
-        /* when we call here, the exit status should be on the stack already */
+        /* when we jump here, the exit status should be on the stack already */
         pushl $0 /* push exit system-call number */
-        int $0x80
-        ret
+        int $0x80 /* this never returns */
+
+/* Temporary workaround, as opsys does not yet quit tasks */
+do_hlt: 
+        hlt
+        jmp do_hlt
 

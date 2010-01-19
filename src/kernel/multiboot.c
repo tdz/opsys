@@ -240,7 +240,9 @@ load_modules(const struct multiboot_info *mb_info)
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
                 extern struct page_directory *g_current_pd;
 
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
                 elf_exec(g_current_pd, (const void*)mod->mod_start);
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
         }
 
         return 0;

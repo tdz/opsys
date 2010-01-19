@@ -150,16 +150,6 @@ invalid_opcode_handler(unsigned long eip,
                                                                   eflags);
 }
 
-void
-syscall_handler(unsigned long eip,
-                unsigned long cs,
-                unsigned long eflags)
-{
-        console_printf("system call eip=%x cs=%x eflags=%x\n", eip,
-                                                               cs,
-                                                               eflags);
-}
-
 void handle_interupt0(void);
 void handle_interupt1(void);
 void handle_interupt2(void);

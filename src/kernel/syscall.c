@@ -20,9 +20,12 @@
 #include "syscall.h"
 #include "crt.h"
 
+#include "console.h"
+
 int
 syscall_task_quit()
 {
+        console_printf("%s:%x\n", __FILE__, __LINE__);
         return 0;
 }
 
@@ -31,6 +34,8 @@ syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
 {
         unsigned short row, col;
         volatile unsigned char *vidmem;
+
+        console_printf("%s:%x\n", __FILE__, __LINE__);
 
         crt_getpos(&row, &col);
         vidmem = crt_getaddress(row, col);
@@ -41,18 +46,21 @@ syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
 int
 syscall_crt_getmaxpos(unsigned short *row, unsigned short *col)
 {
+        console_printf("%s:%x\n", __FILE__, __LINE__);
         return 0;
 }
 
 int
 syscall_crt_getpos(unsigned short *row, unsigned short *col)
 {
+        console_printf("%s:%x\n", __FILE__, __LINE__);
         return 0;
 }
 
 int
 syscall_crt_setpos(unsigned short row, unsigned short col)
 {
+        console_printf("%s:%x\n", __FILE__, __LINE__);
         return 0;
 }
 

@@ -55,11 +55,6 @@ elf_construct_phdr_load(struct page_directory *pd,
                                   PTE_FLAG_WRITEABLE|
                                   PTE_FLAG_USERMODE);
 
-        /* copy section content */
-
-/*        memcpy(elf_phdr->p_vaddr, elfimg+elf_phdr->p_offset,
-               elf_phdr->p_filesz);*/
-
         /* set remaining bytes to zero */
 
         if (elf_phdr->p_filesz < elf_phdr->p_memsz) {
@@ -133,7 +128,7 @@ elf_exec(struct page_directory *pd, const unsigned char *elfimg)
 
         console_printf("%s:%x entry point=%x.\n", __FILE__, __LINE__, elf_ehdr->e_entry);
 
-        __asm__("       call *%0\n\t"
+        __asm__("call *%0\n\t"
                         :
                         : "r"(elf_ehdr->e_entry) );
 

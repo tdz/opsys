@@ -26,5 +26,6 @@ main(int argc, char **argv)
         syscall_crt_write("Hello world", 11, 0);
 
         exit(0);
+        return 0;
 }
 

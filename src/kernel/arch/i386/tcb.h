@@ -23,18 +23,20 @@ struct tcb
         unsigned long ebx;
         unsigned long ecx;
         unsigned long edx;
+        
+        /* index registers */
         unsigned long esi;
         unsigned long edi;
         unsigned long ebp;
         unsigned long esp;
 
         /* segment registers */
-        unsigned long cs;
-        unsigned long ds;
-        unsigned long ss;
-        unsigned long es;
-        unsigned long fs;
-        unsigned long gs;
+        unsigned short cs;
+        unsigned short ds;
+        unsigned short ss;
+        unsigned short es;
+        unsigned short fs;
+        unsigned short gs;
 
         /* state registers */
         unsigned long cr0;
@@ -67,9 +69,9 @@ struct tcb
 int
 tcb_init(struct tcb *tcb);
 
-/* save CPU registers to TCB */
-int
-tcb_save(struct tcb *tcb);
+/* save CPU registers in TCB */
+void
+tcb_save(struct tcb *tcb, unsigned long ip, unsigned long eflags);
 
 /* load CPU registers from TCB */
 int

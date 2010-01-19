@@ -329,7 +329,7 @@ build_init_task(void)
          */
 
         if ( !(task = task_lookup(0)) ) {
-                err = -ENOMEM;
+                err = -EAGAIN;
                 goto err_task_lookup;
         }
 
@@ -378,7 +378,6 @@ err_virtmem_install:
 err_page_directory_init:
         physmem_unref_frames(pageframe_index((unsigned long)g_current_pd),
                              pageframe_count(sizeof(*g_current_pd)));
-err_page_directory_alloc:
         return err;
 }
 

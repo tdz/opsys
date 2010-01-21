@@ -212,3 +212,15 @@ kbd_get_scancode()
         return byte;
 }
 
+void
+kbd_irq_handler(unsigned char irqno)
+{
+        int scancode;
+
+        scancode = kbd_get_scancode();
+
+        console_printf("%s:%x: keyboard handler scancode=%x.\n", __FILE__,
+                                                                 __LINE__,
+                                                                 scancode);
+}
+

@@ -41,3 +41,15 @@ pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode)
         io_outb(0x40+(counter&0x03), (word&0xff00)>>8);
 }
 
+#include "console.h"
+
+void
+pit_irq_handler(unsigned char irqno)
+{
+        static unsigned long tickcounter = 0;
+
+/*        console_printf("%s:%x timer handler.\n", __FILE__, __LINE__);*/
+
+        ++tickcounter;
+}
+

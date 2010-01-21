@@ -66,3 +66,9 @@ unsigned long
 virtmem_lookup_physical_page(const struct page_directory *pt,
                              unsigned long virt_pgindex);
 
+void
+virtmem_segfault_handler(address_type ip);
+
+void
+virtmem_pagefault_handler(address_type ip, address_type addr);
+

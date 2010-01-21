@@ -684,3 +684,17 @@ virtmem_lookup_physical_page(const struct page_directory *pd,
         return 0;
 }
 
+#include "console.h"
+
+void
+virtmem_segfault_handler(address_type ip)
+{
+        console_printf("segmentation fault: ip=%x.\n", ip);
+}
+
+void
+virtmem_pagefault_handler(address_type ip, address_type addr)
+{
+        console_printf("page fault: ip=%x, addr=%x.\n", ip, addr);
+}
+

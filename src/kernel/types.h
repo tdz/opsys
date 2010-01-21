@@ -22,5 +22,7 @@
 typedef unsigned long size_t;
 typedef   signed long ssize_t;
 
+typedef unsigned long address_type;
+
 #endif
 

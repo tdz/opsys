@@ -25,3 +25,18 @@ idt_install(void);
 void
 idt_install_irq(void);
 
+int
+idt_install_handler(unsigned char intno, address_type handler);
+
+int
+idt_install_invalid_opcode_handler(void (*hdlr)(address_type));
+
+int
+idt_install_segfault_handler(void (*hdlr)(address_type));
+
+int
+idt_install_pagefault_handler(void (*hdlr)(address_type, address_type));
+
+int
+idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char));
+

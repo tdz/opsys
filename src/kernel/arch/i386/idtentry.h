@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,18 +16,24 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum pit_mode {
-        PIT_MODE_TERMINAL = 0x00,
-        PIT_MODE_ONESHOT  = 0x01,
-        PIT_MODE_RATEGEN  = 0x02,
-        PIT_MODE_WAVEGEN  = 0x03,
-        PIT_MODE_SWSTROBE = 0x04,
-        PIT_MODE_HWSTROBE = 0x05
+enum {
+        IDT_ENTRY_FLAG_SEGINMEM = 0x80,
+        IDT_ENTRY_FLAG_32BITINT = 0x0e,
+        IDT_ENTRY_FLAG_16BITINT = 0x06
+};
+
+struct idt_entry
+{
+        unsigned short base_low;
+        unsigned short tss;
+        unsigned char  reserved;
+        unsigned char  flags;
+        unsigned short base_high;
 };
 
 void
-pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode);
-
-void
-pit_irq_handler(unsigned char irqno);
+idt_entry_init(struct idt_entry *idte, unsigned long  func,
+                                       unsigned short tss,
+                                       unsigned char  ring,
+                                       unsigned char  flags);
 

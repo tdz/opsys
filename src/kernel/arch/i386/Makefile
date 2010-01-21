@@ -16,6 +16,7 @@ ASMSOURCES = entry.S \
 CSOURCES = entry.c \
            gdt.c \
            idt.c \
+           idtentry.c \
            interupt.c \
            ioports.c \
            tcb.c

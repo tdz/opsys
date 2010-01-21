@@ -282,6 +282,9 @@ build_init_task(void)
                 goto err_virtmem_install;
         }
 
+        idt_install_segfault_handler(virtmem_segfault_handler);
+        idt_install_pagefault_handler(virtmem_pagefault_handler);
+
         /* enable paging */
 
         console_printf("enabling paging\n");
@@ -383,7 +386,11 @@ err_page_directory_init:
         return err;
 }
 
-unsigned long tickcounter = 0;
+static void
+main_invalop_handler(address_type ip)
+{
+        console_printf("invalid opcode ip=%x.\n", ip);
+}
 
 void
 multiboot_main(const struct multiboot_header *mb_header,
@@ -424,10 +431,13 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* setup keyboard */
         if ((err = kbd_init()) < 0) {
                 console_printf("kbd_init: %x\n", -err);
+        } else {
+                idt_install_irq_handler(1, kbd_irq_handler);
         }
 
         /* setup PIT for system timer */
         pit_install(0, 20, PIT_MODE_RATEGEN);
+        idt_install_irq_handler(0, pit_irq_handler);
 
         sti();
 
@@ -435,6 +445,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_printf("build_init_task: %x\n", err);
                 return;
         }
+
+        idt_install_invalid_opcode_handler(main_invalop_handler);
 
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MODS) {
                 console_printf("%s:%x.\n", __FILE__, __LINE__);

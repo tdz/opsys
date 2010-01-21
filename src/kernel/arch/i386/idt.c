@@ -16,278 +16,159 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
 #include "types.h"
 #include "syscall.h"
 #include "idt.h"
+#include "idtentry.h"
 #include "interupt.h"
-
-enum {
-        IDT_FLAG_SEGINMEM = 0x80,
-        IDT_FLAG_32BITINT = 0x0e,
-        IDT_FLAG_16BITINT = 0x06
-};
-
-struct idt_entry
-{
-        unsigned short base_low;
-        unsigned short tss;
-        unsigned char  reserved;
-        unsigned char  flags;
-        unsigned short base_high;
-};
-
-static void
-idt_entry_init(struct idt_entry *idte, unsigned long  func,
-                                       unsigned short tss,
-                                       unsigned char  ring,
-                                       unsigned char  flags)
-{
-        idte->base_low = func&0xffff;
-        idte->tss = tss;
-        idte->reserved = 0;
-        idte->flags = flags | ((ring&0x03)<<7);
-        idte->base_high = (func>>16)&0xffff;
-}
-
 #include "console.h"
 
+/* system interupts
+ */
+
+static void (*invalop_handler)(address_type ip);
+static void (*segfault_handler)(address_type ip);
+static void (*pagefault_handler)(address_type ip, address_type addr);
+
 void
-timer_handler(unsigned long irqno,
-              unsigned long eip,
-              unsigned long cs,
-              unsigned long eflags)
+int_handler_invalop(unsigned long eip, unsigned long cs, unsigned long eflags)
 {
-        extern unsigned long tickcounter;
-
-/*        console_printf("timer handler\n");*/
-
         __asm__("pusha\n\t");
-        ++tickcounter;
+
+        if (invalop_handler) {
+                invalop_handler(eip);
+        }
+
         __asm__("popa\n\t");
-
-        eoi(irqno);
 }
 
-#include "kbd.h"
 void
-keyboard_handler(unsigned long irqno,
-                 unsigned long eip,
-                 unsigned long cs,
-                 unsigned long eflags)
+int_handler_segfault(unsigned long err,
+                     unsigned long eip,
+                     unsigned long cs,
+                     unsigned long eflags)
 {
-        int scancode;
+        __asm__("pusha\n\t");
 
-        scancode = kbd_get_scancode();
+        if (segfault_handler) {
+                segfault_handler(eip);
+        }
 
-        console_printf("keyboard handler scancode=%x.\n", scancode);
-        eoi(irqno);
+        __asm__("popa\n\t");
 }
 
 void
-unhandled_irq_handler(unsigned long irqno,
+int_handler_pagefault(unsigned long err,
                       unsigned long eip,
                       unsigned long cs,
                       unsigned long eflags)
-{
-        console_printf("unhandled IRQ %x eip=%x cs=%x eflags=%x\n", irqno,
-                                                                    eip,
-                                                                    cs,
-                                                                    eflags);
-        eoi(irqno);
-}
-
-void
-page_fault_handler(unsigned long err,
-                   unsigned long eip,
-                   unsigned long cs,
-                   unsigned long eflags)
 {
         unsigned long addr;
 
         __asm__("pusha\n\t"
                 "movl %%cr2, %0\n\t"
-                        : "=r"(addr)
-                        :
-                        :);
+                        : "=r"(addr));
 
-        console_printf("page fault at address %x, "
-                       "error: %x, "
-                       "eip: %x, "
-                       "cs: %x, "
-                       "eflags: %x\n", addr, err, eip, cs, eflags);
+        if (pagefault_handler) {
+                pagefault_handler(eip, addr);
+        }
 
         __asm__("popa\n\t");
 }
 
+/* hardware interupts
+ */
+
+static void (*irq_table[16])(unsigned char);
+
 void
-default_handler(unsigned long eip,
+int_handler_irq(unsigned long irqno,
+                unsigned long eip,
                 unsigned long cs,
                 unsigned long eflags)
 {
-        console_printf("unknown interupt eip=%x cs=%x eflags=%x\n", eip,
-                                                                    cs,
-                                                                    eflags);
+        __asm__("pusha\n\t");
+
+        size_t irq_table_len = sizeof(irq_table)/sizeof(irq_table[0]);
+
+        if ((irqno < irq_table_len) && irq_table[irqno]) {
+                irq_table[irqno](irqno);
+        }
+
+        eoi(irqno);
+
+        __asm__("popa\n\t");
 }
-
-void
-unhandled_interupt_handler(unsigned long eip,
-                           unsigned long cs,
-                           unsigned long eflags)
-{
-        console_printf("unhandled interupt eip=%x cs=%x eflags=%x\n",
-                        eip, cs, eflags);
-}
-
-void
-int_segfault(unsigned long err,
-             unsigned long eip,
-             unsigned long cs,
-             unsigned long eflags)
-{
-        console_printf("segfault cs=%x err=%x eip=%x eflags=%x\n", cs,
-                                                                   err,
-                                                                   eip,
-                                                                   eflags);
-}
-
-void
-invalid_opcode_handler(unsigned long eip,
-                       unsigned long cs,
-                       unsigned long eflags)
-{
-        console_printf("invalid opcode eip=%x cs=%x eflags=%x\n", eip,
-                                                                  cs,
-                                                                  eflags);
-}
-
-void handle_interupt0(void);
-void handle_interupt1(void);
-void handle_interupt2(void);
-void handle_interupt3(void);
-void handle_interupt4(void);
-void handle_interupt5(void);
-void handle_interupt6(void);
-void handle_interupt7(void);
-void handle_interupt8(void);
-void handle_interupt9(void);
-void handle_interupt10(void);
-void handle_interupt11(void);
-void handle_interupt12(void);
-void handle_interupt13(void);
-void handle_interupt14(void);
-void handle_interupt15(void);
-void handle_interupt16(void);
-void handle_interupt17(void);
-void handle_interupt18(void);
-void handle_interupt19(void);
-void handle_interupt20(void);
-void handle_interupt21(void);
-void handle_interupt22(void);
-void handle_interupt23(void);
-void handle_interupt24(void);
-void handle_interupt25(void);
-void handle_interupt26(void);
-void handle_interupt27(void);
-void handle_interupt28(void);
-void handle_interupt29(void);
-void handle_interupt30(void);
-void handle_interupt31(void);
-
-void handle_irq0(void);
-void handle_irq1(void);
-void handle_irq2(void);
-void handle_irq3(void);
-void handle_irq4(void);
-void handle_irq5(void);
-void handle_irq6(void);
-void handle_irq7(void);
-void handle_irq8(void);
-void handle_irq9(void);
-void handle_irq10(void);
-void handle_irq11(void);
-void handle_irq12(void);
-void handle_irq13(void);
-void handle_irq14(void);
-void handle_irq15(void);
-
-void handle_interupt128(void);
-
-void handle_unknown_interupt(void);
-void handle_invalid_opcode_interupt(void);
 
 static struct idt_entry g_idt[256];
 
 void
-idt_init(void)
+idt_init()
 {
-#define IDT_ENTRY_INIT(index, funcname)                         \
-        idt_entry_init(g_idt+(index),                           \
-                       (unsigned long)funcname,                 \
-                       0x08,                                    \
-                       0,                                       \
-                       IDT_FLAG_SEGINMEM|IDT_FLAG_32BITINT)
+#define IDT_ENTRY_INIT(index, funcname)                                 \
+        idt_entry_init(g_idt+(index),                                   \
+                       (unsigned long)funcname,                         \
+                       0x08,                                            \
+                       0,                                               \
+                       IDT_ENTRY_FLAG_SEGINMEM|IDT_ENTRY_FLAG_32BITINT)
+
+        extern void isr_drop_interupt(void);
+        extern void isr_handle_invalop(void);
+        extern void isr_handle_segfault(void);
+        extern void isr_handle_pagefault(void);
+        extern void isr_handle_irq0(void);
+        extern void isr_handle_irq1(void);
+        extern void isr_handle_irq2(void);
+        extern void isr_handle_irq3(void);
+        extern void isr_handle_irq4(void);
+        extern void isr_handle_irq5(void);
+        extern void isr_handle_irq6(void);
+        extern void isr_handle_irq7(void);
+        extern void isr_handle_irq8(void);
+        extern void isr_handle_irq9(void);
+        extern void isr_handle_irq10(void);
+        extern void isr_handle_irq11(void);
+        extern void isr_handle_irq12(void);
+        extern void isr_handle_irq13(void);
+        extern void isr_handle_irq14(void);
+        extern void isr_handle_irq15(void);
+        extern void isr_handle_syscall(void);
 
         size_t i;
 
         for (i = 0; i < sizeof(g_idt)/sizeof(g_idt[0]); ++i) {
-                IDT_ENTRY_INIT(i, handle_unknown_interupt);
+                IDT_ENTRY_INIT(i, isr_drop_interupt);
         }
 
-        /* System interupts */
+        /* system interupts */
 
-        IDT_ENTRY_INIT(0x00, handle_interupt0);
-        IDT_ENTRY_INIT(0x01, handle_interupt1);
-        IDT_ENTRY_INIT(0x02, handle_interupt2);
-        IDT_ENTRY_INIT(0x03, handle_interupt3);
-        IDT_ENTRY_INIT(0x04, handle_interupt4);
-        IDT_ENTRY_INIT(0x05, handle_interupt5);
-        IDT_ENTRY_INIT(0x06, handle_interupt6);
-        IDT_ENTRY_INIT(0x07, handle_interupt7);
-        IDT_ENTRY_INIT(0x08, handle_interupt8);
-        IDT_ENTRY_INIT(0x09, handle_interupt9);
-        IDT_ENTRY_INIT(0x0a, handle_interupt10);
-        IDT_ENTRY_INIT(0x0b, handle_interupt11);
-        IDT_ENTRY_INIT(0x0c, handle_interupt12);
-        IDT_ENTRY_INIT(0x0d, handle_interupt13);
-        IDT_ENTRY_INIT(0x0e, handle_interupt14);
-        IDT_ENTRY_INIT(0x0f, handle_interupt15);
-        IDT_ENTRY_INIT(0x10, handle_interupt16);
-        IDT_ENTRY_INIT(0x11, handle_interupt17);
-        IDT_ENTRY_INIT(0x12, handle_interupt18);
-        IDT_ENTRY_INIT(0x13, handle_interupt19);
-        IDT_ENTRY_INIT(0x14, handle_interupt20);
-        IDT_ENTRY_INIT(0x15, handle_interupt21);
-        IDT_ENTRY_INIT(0x16, handle_interupt22);
-        IDT_ENTRY_INIT(0x17, handle_interupt23);
-        IDT_ENTRY_INIT(0x18, handle_interupt24);
-        IDT_ENTRY_INIT(0x19, handle_interupt25);
-        IDT_ENTRY_INIT(0x1a, handle_interupt26);
-        IDT_ENTRY_INIT(0x1b, handle_interupt27);
-        IDT_ENTRY_INIT(0x1c, handle_interupt28);
-        IDT_ENTRY_INIT(0x1d, handle_interupt29);
-        IDT_ENTRY_INIT(0x1e, handle_interupt30);
-        IDT_ENTRY_INIT(0x1f, handle_interupt31);
+        IDT_ENTRY_INIT(0x06, isr_handle_invalop);
+        IDT_ENTRY_INIT(0x0d, isr_handle_segfault);
+        IDT_ENTRY_INIT(0x0e, isr_handle_pagefault);
 
         /* hardware interupts */
 
-        IDT_ENTRY_INIT(0x20, handle_irq0);
-        IDT_ENTRY_INIT(0x21, handle_irq1);
-        IDT_ENTRY_INIT(0x22, handle_irq2);
-        IDT_ENTRY_INIT(0x23, handle_irq3);
-        IDT_ENTRY_INIT(0x24, handle_irq4);
-        IDT_ENTRY_INIT(0x25, handle_irq5);
-        IDT_ENTRY_INIT(0x26, handle_irq6);
-        IDT_ENTRY_INIT(0x27, handle_irq7);
-        IDT_ENTRY_INIT(0x28, handle_irq8);
-        IDT_ENTRY_INIT(0x29, handle_irq9);
-        IDT_ENTRY_INIT(0x2a, handle_irq10);
-        IDT_ENTRY_INIT(0x2b, handle_irq11);
-        IDT_ENTRY_INIT(0x2c, handle_irq12);
-        IDT_ENTRY_INIT(0x2d, handle_irq13);
-        IDT_ENTRY_INIT(0x2e, handle_irq14);
-        IDT_ENTRY_INIT(0x2f, handle_irq15);
+        IDT_ENTRY_INIT(0x20, isr_handle_irq0);
+        IDT_ENTRY_INIT(0x21, isr_handle_irq1);
+        IDT_ENTRY_INIT(0x22, isr_handle_irq2);
+        IDT_ENTRY_INIT(0x23, isr_handle_irq3);
+        IDT_ENTRY_INIT(0x24, isr_handle_irq4);
+        IDT_ENTRY_INIT(0x25, isr_handle_irq5);
+        IDT_ENTRY_INIT(0x26, isr_handle_irq6);
+        IDT_ENTRY_INIT(0x27, isr_handle_irq7);
+        IDT_ENTRY_INIT(0x28, isr_handle_irq8);
+        IDT_ENTRY_INIT(0x29, isr_handle_irq9);
+        IDT_ENTRY_INIT(0x2a, isr_handle_irq10);
+        IDT_ENTRY_INIT(0x2b, isr_handle_irq11);
+        IDT_ENTRY_INIT(0x2c, isr_handle_irq12);
+        IDT_ENTRY_INIT(0x2d, isr_handle_irq13);
+        IDT_ENTRY_INIT(0x2e, isr_handle_irq14);
+        IDT_ENTRY_INIT(0x2f, isr_handle_irq15);
 
-        IDT_ENTRY_INIT(0x80, handle_interupt128);
+        /* syscall interrupt */
+
+        IDT_ENTRY_INIT(0x80, isr_handle_syscall);
 }
 
 struct idt_register
@@ -296,15 +177,17 @@ struct idt_register
         unsigned long  base  __attribute__ ((packed));
 };
 
-const static struct idt_register idtr __asm__ ("_idtr") = {
-        .limit = sizeof(g_idt),
-        .base  = (unsigned long)g_idt,
-};
-
 void
 idt_install()
 {
-        __asm__ ("lidt (_idtr)\n\t");
+        const static struct idt_register idtr = {
+                .limit = sizeof(g_idt),
+                .base  = (unsigned long)g_idt,
+        };
+
+        __asm__ ("lidt (%0)\n\t"
+                        :
+                        : "r"(&idtr));
 }
 
 void
@@ -331,5 +214,39 @@ idt_install_irq()
                         :
                         :
                         : "al");
+}
+
+int
+idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
+{
+        invalop_handler = hdlr;
+
+        return 0;
+}
+
+int
+idt_install_segfault_handler(void (*hdlr)(address_type))
+{
+        segfault_handler = hdlr;
+
+        return 0;
+}
+
+int
+idt_install_pagefault_handler(void (*hdlr)(address_type, address_type))
+{
+        pagefault_handler = hdlr;
+
+        return 0;
+}
+
+int
+idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char))
+{
+        if (irqno < sizeof(irq_table)/sizeof(irq_table[0])) {
+                irq_table[irqno] = hdlr;
+        }
+
+        return 0;
 }
 

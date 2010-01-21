@@ -24,6 +24,7 @@
 #include "gdt.h"
 #include "idt.h"
 #include "interupt.h"
+#include "pic.h"
 #include "pit.h"
 #include "pageframe.h"
 #include "physmem.h"
@@ -426,7 +427,9 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* setup IDT for protected mode */
         idt_init();
         idt_install();
-        idt_install_irq();
+
+        /* setup interupt controller */
+        pic_install();
 
         /* setup keyboard */
         if ((err = kbd_init()) < 0) {

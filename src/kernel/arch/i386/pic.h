@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,20 +17,5 @@
  */
 
 void
-idt_init(void);
-
-void
-idt_install(void);
-
-int
-idt_install_invalid_opcode_handler(void (*hdlr)(address_type));
-
-int
-idt_install_segfault_handler(void (*hdlr)(address_type));
-
-int
-idt_install_pagefault_handler(void (*hdlr)(address_type, address_type));
-
-int
-idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char));
+pic_install(void);
 

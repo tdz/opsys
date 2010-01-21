@@ -19,6 +19,7 @@ CSOURCES = entry.c \
            idtentry.c \
            interupt.c \
            ioports.c \
+           pic.c \
            tcb.c
 
 CPPFLAGS += -I$(srcdir)/kernel

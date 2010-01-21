@@ -34,6 +34,8 @@
 
 #include "elfldr.h"
 
+#include "kbd.h"
+
 static int
 range_order(unsigned long beg1, unsigned long end1,
             unsigned long beg2, unsigned long end2)
@@ -419,10 +421,15 @@ multiboot_main(const struct multiboot_header *mb_header,
         idt_install();
         idt_install_irq();
 
-        sti();
+        /* setup keyboard */
+        if ((err = kbd_init()) < 0) {
+                console_printf("kbd_init: %x\n", -err);
+        }
 
         /* setup PIT for system timer */
-/*        pit_install(0, 20, PIT_MODE_RATEGEN);*/
+        pit_install(0, 20, PIT_MODE_RATEGEN);
+
+        sti();
 
         if ((err = build_init_task()) < 0) {
                 console_printf("build_init_task: %x\n", err);

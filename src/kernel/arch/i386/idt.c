@@ -52,27 +52,48 @@ idt_entry_init(struct idt_entry *idte, unsigned long  func,
 #include "console.h"
 
 void
-timer_handler(unsigned long eip,
+timer_handler(unsigned long irqno,
+              unsigned long eip,
               unsigned long cs,
               unsigned long eflags)
 {
         extern unsigned long tickcounter;
 
+/*        console_printf("timer handler\n");*/
+
         __asm__("pusha\n\t");
-
         ++tickcounter;
-/*        eoi(0);*/
-
         __asm__("popa\n\t");
+
+        eoi(irqno);
 }
 
+#include "kbd.h"
 void
-keyboard_handler(unsigned long eip,
+keyboard_handler(unsigned long irqno,
+                 unsigned long eip,
                  unsigned long cs,
                  unsigned long eflags)
 {
-        console_printf("keyboard handler\n");
-        eoi(1);
+        int scancode;
+
+        scancode = kbd_get_scancode();
+
+        console_printf("keyboard handler scancode=%x.\n", scancode);
+        eoi(irqno);
+}
+
+void
+unhandled_irq_handler(unsigned long irqno,
+                      unsigned long eip,
+                      unsigned long cs,
+                      unsigned long eflags)
+{
+        console_printf("unhandled IRQ %x eip=%x cs=%x eflags=%x\n", irqno,
+                                                                    eip,
+                                                                    cs,
+                                                                    eflags);
+        eoi(irqno);
 }
 
 void
@@ -99,16 +120,6 @@ page_fault_handler(unsigned long err,
 }
 
 void
-unhandled_irq_handler(unsigned long eip,
-                      unsigned long cs,
-                      unsigned long eflags)
-{
-        console_printf("unhandled IRQ eip=%x cs=%x eflags=%x\n", eip,
-                                                                 cs,
-                                                                 eflags);
-}
-
-void
 default_handler(unsigned long eip,
                 unsigned long cs,
                 unsigned long eflags)
@@ -123,9 +134,8 @@ unhandled_interupt_handler(unsigned long eip,
                            unsigned long cs,
                            unsigned long eflags)
 {
-        console_printf("unhandled exception eip=%x cs=%x eflags=%x\n", eip,
-                                                                       cs,
-                                                                       eflags);
+        console_printf("unhandled interupt eip=%x cs=%x eflags=%x\n",
+                        eip, cs, eflags);
 }
 
 void

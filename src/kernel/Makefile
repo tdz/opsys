@@ -10,6 +10,7 @@ ASMSOURCES =
 CSOURCES = console.c \
            crt.c \
            elfldr.c \
+           kbd.c \
            multiboot.c \
            physmem.c \
            pagedir.c \

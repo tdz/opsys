@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -206,73 +206,105 @@ handle_interupt31:
         iret
 
 handle_irq0:
-/*        call timer_handler*/
-        pushl %eax
+        pushl $0x0 /* push irqno onto stack */
+        call timer_handler
+/*        pushl %eax
         mov $0x20, %al
-        outb %al, $0x20
+        outb %al, $0x20*/
 /*        popl %eax*/
+/*        addl $4, %esp
+        addl $1, tickcounter*/
         addl $4, %esp
-        addl $1, tickcounter
         iret
 
 handle_irq1:
+        pushl $0x1 /* push irqno onto stack */
         call keyboard_handler
+        addl $4, %esp
         iret
 
 handle_irq2:
+        pushl $0x2 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq3:
+        pushl $0x3 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq4:
+        pushl $0x4 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq5:
+        pushl $0x5 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq6:
+        pushl $0x6 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq7:
+        pushl $0x7 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq8:
+        pushl $0x8 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq9:
+        pushl $0x9 /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq10:
+        pushl $0xa /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq11:
+        pushl $0xb /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq12:
+        pushl $0xc /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq13:
+        pushl $0xd /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq14:
+        pushl $0xe /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_irq15:
+        pushl $0xf /* push irqno onto stack */
         call unhandled_irq_handler
+        addl $4, %esp
         iret
 
 handle_interupt128:

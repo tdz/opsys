@@ -39,9 +39,9 @@ task_lookup(unsigned char taskid)
 }
 
 int
-task_init(struct task *task)
+task_init(struct task *task, struct page_directory *pd)
 {
-        task->pd = NULL;
+        task->pd = pd;
 
         return 0;
 }

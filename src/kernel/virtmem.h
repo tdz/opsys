@@ -31,7 +31,8 @@ enum virtmem_area_flags {
         VIRTMEM_AREA_FLAG_POLUTE     = 1<<1,
         VIRTMEM_AREA_FLAG_IDENTITY   = 1<<2,
         VIRTMEM_AREA_FLAG_PAGETABLES = 1<<3,
-        VIRTMEM_AREA_FLAG_USER       = 1<<4
+        VIRTMEM_AREA_FLAG_GLOBAL     = 1<<4,
+        VIRTMEM_AREA_FLAG_USER       = 1<<5
 };
 
 struct virtmem_area
@@ -58,9 +59,21 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                                                unsigned int flags);
 
 unsigned long
-virtmem_alloc_pages_in_area(struct page_directory *pd, unsigned long npages,
+virtmem_alloc_pages_in_area(struct page_directory *pd,
+                            unsigned long npages,
                       const struct virtmem_area *area,
                             unsigned int flags);
+
+void *
+virtmem_alloc_in_area(struct page_directory *pd,
+                      unsigned long npages,
+                const struct virtmem_area *area,
+                      unsigned int pteflags);
+
+int
+virtmem_flat_copy_areas(const struct page_directory *pd,
+                              struct page_directory *dst,
+                              unsigned long flags);
 
 unsigned long
 virtmem_lookup_physical_page(const struct page_directory *pt,

@@ -21,6 +21,8 @@ CSOURCES = console.c \
            string.c \
            syscall.c \
            task.c \
+           taskmngr.c \
+           tid.c \
            virtmem.c
 
 LDFLAGS += -Ttext=$(reloc_addr) -L$(archdir)/$(target_cpu)

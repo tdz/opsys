@@ -45,7 +45,8 @@ const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
          .flags   = VIRTMEM_AREA_FLAG_KERNEL|
                     VIRTMEM_AREA_FLAG_IDENTITY|
                     VIRTMEM_AREA_FLAG_POLUTE|
-                    VIRTMEM_AREA_FLAG_PAGETABLES},
+                    VIRTMEM_AREA_FLAG_PAGETABLES|
+                    VIRTMEM_AREA_FLAG_GLOBAL},
         {/* user virtual memory: 4 MiB - 3 GiB */
          .pgindex = 1024,
          .npages  = 785408,
@@ -53,17 +54,20 @@ const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
         {/* task state memory: >3 GiB */
          .pgindex = 786432,
          .npages  = PAGE_SPAN(MAXTASK*sizeof(struct task)),
-         .flags   = VIRTMEM_AREA_FLAG_KERNEL},
+         .flags   = VIRTMEM_AREA_FLAG_KERNEL|
+                    VIRTMEM_AREA_FLAG_GLOBAL},
         {/* high kernel temporary virtual memory: >3 GiB */
          .pgindex = 786432+PAGE_SPAN(MAXTASK*sizeof(struct task)),
          .npages  = 1,
          .flags   = VIRTMEM_AREA_FLAG_KERNEL|
-                    VIRTMEM_AREA_FLAG_PAGETABLES},
+                    VIRTMEM_AREA_FLAG_PAGETABLES|
+                    VIRTMEM_AREA_FLAG_GLOBAL},
         {/* high kernel virtual memory: >3 GiB */
          .pgindex = 786433+PAGE_SPAN(MAXTASK*sizeof(struct task)),
          .npages  = 262144-PAGE_SPAN(MAXTASK*sizeof(struct task))-1,
          .flags   = VIRTMEM_AREA_FLAG_KERNEL|
-                    VIRTMEM_AREA_FLAG_PAGETABLES}
+                    VIRTMEM_AREA_FLAG_PAGETABLES|
+                    VIRTMEM_AREA_FLAG_GLOBAL}
 };
 
 static int
@@ -677,6 +681,58 @@ err_page_directory_find_empty_pages:
         return 0;
 }
 
+void *
+virtmem_alloc_in_area(struct page_directory *pd, unsigned long npages,
+                const struct virtmem_area *area,
+                      unsigned int pteflags)
+{
+        return page_address(virtmem_alloc_pages_in_area(pd,
+                                                        npages,
+                                                        area,
+                                                        pteflags));
+}
+
+static int
+virtmem_flat_copy_area(const struct virtmem_area *area,
+                       const struct page_directory *pd,
+                             struct page_directory *dst)
+{
+        unsigned long ptindex, ptcount, pgoffset;
+
+        pgoffset = page_offset(area->pgindex);
+
+        ptindex = pagetable_index(pgoffset);
+
+        ptcount = pagetable_count(pgoffset, page_memory(area->npages));
+
+        while (ptcount) {
+                dst->entry[ptindex] = pd->entry[ptindex];
+                ++ptindex;
+                --ptcount;
+        }
+
+        return 0;
+}
+
+int
+virtmem_flat_copy_areas(const struct page_directory *pd,
+                              struct page_directory *dst,
+                              unsigned long flags)
+{
+        size_t i;
+
+        i = 0;
+
+        while (i < sizeof(g_virtmem_area)/sizeof(g_virtmem_area[0])) {
+                if (g_virtmem_area[i].flags&flags) {
+                        virtmem_flat_copy_area(g_virtmem_area+i, pd, dst);
+                }
+                ++i;
+        }
+
+        return 0;
+}
+
 unsigned long
 virtmem_lookup_physical_page(const struct page_directory *pd,
                              unsigned long pgindex)
@@ -697,4 +753,6 @@ virtmem_pagefault_handler(address_type ip, address_type addr)
 {
         console_printf("page fault: ip=%x, addr=%x.\n", ip, addr);
 }
+
+
 

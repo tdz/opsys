@@ -256,136 +256,11 @@ load_modules(const struct multiboot_info *mb_info)
 #include "mmu.h"
 #include "tcb.h"
 #include "task.h"
-
 #include "string.h"
+#include "tid.h"
+#include "taskmngr.h"
 
 struct page_directory *g_current_pd = NULL;
-
-static int
-build_init_task(void)
-{
-        int err;
-        static struct page_directory init_pd;
-        struct task *task;
-        struct tcb *tcb;
-
-        g_current_pd = &init_pd;
-
-        /* create virtual address space */
-
-        if ((err = page_directory_init(g_current_pd)) < 0) {
-                goto err_page_directory_init;
-        }
-
-        /* build kernel area */
-
-        if ((err = virtmem_install(g_current_pd)) < 0) {
-                goto err_virtmem_install;
-        }
-
-        idt_install_segfault_handler(virtmem_segfault_handler);
-        idt_install_pagefault_handler(virtmem_pagefault_handler);
-
-        /* enable paging */
-
-        console_printf("enabling paging\n");
-        mmu_load(((unsigned long)g_current_pd->entry)&(~0xfff));
-        mmu_enable_paging();
-        console_printf("paging enabled.\n");
-
-        /* test allocation */
-        {
-                int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        g_current_pd,
-                                        2,
-                                        g_virtmem_area+VIRTMEM_AREA_USER,
-                                        PTE_FLAG_PRESENT|
-                                        PTE_FLAG_WRITEABLE));
-
-                if (!addr) {
-                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-                }
-
-                console_printf("alloced addr=%x.\n", addr);
-
-                memset(addr, 0, 2*PAGE_SIZE);
-        }
-
-        {
-                int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        g_current_pd,
-                                        1023,
-                                        g_virtmem_area+VIRTMEM_AREA_USER,
-                                        PTE_FLAG_PRESENT|
-                                        PTE_FLAG_WRITEABLE));
-
-                if (!addr) {
-                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-                }
-
-                console_printf("alloced addr=%x.\n", addr);
-
-                memset(addr, 0, 1023*PAGE_SIZE);
-        }
-
-        return 0;
-
-
-        /* create task 0
-         */
-
-        if ( !(task = task_lookup(0)) ) {
-                err = -EAGAIN;
-                goto err_task_lookup;
-        }
-
-        /* allocate memory for task */
-        /* FIXME: do this in virtual memory */
-        if (!physmem_alloc_frames_at(pageframe_index((unsigned long)task),
-                                     pageframe_count(sizeof(*task)))) {
-                err = -ENOMEM;
-                goto err_task_alloc;
-        }
-
-        if ((err = task_init(task)) < 0) {
-                goto err_task_init;
-        }
-
-        task->pd = g_current_pd;
-
-        /* create thread (0:0)
-         */
-
-        tcb = task_get_tcb(task, 0);
-
-        if (!tcb) {
-                err = -ENOMEM;
-                goto err_task_get_thread;
-        }
-
-        if ((err = tcb_set_page_directory(tcb, g_current_pd)) < 0) {
-                goto err_tcb_set_page_directory;
-        }
-
-        /* save registers in TCB 0 */
-
-        return 0;
-
-err_tcb_set_page_directory:
-err_task_get_thread:
-        task_uninit(task);
-err_task_init:
-        physmem_unref_frames(pageframe_index((unsigned long)task),
-                             pageframe_count(sizeof(*task)));
-err_task_alloc:
-err_task_lookup:
-err_virtmem_install:
-        page_directory_uninit(g_current_pd);
-err_page_directory_init:
-        physmem_unref_frames(pageframe_index((unsigned long)g_current_pd),
-                             pageframe_count(sizeof(*g_current_pd)));
-        return err;
-}
 
 static void
 main_invalop_handler(address_type ip)
@@ -402,6 +277,9 @@ multiboot_main(const struct multiboot_header *mb_header,
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");
 
+        /* init physical memory with lowest 4 MiB reserved for DMA,
+           kernel, etc */
+
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
                 init_physmem(mb_header, mb_info);
         } else {
@@ -410,7 +288,6 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        /* lowest 4 MiB reserved for DMA, kernel, etc */
         physmem_add_area(0, 1024, PHYSMEM_FLAG_RESERVED);
 
         init_physmap_kernel(mb_header);
@@ -444,10 +321,17 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         sti();
 
-        if ((err = build_init_task()) < 0) {
-                console_printf("build_init_task: %x\n", err);
+        /* build initial task and address space */
+
+        idt_install_segfault_handler(virtmem_segfault_handler);
+        idt_install_pagefault_handler(virtmem_pagefault_handler);
+
+        if ((err = taskmngr_init()) < 0) {
+                console_printf("taskmngr_init: %x\n", err);
                 return;
         }
+
+        /* load init task */
 
         idt_install_invalid_opcode_handler(main_invalop_handler);
 
@@ -458,7 +342,6 @@ multiboot_main(const struct multiboot_header *mb_header,
         }
 
         return;
-
 
 /*        for (;;) {*/
 /*                __asm__("int $0x20\n\t");*/

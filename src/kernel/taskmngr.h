@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,21 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct task
-{
-        struct tcb tcb[255];
-        struct page_directory *pd;
-} __attribute__ (( aligned(4096) ));
-
-struct task *
-task_lookup(unsigned char taskid);
-
 int
-task_init(struct task *task, struct page_directory *pd);
-
-void
-task_uninit(struct task *task);
+taskmngr_init();
 
 struct tcb *
-task_get_tcb(struct task *task, unsigned char i);
+taskmngr_get_current_tcb(void);
+
+struct tcb *
+taskmngr_get_tcb(threadid_type tid);
+
+struct tcb *
+taskmngr_switchto(struct tcb *tcb);
+
+int
+taskmngr_allocate_task(struct task *parent);
 

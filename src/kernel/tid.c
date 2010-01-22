@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,21 +16,23 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct task
+#include "tid.h"
+
+threadid_type
+threadid_create(unsigned int taskid, unsigned char tcbid)
 {
-        struct tcb tcb[255];
-        struct page_directory *pd;
-} __attribute__ (( aligned(4096) ));
+        return (taskid<<8) | (tcbid&0xff);
+}
 
-struct task *
-task_lookup(unsigned char taskid);
+unsigned int
+threadid_get_taskid(threadid_type tid)
+{
+        return tid>>8;
+}
 
-int
-task_init(struct task *task, struct page_directory *pd);
-
-void
-task_uninit(struct task *task);
-
-struct tcb *
-task_get_tcb(struct task *task, unsigned char i);
+unsigned char
+threadid_get_tcbid(threadid_type tid)
+{
+        return tid&0xff;
+}
 

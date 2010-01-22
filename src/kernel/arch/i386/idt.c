@@ -128,7 +128,17 @@ idt_install()
 int
 idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
 {
+        const int ints = int_enabled();
+
+        if (ints) {
+                cli();
+        }
+
         invalop_handler = hdlr;
+
+        if (ints) {
+                sti();
+        }
 
         return 0;
 }
@@ -136,6 +146,12 @@ idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
 int
 idt_install_segfault_handler(void (*hdlr)(address_type))
 {
+        const int ints = int_enabled();
+
+        if (ints) {
+                cli();
+        }
+
         segfault_handler = hdlr;
 
         return 0;
@@ -144,7 +160,17 @@ idt_install_segfault_handler(void (*hdlr)(address_type))
 int
 idt_install_pagefault_handler(void (*hdlr)(address_type, address_type))
 {
+        const int ints = int_enabled();
+
+        if (ints) {
+                cli();
+        }
+
         pagefault_handler = hdlr;
+
+        if (ints) {
+                sti();
+        }
 
         return 0;
 }
@@ -153,7 +179,18 @@ int
 idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char))
 {
         if (irqno < sizeof(irq_table)/sizeof(irq_table[0])) {
+
+                const int ints = int_enabled();
+
+                if (ints) {
+                        cli();
+                }
+
                 irq_table[irqno] = hdlr;
+
+                if (ints) {
+                        sti();
+                }
         }
 
         return 0;

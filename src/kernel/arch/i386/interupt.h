@@ -25,3 +25,6 @@ sti(void);
 void
 eoi(unsigned char intno);
 
+int
+int_enabled(void);
+

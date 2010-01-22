@@ -421,6 +421,7 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
 
         return nempty;
 }
+#include "console.h"
 
 static unsigned long
 virtmem_find_empty_pages(const struct page_directory *pd,
@@ -662,6 +663,7 @@ virtmem_alloc_pages_in_area(struct page_directory *pd, unsigned long npages,
         unsigned long pgindex;
 
         pgindex = virtmem_find_empty_pages(pd, npages, area->pgindex,
+                                                       area->pgindex+
                                                        area->npages);
         if (!pgindex) {
                 err = -ENOMEM;
@@ -678,7 +680,7 @@ virtmem_alloc_pages_in_area(struct page_directory *pd, unsigned long npages,
 
 err_page_directory_alloc_pages_at:
 err_page_directory_find_empty_pages:
-        return 0;
+        return err;
 }
 
 void *
@@ -686,6 +688,9 @@ virtmem_alloc_in_area(struct page_directory *pd, unsigned long npages,
                 const struct virtmem_area *area,
                       unsigned int pteflags)
 {
+        console_printf("%s:%x pd=%x, npages=%x, area=%x, pteflags=%x.\n", __FILE__, __LINE__,
+                        pd, npages, area, pteflags);
+
         return page_address(virtmem_alloc_pages_in_area(pd,
                                                         npages,
                                                         area,

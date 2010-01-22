@@ -31,117 +31,73 @@
 #include "virtmem.h"
 #include "tid.h"
 #include "taskmngr.h"
-
-static threadid_type current_tid = 0;
-
-static struct task* g_task[1024];
-
 #include "console.h"
 #include <mmu.h>
 #include <string.h>
 
+static struct task*  g_task[1024];
+static threadid_type g_current_tid = 0;
+
 int
 taskmngr_init()
 {
-        extern struct page_directory *g_current_pd;
-
         int err;
-        static struct page_directory init_pd;
-        struct task *task;
+        int pgindex;
         struct tcb *tcb;
 
-        g_current_pd = &init_pd;
+        /* init page directory for kernel task */
 
-        /* create virtual address space */
+        static struct page_directory g_kernel_pd;
 
-        if ((err = page_directory_init(g_current_pd)) < 0) {
+        if ((err = page_directory_init(&g_kernel_pd)) < 0) {
                 goto err_page_directory_init;
         }
 
         /* build kernel area */
 
-        if ((err = virtmem_install(g_current_pd)) < 0) {
+        if ((err = virtmem_install(&g_kernel_pd)) < 0) {
                 goto err_virtmem_install;
         }
 
         /* enable paging */
 
         console_printf("enabling paging\n");
-        mmu_load(((unsigned long)g_current_pd->entry)&(~0xfff));
+        mmu_load(((unsigned long)g_kernel_pd.entry)&(~0xfff));
         mmu_enable_paging();
         console_printf("paging enabled.\n");
 
-        /* test allocation */
-        {
-                int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        g_current_pd,
-                                        2,
-                                        g_virtmem_area+VIRTMEM_AREA_USER,
-                                        PTE_FLAG_PRESENT|
-                                        PTE_FLAG_WRITEABLE));
+        /* create kernel task */
 
-                if (!addr) {
-                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-                }
-
-                console_printf("alloced addr=%x.\n", addr);
-
-                memset(addr, 0, 2*PAGE_SIZE);
+        pgindex = virtmem_alloc_pages_in_area(&g_kernel_pd,
+                                              page_count(0, sizeof(*g_task[0])),
+                                              g_virtmem_area+
+                                                VIRTMEM_AREA_KERNEL,
+                                              PTE_FLAG_PRESENT|
+                                              PTE_FLAG_WRITEABLE);
+        if (pgindex < 0) {
+                err = pgindex;
+                goto err_virtmem_alloc_pages_in_area_tsk;
         }
 
-        {
-                int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        g_current_pd,
-                                        1023,
-                                        g_virtmem_area+VIRTMEM_AREA_USER,
-                                        PTE_FLAG_PRESENT|
-                                        PTE_FLAG_WRITEABLE));
+        g_task[0] = page_address(pgindex);
 
-                if (!addr) {
-                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-                }
-
-                console_printf("alloced addr=%x.\n", addr);
-
-                memset(addr, 0, 1023*PAGE_SIZE);
+        if ((err = task_init(g_task[0], &g_kernel_pd)) < 0) {
+                goto err_task_init;
         }
 
         return 0;
 
-
-        /* create task 0
-         */
-
-        if ( !(task = task_lookup(0)) ) {
-                err = -EAGAIN;
-                goto err_task_lookup;
-        }
-
-        /* allocate memory for task */
-        /* FIXME: do this in virtual memory */
-        if (!physmem_alloc_frames_at(pageframe_index((unsigned long)task),
-                                     pageframe_count(sizeof(*task)))) {
-                err = -ENOMEM;
-                goto err_task_alloc;
-        }
-
-        if ((err = task_init(task, g_current_pd)) < 0) {
-                goto err_task_init;
-        }
-
-        task->pd = g_current_pd;
-
         /* create thread (0:0)
          */
 
-        tcb = task_get_tcb(task, 0);
+        tcb = task_get_tcb(g_task[0], 0);
 
         if (!tcb) {
                 err = -ENOMEM;
                 goto err_task_get_thread;
         }
 
-        if ((err = tcb_set_page_directory(tcb, g_current_pd)) < 0) {
+        if ((err = tcb_set_page_directory(tcb, &g_kernel_pd)) < 0) {
                 goto err_tcb_set_page_directory;
         }
 
@@ -151,45 +107,23 @@ taskmngr_init()
 
 err_tcb_set_page_directory:
 err_task_get_thread:
-        task_uninit(task);
+        task_uninit(g_task[0]);
 err_task_init:
-        physmem_unref_frames(pageframe_index((unsigned long)task),
-                             pageframe_count(sizeof(*task)));
-err_task_alloc:
-err_task_lookup:
+        physmem_unref_frames(pageframe_index((unsigned long)g_task[0]),
+                             pageframe_count(sizeof(*g_task[0])));
+err_virtmem_alloc_pages_in_area_tsk:
 err_virtmem_install:
-        page_directory_uninit(g_current_pd);
+        page_directory_uninit(&g_kernel_pd);
 err_page_directory_init:
-        physmem_unref_frames(pageframe_index((unsigned long)g_current_pd),
-                             pageframe_count(sizeof(*g_current_pd)));
+        physmem_unref_frames(pageframe_index((unsigned long)&g_kernel_pd),
+                             pageframe_count(sizeof(g_kernel_pd)));
         return err;
 }
 
-struct tcb *
-taskmngr_get_current_tcb()
+ssize_t
+taskmngr_add_task(struct task *tsk)
 {
-        return taskmngr_get_tcb(current_tid);
-}
-
-struct tcb *
-taskmngr_get_tcb(threadid_type tid)
-{
-        struct task *tsk =
-                page_address(g_virtmem_area[VIRTMEM_AREA_TASKSTATE].pgindex);
-
-        return tsk[threadid_get_taskid(tid)].tcb + threadid_get_tcbid(tid);
-}
-
-struct tcb *
-taskmngr_switchto(struct tcb *tcb)
-{
-        return NULL;
-}
-
-int
-taskmngr_install_task(struct task *tsk)
-{
-        int i = 0;
+        ssize_t i = 1;
 
         while ((i < sizeof(g_task)/sizeof(g_task[0])) && g_task[i]) {
                 ++i;
@@ -204,7 +138,7 @@ taskmngr_install_task(struct task *tsk)
         return i;
 }
 
-int
+ssize_t
 taskmngr_allocate_task(struct task *parent)
 {
         int err;
@@ -247,7 +181,7 @@ taskmngr_allocate_task(struct task *parent)
                 goto err_task_init;
         }
 
-        return taskmngr_install_task(tsk);
+        return taskmngr_add_task(tsk);
 
 err_task_init:
         /* TODO: free pages */
@@ -256,5 +190,38 @@ err_virtmem_flat_copy_areas:
 err_page_directory_init:
 err_virtmem_alloc_in_area_pd:
         return err;
+}
+
+struct task *
+taskmngr_get_current_task()
+{
+        return taskmngr_get_task(threadid_get_taskid(g_current_tid));
+}
+
+struct task *
+taskmngr_get_task(unsigned int taskid)
+{
+        return taskid < sizeof(g_task)/sizeof(g_task[0]) ? g_task[taskid]
+                                                         : NULL;
+}
+
+struct tcb *
+taskmngr_get_current_tcb()
+{
+        return taskmngr_get_tcb(g_current_tid);
+}
+
+struct tcb *
+taskmngr_get_tcb(threadid_type tid)
+{
+        struct task *tsk = taskmngr_get_task(threadid_get_taskid(tid));
+
+        return tsk ? task_get_tcb(tsk, threadid_get_tcbid(tid)) : NULL;
+}
+
+struct tcb *
+taskmngr_switchto(struct tcb *tcb)
+{
+        return NULL;
 }
 

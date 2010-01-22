@@ -232,25 +232,6 @@ init_physmap_modules(const struct multiboot_info *mb_info)
         return 0;
 }
 
-static int
-load_modules(const struct multiboot_info *mb_info)
-{
-        size_t i;
-        const struct multiboot_module *mod;
-
-        mod = (const struct multiboot_module*)mb_info->mods_addr;
-
-        for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
-                extern struct page_directory *g_current_pd;
-
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-                elf_exec(g_current_pd, (const void*)mod->mod_start);
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-        }
-
-        return 0;
-}
-
 #include "page.h"
 #include "pte.h"
 #include "mmu.h"
@@ -260,7 +241,25 @@ load_modules(const struct multiboot_info *mb_info)
 #include "tid.h"
 #include "taskmngr.h"
 
-struct page_directory *g_current_pd = NULL;
+static int
+load_modules(const struct multiboot_info *mb_info)
+{
+        size_t i;
+        const struct multiboot_module *mod;
+
+        mod = (const struct multiboot_module*)mb_info->mods_addr;
+
+        for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
+
+                struct task *tsk = taskmngr_get_current_task();
+
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+                elf_exec(tsk->pd, (const void*)mod->mod_start);
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+        }
+
+        return 0;
+}
 
 static void
 main_invalop_handler(address_type ip)
@@ -327,8 +326,47 @@ multiboot_main(const struct multiboot_header *mb_header,
         idt_install_pagefault_handler(virtmem_pagefault_handler);
 
         if ((err = taskmngr_init()) < 0) {
-                console_printf("taskmngr_init: %x\n", err);
+                console_printf("taskmngr_init: %x\n", -err);
                 return;
+        }
+
+        /* test allocation */
+        {
+                struct task *tsk = taskmngr_get_current_task();
+
+                int *addr = page_address(virtmem_alloc_pages_in_area(
+                                        tsk->pd,
+                                        2,
+                                        g_virtmem_area+VIRTMEM_AREA_USER,
+                                        PTE_FLAG_PRESENT|
+                                        PTE_FLAG_WRITEABLE));
+
+                if (!addr) {
+                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
+                }
+
+                console_printf("alloced addr=%x.\n", addr);
+
+                memset(addr, 0, 2*PAGE_SIZE);
+        }
+
+        {
+                struct task *tsk = taskmngr_get_current_task();
+
+                int *addr = page_address(virtmem_alloc_pages_in_area(
+                                        tsk->pd,
+                                        1023,
+                                        g_virtmem_area+VIRTMEM_AREA_USER,
+                                        PTE_FLAG_PRESENT|
+                                        PTE_FLAG_WRITEABLE));
+
+                if (!addr) {
+                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
+                }
+
+                console_printf("alloced addr=%x.\n", addr);
+
+                memset(addr, 0, 1023*PAGE_SIZE);
         }
 
         /* load init task */

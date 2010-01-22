@@ -22,9 +22,6 @@ struct task
         struct page_directory *pd;
 } __attribute__ (( aligned(4096) ));
 
-struct task *
-task_lookup(unsigned char taskid);
-
 int
 task_init(struct task *task, struct page_directory *pd);
 
@@ -32,5 +29,5 @@ void
 task_uninit(struct task *task);
 
 struct tcb *
-task_get_tcb(struct task *task, unsigned char i);
+task_get_tcb(struct task *task, unsigned char tcbid);
 

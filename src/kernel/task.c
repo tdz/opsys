@@ -27,17 +27,6 @@
 #include "tcb.h"
 #include "task.h"
 
-struct task *
-task_lookup(unsigned char taskid)
-{
-        unsigned long offset;
-
-        offset = page_offset(g_virtmem_area[VIRTMEM_AREA_TASKSTATE].pgindex) +
-                        sizeof(struct task)*taskid;
-
-        return (struct task*)offset;
-}
-
 int
 task_init(struct task *task, struct page_directory *pd)
 {
@@ -53,8 +42,8 @@ task_uninit(struct task *task)
 }
 
 struct tcb *
-task_get_tcb(struct task *task, unsigned char i)
+task_get_tcb(struct task *task, unsigned char tcbid)
 {
-        return i < 256 ? task->tcb+i : NULL;
+        return tcbid < 256 ? task->tcb+tcbid : NULL;
 }
 

@@ -44,115 +44,153 @@ isr_drop_interupt:
         iret
 
 isr_handle_invalop:
-        call int_handler_invalop
+        cmp $0, invalop_handler
+        je isr_handle_invalop_ret
+        pushl %eax
+        pushl %ecx
+        pushl %edx
+        pushl 12(%esp)
+        movl $invalop_handler, %eax
+        call *(%eax)
+        addl $4, %esp
+        popl %edx
+        popl %ecx
+        popl %eax
+isr_handle_invalop_ret:
         iret
 
 isr_handle_segfault:
-        call int_handler_segfault
+        cmp $0, segfault_handler
+        je isr_handle_segfault_ret
+        pushl %eax
+        pushl %ecx
+        pushl %edx
+        pushl 12(%esp)
+        movl $segfault_handler, %eax
+        call *(%eax)
+        addl $4, %esp
+        popl %edx
+        popl %ecx
+        popl %eax
+isr_handle_segfault_ret:
         iret
 
 isr_handle_pagefault:
-        call int_handler_pagefault
-        hlt
+        cmp $0, pagefault_handler
+        je isr_handle_pagefault_ret
+        pushl %eax
+        pushl %ecx
+        pushl %edx
+        movl %cr2, %eax
+        pushl %eax
+        pushl 12(%esp)
+        movl $pagefault_handler, %eax
+        call *(%eax)
+        addl $8, %esp
+        popl %edx
+        popl %ecx
+        popl %eax
+isr_handle_pagefault_ret:
+        iret
+
+isr_handle_irq:
+        /* save registers (according to cdecl convention) */
+        pushl %eax
+        pushl %ecx
+        pushl %edx
+        /* compute irq_table[irqno] in %eax */
+        movl 12(%esp), %eax
+        cmp $16, %eax
+        jnl isr_handle_irq_ret
+        shll $2, %eax
+        addl $irq_table, %eax
+        cmp $0, %eax
+        je isr_handle_irq_ret
+        /* call irq_table[irqno] */
+        pushl 12(%esp)
+        call *(%eax)
+        addl $4, %esp
+isr_handle_irq_ret:
+        /* signal eoi to PIC */
+        pushl 12(%esp)
+        call eoi
+        addl $4, %esp
+        /* restore registers */
+        popl %edx
+        popl %ecx
+        popl %eax
+        addl $4, %esp /* remove irqno */
         iret
 
 isr_handle_irq0:
         pushl $0
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq1:
         pushl $1
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq2:
         pushl $2
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq3:
         pushl $3
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq4:
         pushl $4
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq5:
         pushl $5
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq6:
         pushl $6
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq7:
         pushl $7
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq8:
         pushl $8
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq9:
         pushl $9
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq10:
         pushl $10
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq11:
         pushl $11
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq12:
         pushl $12
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq13:
         pushl $13
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq14:
         pushl $14
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_irq15:
         pushl $15
-        call int_handler_irq
-        addl $4, %esp
-        iret
+        jmp isr_handle_irq
 
 isr_handle_syscall:
+        /* syscalls use cdecl convention and the application is responsible
+           for saving the GP registers. The code below doesn't have to care
+           about this. */
+
         /* read sysno from stack */
         movl 12(%esp), %eax
         /* compare sysno to length of entry table */

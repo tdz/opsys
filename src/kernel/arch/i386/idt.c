@@ -27,79 +27,14 @@
 /* system interupts
  */
 
-static void (*invalop_handler)(address_type ip);
-static void (*segfault_handler)(address_type ip);
-static void (*pagefault_handler)(address_type ip, address_type addr);
-
-void
-int_handler_invalop(unsigned long eip, unsigned long cs, unsigned long eflags)
-{
-        __asm__("pusha\n\t");
-
-        if (invalop_handler) {
-                invalop_handler(eip);
-        }
-
-        __asm__("popa\n\t");
-}
-
-void
-int_handler_segfault(unsigned long err,
-                     unsigned long eip,
-                     unsigned long cs,
-                     unsigned long eflags)
-{
-        __asm__("pusha\n\t");
-
-        if (segfault_handler) {
-                segfault_handler(eip);
-        }
-
-        __asm__("popa\n\t");
-}
-
-void
-int_handler_pagefault(unsigned long err,
-                      unsigned long eip,
-                      unsigned long cs,
-                      unsigned long eflags)
-{
-        unsigned long addr;
-
-        __asm__("pusha\n\t"
-                "movl %%cr2, %0\n\t"
-                        : "=r"(addr));
-
-        if (pagefault_handler) {
-                pagefault_handler(eip, addr);
-        }
-
-        __asm__("popa\n\t");
-}
+void (*invalop_handler)(address_type ip);
+void (*segfault_handler)(address_type ip);
+void (*pagefault_handler)(address_type ip, address_type addr);
 
 /* hardware interupts
  */
 
-static void (*irq_table[16])(unsigned char);
-
-void
-int_handler_irq(unsigned long irqno,
-                unsigned long eip,
-                unsigned long cs,
-                unsigned long eflags)
-{
-        __asm__("pusha\n\t");
-
-        size_t irq_table_len = sizeof(irq_table)/sizeof(irq_table[0]);
-
-        if ((irqno < irq_table_len) && irq_table[irqno]) {
-                irq_table[irqno](irqno);
-        }
-
-        eoi(irqno);
-
-        __asm__("popa\n\t");
-}
+void (*irq_table[16])(unsigned char);
 
 static struct idt_entry g_idt[256];
 

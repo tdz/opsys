@@ -17,7 +17,7 @@
  */
 
 int
-elf_loader_exec(struct task *tsk, const unsigned char *elfimg);
+elf_loader_exec(struct task *tsk, const unsigned char *img);
 
 int
 elf_loader_is_elf(const unsigned char *img);

@@ -36,17 +36,19 @@
 
 static int
 elf_loader_construct_phdr_null(struct page_directory *pd,
-                        const Elf32_Phdr *elf_phdr, const unsigned char *elfimg)
+                               const Elf32_Phdr *elf_phdr,
+                               const unsigned char *img)
 {
         return 0;
 }
 
 static int
 elf_loader_construct_phdr_load(struct page_directory *pd,
-                        const Elf32_Phdr *elf_phdr, const unsigned char *elfimg)
+                               const Elf32_Phdr *elf_phdr,
+                               const unsigned char *img)
 {
         virtmem_alloc_page_frames(pd,
-                                  pageframe_index(elf_phdr->p_offset+elfimg),
+                                  pageframe_index(elf_phdr->p_offset+img),
                                   page_index(elf_phdr->p_vaddr),
                                   page_count(elf_phdr->p_vaddr,
                                              elf_phdr->p_filesz),
@@ -67,7 +69,8 @@ elf_loader_construct_phdr_load(struct page_directory *pd,
 
 static int
 elf_loader_construct_phdr(struct page_directory *pd,
-                   const Elf32_Phdr *elf_phdr, const unsigned char *elfimg)
+                          const Elf32_Phdr *elf_phdr,
+                          const unsigned char *img)
 {
         static int (* const construct_phdr[])(struct page_directory*,
                                               const Elf32_Phdr*,
@@ -82,22 +85,22 @@ elf_loader_construct_phdr(struct page_directory *pd,
                 return 0;
         }
 
-        return construct_phdr[elf_phdr->p_type](pd, elf_phdr, elfimg);
+        return construct_phdr[elf_phdr->p_type](pd, elf_phdr, img);
 }
 
-#include "console.h"
-
 int
-elf_loader_exec(struct task *tsk, const unsigned char *elfimg)
+elf_loader_exec(struct task *tsk, const unsigned char *img)
 {
         const Elf32_Ehdr *elf_ehdr;
         size_t i;
+        struct tcb *tcb;
+        int err;
 
-        elf_ehdr = (const Elf32_Ehdr*)elfimg;
+        elf_ehdr = (const Elf32_Ehdr*)img;
 
         /* some sanity checks */
 
-        if (!elf_loader_is_elf(elfimg) ||
+        if (!elf_loader_is_elf(img) ||
             (elf_ehdr->e_ident[EI_CLASS] != ELFCLASS32) ||
             (elf_ehdr->e_ident[EI_DATA] != ELFDATA2LSB) ||
             (elf_ehdr->e_ident[EI_VERSION] != EV_CURRENT) ||
@@ -106,7 +109,8 @@ elf_loader_exec(struct task *tsk, const unsigned char *elfimg)
             (elf_ehdr->e_version != EV_CURRENT) ||
             (!elf_ehdr->e_entry) ||
             (!elf_ehdr->e_phoff)) {
-                return -ENOEXEC;
+                err = -ENOEXEC;
+                goto err_checks;
         }
 
         /* construct sections from program headers */
@@ -114,24 +118,35 @@ elf_loader_exec(struct task *tsk, const unsigned char *elfimg)
         for (i = 0; i < elf_ehdr->e_phnum; ++i) {
 
                 const Elf32_Phdr *elf_phdr;
-                int res;
 
-                elf_phdr = (const Elf32_Phdr*)((elfimg) +
+                elf_phdr = (const Elf32_Phdr*)((img) +
                         elf_ehdr->e_phoff +
                         elf_ehdr->e_phentsize*i);
 
-                if ((res = elf_loader_construct_phdr(tsk->pd, elf_phdr, elfimg)) < 0) {
-                        return res;
+                err = elf_loader_construct_phdr(tsk->pd, elf_phdr, img);
+
+                if (err < 0) {
+                        goto err_elf_loader_construct_phdr;
                 }
         }
 
-        console_printf("%s:%x entry point=%x.\n", __FILE__, __LINE__, elf_ehdr->e_entry);
+        /* init TCB of first thread */
 
-        __asm__("call *%0\n\t"
-                        :
-                        : "r"(elf_ehdr->e_entry) );
+        tcb = task_get_tcb(tsk, 0);
+
+        if (!tcb) {
+                err = -EAGAIN;
+                goto err_task_get_tcb;
+        }
+
+        tcb_set_ip(tcb, (address_type)elf_ehdr->e_entry);
 
         return 0;
+
+err_task_get_tcb:
+err_elf_loader_construct_phdr:
+err_checks:
+        return err;
 }
 
 int

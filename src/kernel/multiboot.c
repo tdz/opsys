@@ -382,6 +382,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
+
+        tcb_switch_to(tcb, tcb);
 }
 
 /* dead code */

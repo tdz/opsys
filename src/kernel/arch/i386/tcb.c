@@ -16,8 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "string.h"
+#include <string.h>
+#include <types.h>
+
 #include "page.h"
 #include "pte.h"
 #include "pagetbl.h"
@@ -32,6 +33,22 @@ tcb_init(struct tcb *tcb, void *stack)
         memset(tcb, 0, sizeof(*tcb));
 
         tcb->stack = stack;
+
+        return 0;
+}
+
+void
+tcb_set_ip(struct tcb *tcb, address_type ip)
+{
+        tcb->eip = ip;
+}
+
+int
+tcb_switch_to(struct tcb *tcb, const struct tcb *dst)
+{
+        __asm__("jmp *%0\n\t"
+                        :
+                        : "r"(dst->eip) );
 
         return 0;
 }

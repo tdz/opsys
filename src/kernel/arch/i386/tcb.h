@@ -71,6 +71,12 @@ struct tcb
 int
 tcb_init(struct tcb *tcb, void *stack);
 
+void
+tcb_set_ip(struct tcb *tcb, address_type ip);
+
+int
+tcb_switch_to(struct tcb *tcb, const struct tcb *dst);
+
 /* save CPU registers in TCB */
 void
 tcb_save(struct tcb *tcb, unsigned long ip, unsigned long eflags);

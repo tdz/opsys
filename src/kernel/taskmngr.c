@@ -19,6 +19,8 @@
 #include <types.h>
 #include <errno.h>
 #include <stddef.h>
+#include <string.h>
+
 #include <page.h>
 #include <pte.h>
 #include <pagetbl.h>
@@ -31,11 +33,15 @@
 #include "virtmem.h"
 #include "tid.h"
 #include "taskmngr.h"
-#include "console.h"
 #include <mmu.h>
-#include <string.h>
 
-static struct task*  g_task[1024];
+#include "console.h"
+
+enum {
+        MAXTASK = 1024
+};
+
+static struct task*  g_task[MAXTASK];
 static threadid_type g_current_tid = 0;
 
 int
@@ -170,7 +176,7 @@ taskmngr_allocate_task(struct task *parent)
 
         tsk = virtmem_alloc_in_area(parent->pd,
                                     page_count(0, sizeof(*tsk)),
-                                    g_virtmem_area+VIRTMEM_AREA_TASKSTATE,
+                                    g_virtmem_area+VIRTMEM_AREA_KERNEL,
                                     PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
         if (!tsk) {
                 err = -ENOMEM;

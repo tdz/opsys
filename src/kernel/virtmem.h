@@ -19,10 +19,9 @@
 enum virtmem_area_name {
         VIRTMEM_AREA_LOW        = 0,
         VIRTMEM_AREA_USER       = 1,
-        VIRTMEM_AREA_TASKSTATE  = 2,
-        VIRTMEM_AREA_KERNEL_TMP = 3,
-        VIRTMEM_AREA_KERNEL     = 4,
-        LAST_VIRTMEM_AREA       = 5
+        VIRTMEM_AREA_KERNEL_TMP = 2,
+        VIRTMEM_AREA_KERNEL     = 3,
+        LAST_VIRTMEM_AREA       = 4
 };
 
 enum virtmem_area_flags {

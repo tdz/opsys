@@ -34,10 +34,6 @@
 #include "tcb.h"
 #include "task.h"
 
-enum {
-        MAXTASK = 1024
-};
-
 const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
         {/* low kernel virtual memory: <4 MiB */
          .pgindex = 1,
@@ -51,20 +47,15 @@ const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
          .pgindex = 1024,
          .npages  = 785408,
          .flags   = VIRTMEM_AREA_FLAG_USER},
-        {/* task state memory: >3 GiB */
-         .pgindex = 786432,
-         .npages  = PAGE_SPAN(MAXTASK*sizeof(struct task)),
-         .flags   = VIRTMEM_AREA_FLAG_KERNEL|
-                    VIRTMEM_AREA_FLAG_GLOBAL},
         {/* high kernel temporary virtual memory: >3 GiB */
-         .pgindex = 786432+PAGE_SPAN(MAXTASK*sizeof(struct task)),
+         .pgindex = 786432,
          .npages  = 1,
          .flags   = VIRTMEM_AREA_FLAG_KERNEL|
                     VIRTMEM_AREA_FLAG_PAGETABLES|
                     VIRTMEM_AREA_FLAG_GLOBAL},
         {/* high kernel virtual memory: >3 GiB */
-         .pgindex = 786433+PAGE_SPAN(MAXTASK*sizeof(struct task)),
-         .npages  = 262144-PAGE_SPAN(MAXTASK*sizeof(struct task))-1,
+         .pgindex = 786433,
+         .npages  = 262143,
          .flags   = VIRTMEM_AREA_FLAG_KERNEL|
                     VIRTMEM_AREA_FLAG_PAGETABLES|
                     VIRTMEM_AREA_FLAG_GLOBAL}

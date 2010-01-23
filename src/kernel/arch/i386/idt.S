@@ -50,8 +50,8 @@ isr_handle_invalop:
         pushl %ecx
         pushl %edx
         pushl 12(%esp)
-        movl $invalop_handler, %eax
-        call *(%eax)
+        movl invalop_handler, %eax
+        call *%eax
         addl $4, %esp
         popl %edx
         popl %ecx
@@ -66,8 +66,8 @@ isr_handle_segfault:
         pushl %ecx
         pushl %edx
         pushl 12(%esp)
-        movl $segfault_handler, %eax
-        call *(%eax)
+        movl segfault_handler, %eax
+        call *%eax
         addl $4, %esp
         popl %edx
         popl %ecx
@@ -84,8 +84,8 @@ isr_handle_pagefault:
         movl %cr2, %eax
         pushl %eax
         pushl 12(%esp)
-        movl $pagefault_handler, %eax
-        call *(%eax)
+        movl pagefault_handler, %eax
+        call *%eax
         addl $8, %esp
         popl %edx
         popl %ecx

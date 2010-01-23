@@ -130,6 +130,8 @@ idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
 {
         const int ints = int_enabled();
 
+        console_printf("ints=%x.\n", ints);
+
         if (ints) {
                 cli();
         }
@@ -137,7 +139,9 @@ idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
         invalop_handler = hdlr;
 
         if (ints) {
+                __asm__("hlt\n\t");
                 sti();
+                __asm__("hlt\n\t");
         }
 
         return 0;
@@ -153,6 +157,10 @@ idt_install_segfault_handler(void (*hdlr)(address_type))
         }
 
         segfault_handler = hdlr;
+
+        if (ints) {
+                sti();
+        }
 
         return 0;
 }

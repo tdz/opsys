@@ -101,6 +101,9 @@ enum {
         ETIMEDOUT,
         ETXTBSY,
         EWOULDBLOCK,
-        EXDEV
+        EXDEV,
+        LAST_ERROR
 };
+
+const char const * sys_errlist[1];
 

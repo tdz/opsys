@@ -17,8 +17,8 @@
  */
 
 #include <stdarg.h>
-
 #include "types.h"
+#include "errno.h"
 #include "string.h"
 #include "crt.h"
 
@@ -153,5 +153,16 @@ console_printf(const char *str, ...)
         crt_setpos(row, col+len);
 
         return 0;
+}
+
+
+int
+console_perror(const char *s, int err)
+{
+        if ((err < 0) || (err >= LAST_ERROR)) {
+                return console_perror("console_perror", EINVAL);
+        }
+
+        return console_printf("%s: %s\n", s, sys_errlist[err]);
 }
 

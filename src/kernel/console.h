@@ -19,3 +19,6 @@
 int
 console_printf(const char *str, ...);
 
+int
+console_perror(const char *s, int err);
+

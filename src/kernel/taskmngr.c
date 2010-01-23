@@ -39,7 +39,7 @@ static struct task*  g_task[1024];
 static threadid_type g_current_tid = 0;
 
 int
-taskmngr_init()
+taskmngr_init(void *stack)
 {
         int err;
         int pgindex;

@@ -273,11 +273,15 @@ multiboot_main(const struct multiboot_header *mb_header,
 {
         int err;
 
+        int_enabled();
+
         console_printf("%s...\n\t%s\n", "OS kernel booting",
                                         "Cool, isn't it?");
 
         /* init physical memory with lowest 4 MiB reserved for DMA,
            kernel, etc */
+
+        int_enabled();
 
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
                 init_physmem(mb_header, mb_info);
@@ -289,27 +293,41 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         physmem_add_area(0, 1024, PHYSMEM_FLAG_RESERVED);
 
+        int_enabled();
+
         init_physmap_kernel(mb_header);
+
+        int_enabled();
 
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MMAP) {
                 init_physmap_areas(mb_info);
                 init_physmap_modules(mb_info);
         }
+        int_enabled();
 
         /* setup GDT for protected mode */
         gdt_init();
+        int_enabled();
         gdt_install();
+
+        int_enabled();
 
         /* setup IDT for protected mode */
         idt_init();
+        int_enabled();
         idt_install();
+        int_enabled();
+
+        idt_install_invalid_opcode_handler(main_invalop_handler);
+
+/*        __asm__("hlt\n\t");*/
 
         /* setup interupt controller */
         pic_install();
 
         /* setup keyboard */
         if ((err = kbd_init()) < 0) {
-                console_printf("kbd_init: %x\n", -err);
+                console_perror("kbd_init", -err);
         } else {
                 idt_install_irq_handler(1, kbd_irq_handler);
         }
@@ -326,7 +344,7 @@ multiboot_main(const struct multiboot_header *mb_header,
         idt_install_pagefault_handler(virtmem_pagefault_handler);
 
         if ((err = taskmngr_init()) < 0) {
-                console_printf("taskmngr_init: %x\n", -err);
+                console_perror("taskmngr_init", -err);
                 return;
         }
 
@@ -369,9 +387,19 @@ multiboot_main(const struct multiboot_header *mb_header,
                 memset(addr, 0, 1023*PAGE_SIZE);
         }
 
-        /* load init task */
+        /* setup kernel as thread 0 of kernel task */
 
-        idt_install_invalid_opcode_handler(main_invalop_handler);
+        {
+                struct task *tsk = taskmngr_get_current_task();
+
+                struct tcb *tcb = task_get_tcb(tsk, 0);
+
+                if ((err = tcb_init(tcb, 0)) < 0) {
+                        console_perror("tcb_init", -err);
+                }
+        }
+
+        /* load init task */
 
         if (mb_info->flags&MULTIBOOT_INFO_FLAG_MODS) {
                 console_printf("%s:%x.\n", __FILE__, __LINE__);

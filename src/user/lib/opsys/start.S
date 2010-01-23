@@ -29,6 +29,7 @@ _start:
 exit:
         /* when we jump here, the exit status should be on the stack already */
         pushl $0 /* push exit system-call number */
+        hlt
         int $0x80 /* this never returns */
 
 /* Temporary workaround, as opsys does not yet quit tasks */

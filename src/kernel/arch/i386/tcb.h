@@ -18,6 +18,8 @@
 
 struct tcb
 {
+        void *stack;
+
         /* general-purpose register */
         unsigned long eax;
         unsigned long ebx;
@@ -67,7 +69,7 @@ struct tcb
 } __attribute__ (( aligned(256) ));
 
 int
-tcb_init(struct tcb *tcb);
+tcb_init(struct tcb *tcb, void *stack);
 
 /* save CPU registers in TCB */
 void

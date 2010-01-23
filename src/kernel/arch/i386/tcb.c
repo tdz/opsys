@@ -27,9 +27,11 @@
 #include "tcb.h"
 
 int
-tcb_init(struct tcb *tcb)
+tcb_init(struct tcb *tcb, void *stack)
 {
         memset(tcb, 0, sizeof(*tcb));
+
+        tcb->stack = stack;
 
         return 0;
 }

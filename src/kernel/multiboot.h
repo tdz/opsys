@@ -111,5 +111,6 @@ struct multiboot_mmap
 
 void
 multiboot_main(const struct multiboot_header *mb_header,
-               const struct multiboot_info *mb_info);
+               const struct multiboot_info *mb_info/*,
+               void *stack*/);
 

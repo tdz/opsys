@@ -48,6 +48,7 @@ multiboot_entry:
 
         /* call C main function for multiboot */
 
+/*	pushl stack*/
 	pushl %ebx
 	pushl $multiboot_header
 	call multiboot_main

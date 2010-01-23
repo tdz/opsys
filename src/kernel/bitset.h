@@ -16,23 +16,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <types.h>
+void
+bitset_set(unsigned char *bitset, size_t bit);
 
-#include "pde.h"
-#include "pagedir.h"
-#include "tcb.h"
-#include "task.h"
-#include "elfldr.h"
-#include "loader.h"
+void
+bitset_unset(unsigned char *bitset, size_t bit);
 
 int
-loader_exec(struct tcb *tcb, const void *img)
-{
-        if (elf_loader_is_elf(img)) {
-                return elf_loader_exec(tcb, img);
-        }
+bitset_isset(const unsigned char *bitset, size_t bit);
 
-        return -EINVAL;
-}
+ssize_t
+bitset_find_unset(const unsigned char *bitset, size_t len);
 

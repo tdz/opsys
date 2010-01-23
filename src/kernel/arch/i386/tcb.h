@@ -18,7 +18,9 @@
 
 struct tcb
 {
-        void *stack;
+        struct task *task; /* task of the thread */
+        void *stack; /* stack base address */
+        unsigned char id; /* task-local id */
 
         /* general-purpose register */
         unsigned long eax;
@@ -69,7 +71,14 @@ struct tcb
 } __attribute__ (( aligned(256) ));
 
 int
-tcb_init(struct tcb *tcb, void *stack);
+tcb_init_with_id(struct tcb *tcb,
+                 struct task *task, unsigned char id, void *stack);
+
+int
+tcb_init(struct tcb *tcb, struct task *task, void *stack);
+
+void
+tcb_uninit(struct tcb *tcb);
 
 void
 tcb_set_ip(struct tcb *tcb, address_type ip);

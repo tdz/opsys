@@ -7,7 +7,8 @@ archdir = ./arch
 
 ASMSOURCES =
 
-CSOURCES = console.c \
+CSOURCES = bitset.c \
+           console.c \
            crt.c \
            elfldr.c \
            errno.c \

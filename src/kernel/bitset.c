@@ -18,21 +18,47 @@
 
 #include <errno.h>
 #include <types.h>
+#include "bitset.h"
 
-#include "pde.h"
-#include "pagedir.h"
-#include "tcb.h"
-#include "task.h"
-#include "elfldr.h"
-#include "loader.h"
+void
+bitset_set(unsigned char *bitset, size_t bit)
+{
+        bitset[bit>>3] |= ~(1<<(bit&0x07));
+}
+
+void
+bitset_unset(unsigned char *bitset, size_t bit)
+{
+        bitset[bit>>3] &= ~(1<<(bit&0x07));
+}
 
 int
-loader_exec(struct tcb *tcb, const void *img)
+bitset_isset(const unsigned char *bitset, size_t bit)
 {
-        if (elf_loader_is_elf(img)) {
-                return elf_loader_exec(tcb, img);
+        return !!(bitset[bit>>3] & ~(1<<(bit&0x07)));
+}
+
+ssize_t
+bitset_find_unset(const unsigned char *bitset, size_t len)
+{
+        ssize_t i, bit;
+        int found;
+
+        bit = 0;
+        found = 0;
+
+        for (i = 0; !found && (i < len); ++i) {
+                ssize_t j;
+                for (j = 0; !found && (j < 8); ++j, ++bit) {
+                        found = (bitset[i] ^ (1<<j));
+                        ++j;
+                }
         }
 
-        return -EINVAL;
+        if (!found) {
+                return -EAGAIN;
+        }
+
+        return bit;
 }
 

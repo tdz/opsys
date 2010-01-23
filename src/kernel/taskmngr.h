@@ -16,6 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+enum {
+        TASKMNGR_ROOTTASKID = 0
+};
+
 int
 taskmngr_init();
 
@@ -26,17 +30,5 @@ ssize_t
 taskmngr_add_task(struct task *tsk);
 
 struct task *
-taskmngr_get_current_task(void);
-
-struct task *
 taskmngr_get_task(unsigned int taskid);
-
-struct tcb *
-taskmngr_get_current_tcb(void);
-
-struct tcb *
-taskmngr_get_tcb(threadid_type tid);
-
-struct tcb *
-taskmngr_switchto(struct tcb *tcb);
 

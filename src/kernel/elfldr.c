@@ -89,11 +89,10 @@ elf_loader_construct_phdr(struct page_directory *pd,
 }
 
 int
-elf_loader_exec(struct task *tsk, const unsigned char *img)
+elf_loader_exec(struct tcb *tcb, const unsigned char *img)
 {
         const Elf32_Ehdr *elf_ehdr;
         size_t i;
-        struct tcb *tcb;
         int err;
 
         elf_ehdr = (const Elf32_Ehdr*)img;
@@ -123,7 +122,7 @@ elf_loader_exec(struct task *tsk, const unsigned char *img)
                         elf_ehdr->e_phoff +
                         elf_ehdr->e_phentsize*i);
 
-                err = elf_loader_construct_phdr(tsk->pd, elf_phdr, img);
+                err = elf_loader_construct_phdr(tcb->task->pd, elf_phdr, img);
 
                 if (err < 0) {
                         goto err_elf_loader_construct_phdr;
@@ -132,18 +131,10 @@ elf_loader_exec(struct task *tsk, const unsigned char *img)
 
         /* init TCB of first thread */
 
-        tcb = task_get_tcb(tsk, 0);
-
-        if (!tcb) {
-                err = -EAGAIN;
-                goto err_task_get_tcb;
-        }
-
         tcb_set_ip(tcb, (address_type)elf_ehdr->e_entry);
 
         return 0;
 
-err_task_get_tcb:
 err_elf_loader_construct_phdr:
 err_checks:
         return err;

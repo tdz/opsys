@@ -256,21 +256,25 @@ multiboot_init_physmem_modules(const struct multiboot_info *mb_info)
 }
 
 static int
-multiboot_load_modules(const struct multiboot_info *mb_info)
+multiboot_load_modules(struct tcb *tcb, const struct multiboot_info *mb_info)
 {
-        size_t i;
+/*        struct task *tsk;*/
+        int err;
         const struct multiboot_module *mod;
+        size_t i;
 
         if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MODS)) {
                 return 0;
         }
 
+/*        if (!(tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID))) {
+                err = -ENOMEM;
+                goto err_taskmngr_get_roottask;
+        }*/
+
         mod = (const struct multiboot_module*)mb_info->mods_addr;
 
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
-
-                int err;
-                struct task *tsk = taskmngr_get_current_task();
 
                 if (mod->string) {
                         console_printf("loading module '\%s'\n", mod->string);
@@ -278,12 +282,15 @@ multiboot_load_modules(const struct multiboot_info *mb_info)
                         console_printf("loading module %x\n", i);
                 }
 
-                if ((err = loader_exec(tsk, (void*)mod->mod_start)) < 0) {
+                if ((err = loader_exec(tcb, (void*)mod->mod_start)) < 0) {
                         console_perror("loader_exec", -err);
                 }
         }
 
         return 0;
+
+/*err_taskmngr_get_roottask:
+        return err;*/
 }
 
 static void
@@ -299,6 +306,7 @@ multiboot_main(const struct multiboot_header *mb_header,
 {
         int err;
         struct task *tsk;
+        long pgindex;
         struct tcb *tcb;
 
         console_printf("opsys booting...\n");
@@ -367,18 +375,34 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* setup kernel as thread 0 of kernel task
          */
 
-        tsk = taskmngr_get_current_task();
+        tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID);
 
-        tcb = task_get_tcb(tsk, 0);
+        if (!tsk) {
+                console_perror("taskmngr_get_task", ENOMEM);
+                return;
+        }
 
-        if ((err = tcb_init(tcb, stack)) < 0) {
+        pgindex = virtmem_alloc_pages_in_area(tsk->pd,
+                                              page_count(0, sizeof(*tcb)),
+                                              g_virtmem_area+VIRTMEM_AREA_KERNEL,
+                                              PTE_FLAG_PRESENT|
+                                              PTE_FLAG_WRITEABLE);
+        if (pgindex < 0) {
+                console_perror("virtmem_alloc_pages_in_area", -pgindex);
+                return;
+        }
+
+        tcb = page_address(pgindex);
+
+        if ((err = tcb_init(tcb, tsk, stack)) < 0) {
                 console_perror("tcb_init", -err);
+                return;
         }
 
         /* load modules as ELF binaries
          */
 
-        if ((err = multiboot_load_modules(mb_info)) < 0) {
+        if ((err = multiboot_load_modules(tcb, mb_info)) < 0) {
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
@@ -394,7 +418,7 @@ test_alloc(void)
         struct task *tsk;
         int *addr;
 
-        tsk = taskmngr_get_current_task();
+        tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID);
  
         addr = page_address(virtmem_alloc_pages_in_area(
                             tsk->pd,
@@ -410,7 +434,7 @@ test_alloc(void)
 
         memset(addr, 0, 2*PAGE_SIZE);
 
-        tsk = taskmngr_get_current_task();
+        tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID);
 
         addr = page_address(virtmem_alloc_pages_in_area(
                             tsk->pd,

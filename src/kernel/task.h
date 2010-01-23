@@ -18,17 +18,24 @@
 
 struct task
 {
-        struct tcb tcb[255];
         struct page_directory *pd;
+        unsigned int  id;
         unsigned char nthreads;
+        unsigned char threadid[8];
 };
 
 int
 task_init(struct task *task, struct page_directory *pd);
 
+int
+task_init_from_parent(struct task *tsk, const struct task *parent);
+
 void
 task_uninit(struct task *task);
 
-struct tcb *
-task_get_tcb(struct task *task, unsigned char tcbid);
+int
+task_ref(struct task *task);
+
+int
+task_unref(struct task *task);
 

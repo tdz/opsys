@@ -17,5 +17,5 @@
  */
 
 int
-loader_exec(struct task *tsk, const void *img);
+loader_exec(struct tcb *tcb, const void *img);
 

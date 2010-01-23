@@ -16,8 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <string.h>
 #include <types.h>
+
+#include "bitset.h"
 
 #include "page.h"
 #include "pte.h"
@@ -26,15 +29,62 @@
 #include "pagedir.h"
 #include "virtmem.h"
 #include "tcb.h"
+#include "task.h"
 
 int
-tcb_init(struct tcb *tcb, void *stack)
+tcb_init_with_id(struct tcb *tcb,
+                 struct task *task, unsigned char id, void *stack)
 {
+        int err;
+
+        if ((err = task_ref(task)) < 0) {
+                goto err_task_ref;
+        }
+
+        if (bitset_isset(task->threadid, id)) {
+                err = -EINVAL;
+                goto err_bitset_isset;
+        }
+
+        bitset_set(task->threadid, id);
+
         memset(tcb, 0, sizeof(*tcb));
 
+        tcb->task = task;
         tcb->stack = stack;
+        tcb->id = id;
 
         return 0;
+
+err_bitset_isset:
+        task_unref(task);
+err_task_ref:
+        return err;
+}
+
+int
+tcb_init(struct tcb *tcb, struct task *task, void *stack)
+{
+        int err;
+        ssize_t id;
+
+        id = bitset_find_unset(task->threadid, sizeof(task->threadid));
+
+        if (id < 0) {
+                err = id;
+                goto err_bitset_find_unset;
+        }
+
+        return tcb_init_with_id(tcb, task, id, stack);
+
+err_bitset_find_unset:
+        return err;
+}
+
+void
+tcb_uninit(struct tcb *tcb)
+{
+        task_unref(tcb->task);
 }
 
 void

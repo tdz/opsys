@@ -16,8 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define EI_NIDENT       16
-
 typedef unsigned long   Elf32_Addr;
 typedef unsigned short  Elf32_Half;
 typedef unsigned long   Elf32_Off;

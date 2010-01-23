@@ -16,34 +16,34 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <elf.h>
-#include "types.h"
-#include "errno.h"
+#include <errno.h>
+#include <string.h>
+#include <types.h>
 
 #include "pageframe.h"
-
 #include "page.h"
 #include "pte.h"
 #include "pde.h"
 #include "pagedir.h"
 #include "virtmem.h"
-
-#include "elfldr.h"
-#include "string.h"
+#include "tcb.h"
+#include "task.h"
 #include "console.h"
+#include "elf.h"
+#include "elfldr.h"
 
 /* program headers
  */
 
 static int
-elf_construct_phdr_null(struct page_directory *pd,
+elf_loader_construct_phdr_null(struct page_directory *pd,
                         const Elf32_Phdr *elf_phdr, const unsigned char *elfimg)
 {
         return 0;
 }
 
 static int
-elf_construct_phdr_load(struct page_directory *pd,
+elf_loader_construct_phdr_load(struct page_directory *pd,
                         const Elf32_Phdr *elf_phdr, const unsigned char *elfimg)
 {
         virtmem_alloc_page_frames(pd,
@@ -67,14 +67,14 @@ elf_construct_phdr_load(struct page_directory *pd,
 }
 
 static int
-elf_construct_phdr(struct page_directory *pd,
+elf_loader_construct_phdr(struct page_directory *pd,
                    const Elf32_Phdr *elf_phdr, const unsigned char *elfimg)
 {
         static int (* const construct_phdr[])(struct page_directory*,
                                               const Elf32_Phdr*,
                                               const unsigned char*) = {
-                elf_construct_phdr_null,
-                elf_construct_phdr_load};
+                elf_loader_construct_phdr_null,
+                elf_loader_construct_phdr_load};
 
         /* some sanity checks */
 
@@ -87,10 +87,8 @@ elf_construct_phdr(struct page_directory *pd,
 }
 
 int
-elf_exec(struct page_directory *pd, const unsigned char *elfimg)
+elf_loader_exec(struct task *tsk, const unsigned char *elfimg)
 {
-        static const char ident[4] = {EI_MAG0, EI_MAG1, EI_MAG2, EI_MAG3};
-
         const Elf32_Ehdr *elf_ehdr;
         size_t i;
 
@@ -98,7 +96,7 @@ elf_exec(struct page_directory *pd, const unsigned char *elfimg)
 
         /* some sanity checks */
 
-        if (!memcmp(elf_ehdr->e_ident, ident, 4) ||
+        if (!elf_loader_is_elf(elfimg) ||
             (elf_ehdr->e_ident[EI_CLASS] != ELFCLASS32) ||
             (elf_ehdr->e_ident[EI_DATA] != ELFDATA2LSB) ||
             (elf_ehdr->e_ident[EI_VERSION] != EV_CURRENT) ||
@@ -121,7 +119,7 @@ elf_exec(struct page_directory *pd, const unsigned char *elfimg)
                         elf_ehdr->e_phoff +
                         elf_ehdr->e_phentsize*i);
 
-                if ((res = elf_construct_phdr(pd, elf_phdr, elfimg)) < 0) {
+                if ((res = elf_loader_construct_phdr(tsk->pd, elf_phdr, elfimg)) < 0) {
                         return res;
                 }
         }
@@ -133,5 +131,13 @@ elf_exec(struct page_directory *pd, const unsigned char *elfimg)
                         : "r"(elf_ehdr->e_entry) );
 
         return 0;
+}
+
+int
+elf_loader_is_elf(const unsigned char *img)
+{
+        static const char ident[4] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
+
+        return !memcmp(img, ident, sizeof(ident)/sizeof(ident[0]));
 }
 

@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,8 +17,5 @@
  */
 
 int
-elf_loader_exec(struct task *tsk, const unsigned char *elfimg);
-
-int
-elf_loader_is_elf(const unsigned char *img);
+loader_exec(struct task *tsk, const void *img);
 

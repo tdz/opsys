@@ -27,28 +27,31 @@ _start:
 
 multiboot_header:
         .long 0x1badb002 /* MULTIBOOT_HEADER_MAGIC */
-        .long 0x00000003 /* MULTIBOOT_HEADER_FLAG_ALIGNED|
+        .long 0x00000007 /* MULTIBOOT_HEADER_FLAG_ALIGNED|
                             MULTIBOOT_HEADER_FLAG_MEMINFO */
-        .long -(0x1badb002+0x00000003)
+        .long -(0x1badb002+0x00000007)
+        /* address fields */
         .long multiboot_header
         .long _start
         .long _edata
         .long _end
         .long multiboot_entry
+        /* graphics fields */
         .long 1
         .long 80
-        .long 50
+        .long 43
         .long 0
 
 multiboot_entry:
         movl $(stack+4096), %esp
 
+        /* reset eflags */
         pushl $0
         popf
 
         /* call C main function for multiboot */
 
-        pushl stack
+        pushl %esp
         pushl %ebx
         pushl $multiboot_header
         call multiboot_main

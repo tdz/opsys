@@ -155,7 +155,6 @@ console_printf(const char *str, ...)
         return 0;
 }
 
-
 int
 console_perror(const char *s, int err)
 {

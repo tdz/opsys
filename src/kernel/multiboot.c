@@ -16,9 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "stddef.h"
-#include "errno.h"
-#include "types.h"
+#include <types.h>
+#include <errno.h>
+#include <stddef.h>
+#include <string.h>
+
 #include "multiboot.h"
 #include "console.h"
 #include "gdt.h"
@@ -28,14 +30,18 @@
 #include "pit.h"
 #include "pageframe.h"
 #include "physmem.h"
-
 #include "pde.h"
 #include "pagedir.h"
 #include "virtmem.h"
-
-#include "elfldr.h"
-
 #include "kbd.h"
+#include "page.h"
+#include "pte.h"
+#include "mmu.h"
+#include "tcb.h"
+#include "task.h"
+#include "loader.h"
+#include "tid.h"
+#include "taskmngr.h"
 
 static int
 range_order(unsigned long beg1, unsigned long end1,
@@ -79,7 +85,7 @@ find_unused_area(const struct multiboot_header *mb_header,
                 mmap_addr += mmap->size+4;
                 i += mmap->size+4;
 
-                /* area if not useable */
+                /* area is not useable */
                 if (mmap->type != 1) {
                         continue;
                 }
@@ -146,43 +152,51 @@ find_unused_area(const struct multiboot_header *mb_header,
 }
 
 static int
-init_physmem(const struct multiboot_header *mb_header,
-             const struct multiboot_info *mb_info)
+multiboot_init_physmem(const struct multiboot_header *mb_header,
+                       const struct multiboot_info *mb_info)
 {
-        unsigned long physmap, pfcount;
+        int err;
+        unsigned long pfindex, pfcount;
 
-        pfcount = pageframe_count((mb_info->mem_upper+1)<<10);
+        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MEM)) {
+                err = -EINVAL;
+                goto err_multiboot_info_flag_mem;
+        }
 
-        physmap = find_unused_area(mb_header,
+        pfcount = pageframe_span(0, (mb_info->mem_upper+1024)<<10);
+
+        pfindex = find_unused_area(mb_header,
                                    mb_info,
                                    pfcount>>PAGEFRAME_SHIFT);
 
-        console_printf("found phymap area at %x\n", (unsigned long)physmap);
+        console_printf("found physmap area at %x\n", (unsigned long)pfindex);
 
-        /* init memory manager */
-        return physmem_init(physmap, pfcount);
+        return physmem_init(pfindex, pfcount);
+
+err_multiboot_info_flag_mem:
+        return err;
 }
 
 static int
-init_physmap_kernel(const struct multiboot_header *mb_header)
+multiboot_init_physmem_kernel(const struct multiboot_header *mb_header)
 {
-        unsigned long pfindex, nframes;
-
-        pfindex = pageframe_index(mb_header->load_addr);
-        nframes = pageframe_count(mb_header->bss_end_addr-mb_header->load_addr);
-
-        return physmem_add_area(pfindex, nframes, PHYSMEM_FLAG_RESERVED);
+        return physmem_set_flags(pageframe_index(mb_header->load_addr),
+                                 pageframe_count(mb_header->bss_end_addr-
+                                                 mb_header->load_addr),
+                                 PHYSMEM_FLAG_RESERVED);
 }
 
 static int
-init_physmap_areas(const struct multiboot_info *mb_info)
+multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
 {
         size_t i;
         unsigned long mmap_addr;
 
-        mmap_addr = mb_info->mmap_addr;
+        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MMAP)) {
+                return 0;
+        }
 
-        /* add memory areas */
+        mmap_addr = mb_info->mmap_addr;
 
         for (i = 0; i < mb_info->mmap_length;) {
                 const struct multiboot_mmap *mmap;
@@ -199,10 +213,10 @@ init_physmap_areas(const struct multiboot_info *mb_info)
                         (((unsigned long long)mmap->length_high)<<32) +
                                               mmap->length_low);
 
-                physmem_add_area(pfindex,
-                                 nframes,
-                                 mmap->type==1 ? PHYSMEM_FLAG_USEABLE
-                                               : PHYSMEM_FLAG_RESERVED);
+                physmem_set_flags(pfindex,
+                                  nframes,
+                                  mmap->type==1 ? PHYSMEM_FLAG_USEABLE
+                                                : PHYSMEM_FLAG_RESERVED);
 
                 mmap_addr += mmap->size+4;
                 i += mmap->size+4;
@@ -212,50 +226,61 @@ init_physmap_areas(const struct multiboot_info *mb_info)
 }
 
 static int
-init_physmap_modules(const struct multiboot_info *mb_info)
+multiboot_init_physmem_module(const struct multiboot_module *mod)
 {
-        size_t i;
-        const struct multiboot_module *mod;
-
-        mod = (const struct multiboot_module*)mb_info->mods_addr;
-
-        for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
-                unsigned long pfindex;
-                unsigned long nframes;
-
-                pfindex = pageframe_index(mod->mod_start);
-                nframes = pageframe_count(mod->mod_end-mod->mod_start);
-
-                physmem_add_area(pfindex, nframes, PHYSMEM_FLAG_RESERVED);
-        }
-
-        return 0;
+        return physmem_set_flags(pageframe_index(mod->mod_start),
+                                 pageframe_count(mod->mod_end-mod->mod_start),
+                                 PHYSMEM_FLAG_RESERVED);
 }
 
-#include "page.h"
-#include "pte.h"
-#include "mmu.h"
-#include "tcb.h"
-#include "task.h"
-#include "string.h"
-#include "tid.h"
-#include "taskmngr.h"
+static int
+multiboot_init_physmem_modules(const struct multiboot_info *mb_info)
+{
+        int err;
+        const struct multiboot_module *mod, *modend;
+
+        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MODS)) {
+                return 0;
+        }
+
+        err = 0;
+        mod = (const struct multiboot_module*)mb_info->mods_addr;
+        modend = mod+mb_info->mods_count;
+
+        while ((mod < modend)
+                && ((err = multiboot_init_physmem_module(mod)) < 0)) {
+                ++mod;
+        }
+
+        return err;
+}
 
 static int
-load_modules(const struct multiboot_info *mb_info)
+multiboot_load_modules(const struct multiboot_info *mb_info)
 {
         size_t i;
         const struct multiboot_module *mod;
+
+        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MODS)) {
+                return 0;
+        }
 
         mod = (const struct multiboot_module*)mb_info->mods_addr;
 
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
 
+                int err;
                 struct task *tsk = taskmngr_get_current_task();
 
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-                elf_exec(tsk->pd, (const void*)mod->mod_start);
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
+                if (mod->string) {
+                        console_printf("loading module '\%s'\n", mod->string);
+                } else {
+                        console_printf("loading module %x\n", i);
+                }
+
+                if ((err = loader_exec(tsk, (void*)mod->mod_start)) < 0) {
+                        console_perror("loader_exec", -err);
+                }
         }
 
         return 0;
@@ -273,55 +298,44 @@ multiboot_main(const struct multiboot_header *mb_header,
                void *stack)
 {
         int err;
+        struct task *tsk;
+        struct tcb *tcb;
 
-        int_enabled();
-
-        console_printf("%s...\n\t%s\n", "OS kernel booting",
-                                        "Cool, isn't it?");
+        console_printf("opsys booting...\n");
 
         /* init physical memory with lowest 4 MiB reserved for DMA,
-           kernel, etc */
+           kernel, etc
+         */
 
-        int_enabled();
-
-        if (mb_info->flags&MULTIBOOT_INFO_FLAG_MEM) {
-                init_physmem(mb_header, mb_info);
-        } else {
-                /* FIXME: abort kernel */
-                console_printf("no memory information given.\n");
+        if ((err = multiboot_init_physmem(mb_header, mb_info)) < 0) {
+                console_perror("multiboot_init_physmem", -err);
                 return;
         }
 
-        physmem_add_area(0, 1024, PHYSMEM_FLAG_RESERVED);
+        physmem_set_flags(0, 1024, PHYSMEM_FLAG_RESERVED);
 
-        int_enabled();
-
-        init_physmap_kernel(mb_header);
-
-        int_enabled();
-
-        if (mb_info->flags&MULTIBOOT_INFO_FLAG_MMAP) {
-                init_physmap_areas(mb_info);
-                init_physmap_modules(mb_info);
+        if ((err = multiboot_init_physmem_kernel(mb_header)) < 0) {
+                console_perror("multiboot_init_physmem_kernel", -err);
+                return;
         }
-        int_enabled();
+        if ((err = multiboot_init_physmem_mmap(mb_info)) < 0) {
+                console_perror("multiboot_init_physmem_mmap", -err);
+                return;
+        }
+        if ((err = multiboot_init_physmem_modules(mb_info)) < 0) {
+                console_perror("multiboot_init_physmem_modules", -err);
+                return;
+        }
 
         /* setup GDT for protected mode */
         gdt_init();
-        int_enabled();
         gdt_install();
-
-        int_enabled();
 
         /* setup IDT for protected mode */
         idt_init();
-        int_enabled();
         idt_install();
-        int_enabled();
 
         idt_install_invalid_opcode_handler(main_invalop_handler);
-
-/*        __asm__("hlt\n\t");*/
 
         /* setup interupt controller */
         pic_install();
@@ -339,7 +353,8 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         sti();
 
-        /* build initial task and address space */
+        /* build initial task and address space
+         */
 
         idt_install_segfault_handler(virtmem_segfault_handler);
         idt_install_pagefault_handler(virtmem_pagefault_handler);
@@ -349,64 +364,28 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        /* test allocation */
-        {
-                struct task *tsk = taskmngr_get_current_task();
+        /* setup kernel as thread 0 of kernel task
+         */
 
-                int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        tsk->pd,
-                                        2,
-                                        g_virtmem_area+VIRTMEM_AREA_USER,
-                                        PTE_FLAG_PRESENT|
-                                        PTE_FLAG_WRITEABLE));
+        tsk = taskmngr_get_current_task();
 
-                if (!addr) {
-                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-                }
+        tcb = task_get_tcb(tsk, 0);
 
-                console_printf("alloced addr=%x.\n", addr);
-
-                memset(addr, 0, 2*PAGE_SIZE);
+        if ((err = tcb_init(tcb, stack)) < 0) {
+                console_perror("tcb_init", -err);
         }
 
-        {
-                struct task *tsk = taskmngr_get_current_task();
+        /* load modules as ELF binaries
+         */
 
-                int *addr = page_address(virtmem_alloc_pages_in_area(
-                                        tsk->pd,
-                                        1023,
-                                        g_virtmem_area+VIRTMEM_AREA_USER,
-                                        PTE_FLAG_PRESENT|
-                                        PTE_FLAG_WRITEABLE));
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
-                if (!addr) {
-                        console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-                }
-
-                console_printf("alloced addr=%x.\n", addr);
-
-                memset(addr, 0, 1023*PAGE_SIZE);
+        if ((err = multiboot_load_modules(mb_info)) < 0) {
+                console_perror("multiboot_load_modules", -err);
+                return;
         }
 
-        /* setup kernel as thread 0 of kernel task */
-
-        {
-                struct task *tsk = taskmngr_get_current_task();
-
-                struct tcb *tcb = task_get_tcb(tsk, 0);
-
-                if ((err = tcb_init(tcb, stack)) < 0) {
-                        console_perror("tcb_init", -err);
-                }
-        }
-
-        /* load init task */
-
-        if (mb_info->flags&MULTIBOOT_INFO_FLAG_MODS) {
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-                load_modules(mb_info);
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-        }
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         return;
 
@@ -422,5 +401,48 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_printf("%x", esp);
                 sti();
         }*/
+}
+
+/* dead code */
+
+int
+test_alloc(void)
+{
+        struct task *tsk;
+        int *addr;
+
+        tsk = taskmngr_get_current_task();
+ 
+        addr = page_address(virtmem_alloc_pages_in_area(
+                            tsk->pd,
+                            2,
+                            g_virtmem_area+VIRTMEM_AREA_USER,
+                            PTE_FLAG_PRESENT|
+                            PTE_FLAG_WRITEABLE));
+        if (!addr) {
+                console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
+        }
+
+        console_printf("alloced addr=%x.\n", addr);
+
+        memset(addr, 0, 2*PAGE_SIZE);
+
+        tsk = taskmngr_get_current_task();
+
+        addr = page_address(virtmem_alloc_pages_in_area(
+                            tsk->pd,
+                            1023,
+                            g_virtmem_area+VIRTMEM_AREA_USER,
+                            PTE_FLAG_PRESENT|
+                            PTE_FLAG_WRITEABLE));
+        if (!addr) {
+                console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
+        }
+
+        console_printf("alloced addr=%x.\n", addr);
+
+        memset(addr, 0, 1023*PAGE_SIZE);
+
+        return 0;
 }
 

@@ -27,9 +27,9 @@ int
 physmem_init(unsigned long physmap, unsigned long nframes);
 
 int
-physmem_add_area(unsigned long pfindex,
-                 unsigned long nframes,
-                 unsigned char flags);
+physmem_set_flags(unsigned long pfindex,
+                  unsigned long pfcount,
+                  unsigned char flags);
 
 unsigned long
 physmem_alloc_frames(unsigned long nframes);

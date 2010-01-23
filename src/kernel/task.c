@@ -31,6 +31,7 @@ int
 task_init(struct task *task, struct page_directory *pd)
 {
         task->pd = pd;
+        task->nthreads = 0;
 
         return 0;
 }

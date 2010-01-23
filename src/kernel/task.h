@@ -20,7 +20,8 @@ struct task
 {
         struct tcb tcb[255];
         struct page_directory *pd;
-} __attribute__ (( aligned(4096) ));
+        unsigned char nthreads;
+};
 
 int
 task_init(struct task *task, struct page_directory *pd);

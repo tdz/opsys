@@ -40,9 +40,6 @@ page_address(unsigned long pgindex)
         return (void*)page_offset(pgindex);
 }
 
-#define PAGE_SPAN(_bytes) \
-        (((_bytes)+(PAGE_SIZE-1))>>PAGE_SHIFT)
-
 static __inline__ unsigned long
 page_count(unsigned long addr, unsigned long bytes)
 {

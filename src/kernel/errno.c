@@ -18,7 +18,7 @@
 
 #include <errno.h>
 
-const char* sys_errlist[] = {
+const char const * sys_errlist[] = {
         "no error",
         "E2BIG",
         "EACCES",

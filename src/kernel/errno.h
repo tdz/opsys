@@ -105,5 +105,5 @@ enum {
         LAST_ERROR
 };
 
-const char* sys_errlist[LAST_ERROR];
+const char const * sys_errlist[LAST_ERROR];
 

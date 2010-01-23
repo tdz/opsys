@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <mmu.h>
 #include <page.h>
 #include <pte.h>
 #include <pagetbl.h>
@@ -33,7 +34,6 @@
 #include "virtmem.h"
 #include "tid.h"
 #include "taskmngr.h"
-#include <mmu.h>
 
 #include "console.h"
 

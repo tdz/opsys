@@ -17,12 +17,11 @@
  */
 
 #include <stddef.h>
-#include "types.h"
+#include <types.h>
 #include "syscall.h"
 #include "idt.h"
 #include "idtentry.h"
 #include "interupt.h"
-#include "console.h"
 
 /* system interupts
  */
@@ -130,8 +129,6 @@ idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
 {
         const int ints = int_enabled();
 
-        console_printf("ints=%x.\n", ints);
-
         if (ints) {
                 cli();
         }
@@ -139,9 +136,7 @@ idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
         invalop_handler = hdlr;
 
         if (ints) {
-                __asm__("hlt\n\t");
                 sti();
-                __asm__("hlt\n\t");
         }
 
         return 0;

@@ -21,7 +21,6 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "multiboot.h"
 #include "console.h"
 #include "gdt.h"
 #include "idt.h"
@@ -42,6 +41,7 @@
 #include "loader.h"
 #include "tid.h"
 #include "taskmngr.h"
+#include "multiboot.h"
 
 static int
 range_order(unsigned long beg1, unsigned long end1,
@@ -378,29 +378,10 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* load modules as ELF binaries
          */
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
-
         if ((err = multiboot_load_modules(mb_info)) < 0) {
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
-
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
-
-        return;
-
-/*        for (;;) {*/
-/*                __asm__("int $0x20\n\t");*/
-/*                cli();
-                __asm__("movl %%esp, %0\n\t"
-                                : "=r"(esp)
-                                :
-                                :);
-
-                crt_setpos(12, 40);
-                console_printf("%x", esp);
-                sti();
-        }*/
 }
 
 /* dead code */

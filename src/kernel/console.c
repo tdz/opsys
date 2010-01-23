@@ -16,10 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <stdarg.h>
-#include "types.h"
-#include "errno.h"
-#include "string.h"
+#include <string.h>
+#include <types.h>
 #include "crt.h"
 
 static size_t

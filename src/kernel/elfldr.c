@@ -28,7 +28,6 @@
 #include "virtmem.h"
 #include "tcb.h"
 #include "task.h"
-#include "console.h"
 #include "elf.h"
 #include "elfldr.h"
 
@@ -85,6 +84,8 @@ elf_loader_construct_phdr(struct page_directory *pd,
 
         return construct_phdr[elf_phdr->p_type](pd, elf_phdr, elfimg);
 }
+
+#include "console.h"
 
 int
 elf_loader_exec(struct task *tsk, const unsigned char *elfimg)

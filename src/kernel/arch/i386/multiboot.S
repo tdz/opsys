@@ -41,21 +41,21 @@ multiboot_header:
         .long 0
 
 multiboot_entry:
-	movl $(stack+4096), %esp
+        movl $(stack+4096), %esp
 
-	pushl $0
-	popf
+        pushl $0
+        popf
 
         /* call C main function for multiboot */
 
-/*	pushl stack*/
-	pushl %ebx
-	pushl $multiboot_header
-	call multiboot_main
+        pushl stack
+        pushl %ebx
+        pushl $multiboot_header
+        call multiboot_main
 
 hltloop:
-	hlt
-	jmp hltloop
+        hlt
+        jmp hltloop
 
 .data
 

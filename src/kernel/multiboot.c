@@ -269,7 +269,8 @@ main_invalop_handler(address_type ip)
 
 void
 multiboot_main(const struct multiboot_header *mb_header,
-               const struct multiboot_info *mb_info)
+               const struct multiboot_info *mb_info,
+               void *stack)
 {
         int err;
 
@@ -394,7 +395,7 @@ multiboot_main(const struct multiboot_header *mb_header,
 
                 struct tcb *tcb = task_get_tcb(tsk, 0);
 
-                if ((err = tcb_init(tcb, 0)) < 0) {
+                if ((err = tcb_init(tcb, stack)) < 0) {
                         console_perror("tcb_init", -err);
                 }
         }

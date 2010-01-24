@@ -30,15 +30,15 @@ static int
 physmem_set_flags_self(void)
 {
         /* add global variables of physmem */
-        physmem_set_flags(pageframe_index((unsigned long)&g_physmap),
+        physmem_set_flags(pageframe_index(&g_physmap),
                           pageframe_count(sizeof(g_physmap)),
                           PHYSMEM_FLAG_RESERVED);
-        physmem_set_flags(pageframe_index((unsigned long)&g_physmap_nframes),
+        physmem_set_flags(pageframe_index(&g_physmap_nframes),
                           pageframe_count(sizeof(g_physmap_nframes)),
                           PHYSMEM_FLAG_RESERVED);
 
         /* add physmap */
-        physmem_set_flags(pageframe_index((unsigned long)g_physmap),
+        physmem_set_flags(pageframe_index(g_physmap),
                           pageframe_count(g_physmap_nframes*sizeof(g_physmap[0])),
                           PHYSMEM_FLAG_RESERVED);
 

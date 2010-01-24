@@ -22,46 +22,46 @@ enum {
         PAGE_MASK  = PAGE_SIZE-1
 };
 
-static __inline__ unsigned long
-page_index(unsigned long addr)
+static __inline__ os_index_t
+page_index(const void *addr)
 {
-        return addr>>PAGE_SHIFT;
+        return ((size_t)addr)>>PAGE_SHIFT;
 }
 
-static __inline__ unsigned long
-page_offset(unsigned long pgindex)
+static __inline__ size_t
+page_offset(os_index_t pgindex)
 {
         return pgindex<<PAGE_SHIFT;
 }
 
 static __inline__ void *
-page_address(unsigned long pgindex)
+page_address(os_index_t pgindex)
 {
         return (void*)page_offset(pgindex);
 }
 
-static __inline__ unsigned long
-page_count(unsigned long addr, unsigned long bytes)
+static __inline__ size_t
+page_count(const void *addr, size_t bytes)
 {
         return bytes ? 1 + page_index(addr+bytes-1) - page_index(addr)
                      : 0;
 }
 
-static __inline__ unsigned long
-page_memory(unsigned long npages)
+static __inline__ size_t
+page_memory(size_t npages)
 {
         return npages*PAGE_SIZE;
 }
 
-static __inline__ unsigned long
-page_floor(unsigned long addr)
+static __inline__ void *
+page_floor(const void *addr)
 {
-        return addr & ~PAGE_MASK;
+        return (void*)(((size_t)addr) & ~PAGE_MASK);
 }
 
-static __inline__ unsigned long
-page_ceil(unsigned long addr)
+static __inline__ void *
+page_ceil(const void *addr)
 {
-        return ((addr>>PAGE_SHIFT)+1) << PAGE_SHIFT;
+        return (void*)(((((size_t)addr)>>PAGE_SHIFT)+1) << PAGE_SHIFT);
 }
 

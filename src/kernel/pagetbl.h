@@ -22,45 +22,45 @@ enum {
         PAGETABLE_MASK  = PAGETABLE_SIZE-1
 };
 
-static __inline__ unsigned long
-pagetable_index(unsigned long addr)
+static __inline__ os_index_t
+pagetable_index(const void *addr)
 {
-        return addr>>PAGETABLE_SHIFT;
+        return (((size_t)addr)>>PAGETABLE_SHIFT);
 }
 
-static __inline__ unsigned long
-pagetable_offset(unsigned long index)
+static __inline__ size_t
+pagetable_offset(os_index_t index)
 {
         return index<<PAGETABLE_SHIFT;
 }
 
 static __inline__ void *
-pagetable_address(unsigned long ptindex)
+pagetable_address(os_index_t ptindex)
 {
         return (void*)pagetable_offset(ptindex);
 }
 
-static __inline__ unsigned long
-pagetable_count(unsigned long addr, unsigned long bytes)
+static __inline__ size_t
+pagetable_count(const void *addr, size_t bytes)
 {
         return bytes ? 1+pagetable_index(addr+bytes-1)-pagetable_index(addr)
                      : 0;
 }
 
-static __inline__ unsigned long
-pagetable_floor(unsigned long addr)
+static __inline__ void *
+pagetable_floor(const void *addr)
 {
-        return addr & ~PAGETABLE_MASK;
+        return (void*)(((size_t)addr) & ~PAGETABLE_MASK);
 }
 
-static __inline__ unsigned long
-pagetable_ceil(unsigned long addr)
+static __inline__ void *
+pagetable_ceil(const void *addr)
 {
-        return ((addr>>PAGETABLE_SHIFT)+1) << PAGETABLE_SHIFT;
+        return (void*)(((((size_t)addr)>>PAGETABLE_SHIFT)+1)<<PAGETABLE_SHIFT);
 }
 
-static __inline__ unsigned long
-pagetable_page_index(unsigned long pgindex)
+static __inline__ size_t
+pagetable_page_index(os_index_t pgindex)
 {
         return pgindex&0x3ff;
 }

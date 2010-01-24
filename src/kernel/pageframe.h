@@ -22,52 +22,52 @@ enum {
         PAGEFRAME_MASK  = PAGEFRAME_SIZE-1
 };
 
-static __inline__ unsigned long
-pageframe_index(unsigned long addr)
+static __inline__ os_index_t
+pageframe_index(const void *addr)
 {
-        return addr>>PAGEFRAME_SHIFT;
+        return ((size_t)addr)>>PAGEFRAME_SHIFT;
 }
 
-static __inline__ unsigned long
-pageframe_offset(unsigned long index)
+static __inline__ size_t
+pageframe_offset(os_index_t index)
 {
         return index<<PAGEFRAME_SHIFT;
 }
 
-static __inline__ void *
-pageframe_address(unsigned long index)
+static __inline__ void*
+pageframe_address(os_index_t index)
 {
         return (void*)pageframe_offset(index);
 }
 
-static __inline__ unsigned long
-pageframe_count(unsigned long bytes)
+static __inline__ size_t
+pageframe_count(size_t bytes)
 {
         return (bytes+PAGEFRAME_SIZE-1)>>PAGEFRAME_SHIFT;
 }
 
-static __inline__ unsigned long
-pageframe_span(unsigned long addr, unsigned long bytes)
+static __inline__ size_t
+pageframe_span(const void *addr, size_t bytes)
 {
         return bytes ? 1+pageframe_index(addr+bytes-1)-pageframe_index(addr)
                      : 0;
 }
 
-static __inline__ unsigned long
-pageframe_memory(unsigned long nframes)
+static __inline__ size_t
+pageframe_memory(os_index_t nframes)
 {
         return nframes*PAGEFRAME_SIZE;
 }
 
-static __inline__ unsigned long
-pageframe_floor(unsigned long addr)
+static __inline__ void*
+pageframe_floor(const void *addr)
 {
-        return addr & ~PAGEFRAME_MASK;
+        return (void*)(((size_t)addr) & ~PAGEFRAME_MASK);
 }
 
-static __inline__ unsigned long
-pageframe_ceil(unsigned long addr)
+static __inline__ void*
+pageframe_ceil(const void *addr)
 {
-        return ((addr>>PAGEFRAME_SHIFT)+1) << PAGEFRAME_SHIFT;
+        return (void*)(((((size_t)addr)>>PAGEFRAME_SHIFT)+1)<<PAGEFRAME_SHIFT);
 }
 

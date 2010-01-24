@@ -86,7 +86,7 @@ virtmem_map_page_frame_at_nopg(struct page_directory *pd,
 
         /* get page table */
 
-        ptindex = pagetable_index(page_offset(pgindex));
+        ptindex = pagetable_index(page_address(pgindex));
 
         pt = pageframe_address(pde_get_pageframe_index(pd->entry[ptindex]));
 
@@ -216,8 +216,8 @@ virtmem_init(struct page_directory *pd)
                         continue;
                 }
 
-                ptindex = pagetable_index(page_offset(beg->pgindex));
-                ptcount = pagetable_count(page_offset(beg->pgindex),
+                ptindex = pagetable_index(page_address(beg->pgindex));
+                ptcount = pagetable_count(page_address(beg->pgindex),
                                           page_memory(beg->npages));
 
                 /* create page tables for low area */
@@ -284,10 +284,10 @@ virtmem_init(struct page_directory *pd)
                         return err;
                 }
 
-                ptpfindex = page_index((unsigned long)pt);
+                ptpfindex = page_index(pt);
 
                 index = pagetable_index(
-                                page_offset(
+                                page_address(
                                         g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].pgindex));
 
                 err = page_directory_install_page_table(pd,
@@ -377,8 +377,8 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
         unsigned long ptindex, ptcount;
         unsigned long nempty;
 
-        ptindex = pagetable_index(page_offset(pgindex));
-        ptcount = pagetable_count(page_offset(pgindex), page_memory(pgcount));
+        ptindex = pagetable_index(page_address(pgindex));
+        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
 
         for (nempty = 0; ptcount; --ptcount, ++ptindex) {
 
@@ -467,8 +467,8 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
         unsigned long i;
         int err;
 
-        ptindex = pagetable_index(page_offset(pgindex));
-        ptcount = pagetable_count(page_offset(pgindex), page_memory(pgcount));
+        ptindex = pagetable_index(page_address(pgindex));
+        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
 
         for (err = 0, i = 0; (i < ptcount) && !(err < 0); ++i) {
 
@@ -564,10 +564,12 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
         unsigned long i;
         int err;
 
-        ptindex = pagetable_index(page_offset(pgindex));
-        ptcount = pagetable_count(page_offset(pgindex), page_memory(pgcount));
+        ptindex = pagetable_index(page_address(pgindex));
+        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
 
-        for (err = 0, i = 0; (i < ptcount) && !(err < 0); ++i) {
+        err = 0;
+
+        for (i = 0; (i < ptcount) && !(err < 0); ++i) {
 
                 unsigned long ptpfindex;
                 unsigned long ptpgindex;
@@ -638,7 +640,7 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                         unsigned long pfindex = physmem_alloc_frames(1);
 
                         if (!pfindex) {
-                                err = -1;
+                                err = -ENOMEM;
                                 break;
                         }
 
@@ -697,13 +699,12 @@ virtmem_flat_copy_area(const struct virtmem_area *area,
                        const struct page_directory *pd,
                              struct page_directory *dst)
 {
-        unsigned long ptindex, ptcount, pgoffset;
+        unsigned long ptindex, ptcount;
 
-        pgoffset = page_offset(area->pgindex);
+        ptindex = pagetable_index(page_address(area->pgindex));
 
-        ptindex = pagetable_index(pgoffset);
-
-        ptcount = pagetable_count(pgoffset, page_memory(area->npages));
+        ptcount = pagetable_count(page_address(area->pgindex),
+                                  page_memory(area->npages));
 
         while (ptcount) {
                 dst->entry[ptindex] = pd->entry[ptindex];
@@ -743,7 +744,7 @@ virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
         os_index_t pfindex;
         int err;
 
-        ptindex = pagetable_index(page_offset(pgindex));
+        ptindex = pagetable_index(page_address(pgindex));
 
         ptpfindex = pde_get_pageframe_index(pd->entry[ptindex]);
 

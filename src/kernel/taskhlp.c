@@ -80,13 +80,13 @@ task_helper_allocate_kernel_task(struct page_directory *kernel_pd,
         return 0;
 
 err_task_init:
-        physmem_unref_frames(pageframe_index((unsigned long)*tsk),
+        physmem_unref_frames(pageframe_index(*tsk),
                              pageframe_count(sizeof(**tsk)));
 err_virtmem_alloc_pages_in_area_tsk:
 err_virtmem_install:
         page_directory_uninit(kernel_pd);
 err_page_directory_init:
-        physmem_unref_frames(pageframe_index((unsigned long)kernel_pd),
+        physmem_unref_frames(pageframe_index(kernel_pd),
                              pageframe_count(sizeof(*kernel_pd)));
         return err;
 }

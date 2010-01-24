@@ -19,6 +19,7 @@
 #include <types.h>
 #include <errno.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "console.h"
@@ -45,6 +46,20 @@
 #include "sched.h"
 #include "multiboot.h"
 
+static void*
+mmap_base_addr(const struct multiboot_mmap *mmap)
+{
+        /* only lowest 4 byte are available in 32-bit protected mode */
+        return (void*)(intptr_t)((((uint64_t)mmap->base_addr_high)<<32) +
+                                             mmap->base_addr_low);
+}
+
+static uint64_t
+mmap_length(const struct multiboot_mmap *mmap)
+{
+        return (((uint64_t)mmap->length_high)<<32) + mmap->length_low;
+}
+
 static int
 range_order(unsigned long beg1, unsigned long end1,
             unsigned long beg2, unsigned long end2)
@@ -68,10 +83,10 @@ find_unused_area(const struct multiboot_header *mb_header,
         unsigned long kernel_pfindex, kernel_nframes;
         unsigned long pfoffset;
 
-        kernel_pfindex = pageframe_index(mb_header->load_addr);
-        kernel_nframes = pageframe_span(mb_header->load_addr,
-                                        mb_header->bss_end_addr -
-                                        mb_header->load_addr+1);
+        kernel_pfindex = pageframe_index((void*)mb_header->load_addr);
+        kernel_nframes = pageframe_span((void*)mb_header->load_addr,
+                                               mb_header->bss_end_addr -
+                                               mb_header->load_addr+1);
 
         mmap_addr = mb_info->mmap_addr;
 
@@ -94,13 +109,8 @@ find_unused_area(const struct multiboot_header *mb_header,
 
                 /* area page index and length */
 
-                area_pfindex = pageframe_index(
-                        (((unsigned long long)mmap->base_addr_high)<<32) +
-                                              mmap->base_addr_low);
-
-                area_nframes = pageframe_count(
-                        (((unsigned long long)mmap->length_high)<<32) +
-                                              mmap->length_low);
+                area_pfindex = pageframe_index(mmap_base_addr(mmap));
+                area_nframes = pageframe_count(mmap_length(mmap));
 
                 /* area at address 0, or too small */
                 if (!area_pfindex || (area_nframes < nframes)) {
@@ -132,7 +142,7 @@ find_unused_area(const struct multiboot_header *mb_header,
                                 unsigned long mod_pfindex;
                                 unsigned long mod_nframes;
 
-                                mod_pfindex = pageframe_index(mod->mod_start);
+                                mod_pfindex = pageframe_index((void*)mod->mod_start);
                                 mod_nframes = pageframe_count(mod->mod_end -
                                                               mod->mod_start);
 
@@ -182,7 +192,7 @@ err_multiboot_info_flag_mem:
 static int
 multiboot_init_physmem_kernel(const struct multiboot_header *mb_header)
 {
-        return physmem_set_flags(pageframe_index(mb_header->load_addr),
+        return physmem_set_flags(pageframe_index((void*)mb_header->load_addr),
                                  pageframe_count(mb_header->bss_end_addr-
                                                  mb_header->load_addr),
                                  PHYSMEM_FLAG_RESERVED);
@@ -207,13 +217,8 @@ multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
 
                 mmap = (const struct multiboot_mmap*)mmap_addr;
 
-                pfindex = pageframe_index(
-                        (((unsigned long long)mmap->base_addr_high)<<32) +
-                                              mmap->base_addr_low);
-
-                nframes = pageframe_count(
-                        (((unsigned long long)mmap->length_high)<<32) +
-                                              mmap->length_low);
+                pfindex = pageframe_index(mmap_base_addr(mmap));
+                nframes = pageframe_count(mmap_length(mmap));
 
                 physmem_set_flags(pfindex,
                                   nframes,
@@ -230,7 +235,7 @@ multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
 static int
 multiboot_init_physmem_module(const struct multiboot_module *mod)
 {
-        return physmem_set_flags(pageframe_index(mod->mod_start),
+        return physmem_set_flags(pageframe_index((void*)mod->mod_start),
                                  pageframe_count(mod->mod_end-mod->mod_start),
                                  PHYSMEM_FLAG_RESERVED);
 }

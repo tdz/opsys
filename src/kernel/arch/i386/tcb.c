@@ -227,7 +227,7 @@ tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)
 {
         os_index_t pfindex;
 
-        pfindex = virtmem_lookup_pageframe(pd, page_index((unsigned long)pd));
+        pfindex = virtmem_lookup_pageframe(pd, page_index(pd));
 
         tcb->cr3 = (pfindex<<12) | (tcb->cr3&0xfff);
 

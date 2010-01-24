@@ -18,33 +18,27 @@
 
 #include <types.h>
 #include <errno.h>
-#include <stddef.h>
-#include <string.h>
 
 #include <mmu.h>
-#include <page.h>
-#include <pte.h>
-#include <pagetbl.h>
-#include <pde.h>
-#include <pagedir.h>
-#include <tcb.h>
-#include "task.h"
+
+/* physical memory */
 #include "pageframe.h"
 #include "physmem.h"
+
+/* virtual memory */
+#include <page.h>
+#include <pte.h>
+#include <pde.h>
+#include <pagedir.h>
 #include "virtmem.h"
-#include "tid.h"
-#include "taskmngr.h"
+
+#include "task.h"
+#include "taskhlp.h"
 
 #include "console.h"
 
-enum {
-        MAXTASK = 1024
-};
-
-static struct task* g_task[MAXTASK];
-
 int
-taskmngr_init(void *stack)
+task_helper_allocate_kernel_task(struct task **tsk)
 {
         int err;
         int pgindex;
@@ -73,7 +67,7 @@ taskmngr_init(void *stack)
         /* create kernel task */
 
         pgindex = virtmem_alloc_pages_in_area(&g_kernel_pd,
-                                              page_count(0, sizeof(*g_task[0])),
+                                              page_count(0, sizeof(**tsk)),
                                               g_virtmem_area+
                                                 VIRTMEM_AREA_KERNEL,
                                               PTE_FLAG_PRESENT|
@@ -83,17 +77,17 @@ taskmngr_init(void *stack)
                 goto err_virtmem_alloc_pages_in_area_tsk;
         }
 
-        g_task[0] = page_address(pgindex);
+        *tsk = page_address(pgindex);
 
-        if ((err = task_init(g_task[0], &g_kernel_pd)) < 0) {
+        if ((err = task_init(*tsk, &g_kernel_pd)) < 0) {
                 goto err_task_init;
         }
 
         return 0;
 
 err_task_init:
-        physmem_unref_frames(pageframe_index((unsigned long)g_task[0]),
-                             pageframe_count(sizeof(*g_task[0])));
+        physmem_unref_frames(pageframe_index((unsigned long)*tsk),
+                             pageframe_count(sizeof(**tsk)));
 err_virtmem_alloc_pages_in_area_tsk:
 err_virtmem_install:
         page_directory_uninit(&g_kernel_pd);
@@ -103,59 +97,78 @@ err_page_directory_init:
         return err;
 }
 
-ssize_t
-taskmngr_add_task(struct task *tsk)
-{
-        ssize_t i = 1;
-
-        while ((i < sizeof(g_task)/sizeof(g_task[0])) && g_task[i]) {
-                ++i;
-        }
-
-        if (i == sizeof(g_task)/sizeof(g_task[0])) {
-                return -EAGAIN;
-        }
-
-        g_task[i] = tsk;
-
-        return i;
-}
-
-ssize_t
-taskmngr_allocate_task(struct task *parent)
+int
+task_helper_allocate_task_from_parent(const struct task *parent,
+                                            struct task **tsk)
 {
         int err;
-        struct task *tsk;
 
         /* allocate task memory */
 
-        tsk = virtmem_alloc_in_area(parent->pd,
-                                    page_count(0, sizeof(*tsk)),
-                                    g_virtmem_area+VIRTMEM_AREA_KERNEL,
-                                    PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
-        if (!tsk) {
+        *tsk = virtmem_alloc_in_area(parent->pd,
+                                     page_count(0, sizeof(*tsk)),
+                                     g_virtmem_area+VIRTMEM_AREA_KERNEL,
+                                     PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
+        if (!*tsk) {
                 err = -ENOMEM;
                 goto err_virtmem_alloc_in_area;
         }
 
         /* init task from parent */
 
-        if ((err = task_init_from_parent(tsk, parent)) < 0) {
-                goto err_task_init;
+        if ((err = task_helper_init_task_from_parent(parent, tsk)) < 0) {
+                goto err_task_helper_init_task_from_parent;
         }
 
-        return taskmngr_add_task(tsk);
+        return 0;
 
-err_task_init:
-        /* TODO: free pages */
+err_task_helper_init_task_from_parent:
+        /* TODO: free task pages */
 err_virtmem_alloc_in_area:
         return err;
 }
 
-struct task *
-taskmngr_get_task(unsigned int taskid)
+int
+task_helper_init_task_from_parent(const struct task *parent,
+                                        struct task **tsk)
 {
-        return taskid < sizeof(g_task)/sizeof(g_task[0]) ? g_task[taskid]
-                                                         : NULL;
+        int err;
+        struct page_directory *pd;
+
+        /* flat-copy page directory from parent */
+
+        pd = virtmem_alloc_in_area(parent->pd,
+                                   page_count(0, sizeof(*pd)),
+                                   g_virtmem_area+VIRTMEM_AREA_KERNEL,
+                                   PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
+        if (!pd) {
+                err = -ENOMEM;
+                goto err_virtmem_alloc_in_area;
+        }
+
+        if ((err = page_directory_init(pd)) < 0) {
+                goto err_page_directory_init;
+        }
+
+        if ((err = virtmem_flat_copy_areas(parent->pd,
+                                           pd,
+                                           VIRTMEM_AREA_FLAG_GLOBAL)) < 0) {
+                goto err_virtmem_flat_copy_areas;
+        }
+
+        /* init task */
+
+        if ((err = task_init(*tsk, pd)) < 0) {
+                goto err_task_init;
+        }
+
+        return 0;
+
+err_task_init:
+        /* TODO: free pages */
+err_virtmem_flat_copy_areas:
+err_page_directory_init:
+err_virtmem_alloc_in_area:
+        return err;
 }
 

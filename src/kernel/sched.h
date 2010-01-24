@@ -16,19 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum {
-        TASKMNGR_ROOTTASKID = 0
-};
+int
+sched_init(void);
+
+ssize_t
+sched_add_thread(struct tcb *tcb);
+
+struct tcb *
+sched_get_current_thread(void);
+
+struct tcb *
+sched_get_thread(unsigned int i);
 
 int
-taskmngr_init();
-
-ssize_t
-taskmngr_allocate_task(struct task *parent);
-
-ssize_t
-taskmngr_add_task(struct task *tsk);
-
-struct task *
-taskmngr_get_task(unsigned int taskid);
+sched_switch(void);
 

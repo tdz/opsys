@@ -17,20 +17,21 @@
  */
 
 #include <errno.h>
-#include <stddef.h>
 #include <types.h>
 
 #include "bitset.h"
 
-#include "page.h"
-#include "pte.h"
-#include "pagetbl.h"
+/* virtual memory */
 #include "pde.h"
 #include "pagedir.h"
-#include "virtmem.h"
+
 #include "task.h"
 
-static unsigned char g_taskid[1024>>3];
+enum {
+        MAXTASK = 1024
+};
+
+static unsigned char g_taskid[MAXTASK>>3];
 
 int
 task_init(struct task *task, struct page_directory *pd)
@@ -55,59 +56,22 @@ err_find_taskid:
         return err;
 }
 
-int
-task_init_from_parent(struct task *tsk, const struct task *parent)
-{
-        int err;
-        struct page_directory *pd;
-
-        /* flat-copy page directory from parent */
-
-        pd = virtmem_alloc_in_area(parent->pd,
-                                   page_count(0, sizeof(*pd)),
-                                   g_virtmem_area+VIRTMEM_AREA_KERNEL,
-                                   PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
-        if (!pd) {
-                err = -ENOMEM;
-                goto err_virtmem_alloc_in_area;
-        }
-
-        if ((err = page_directory_init(pd)) < 0) {
-                goto err_page_directory_init;
-        }
-
-        if ((err = virtmem_flat_copy_areas(parent->pd,
-                                           pd,
-                                           VIRTMEM_AREA_FLAG_GLOBAL)) < 0) {
-                goto err_virtmem_flat_copy_areas;
-        }
-
-        /* init task */
-
-        if ((err = task_init(tsk, pd)) < 0) {
-                goto err_task_init;
-        }
-
-        return 0;
-
-err_task_init:
-        /* TODO: free pages */
-err_virtmem_flat_copy_areas:
-err_page_directory_init:
-err_virtmem_alloc_in_area:
-        return err;
-}
-
 void
 task_uninit(struct task *task)
 {
         bitset_unset(g_taskid, task->id);
 }
 
+size_t
+task_max_nthreads(const struct task *task)
+{
+        return sizeof(task->threadid)<<8;
+}
+
 int
 task_ref(struct task *task)
 {
-        if (task->nthreads >= 255) {
+        if (!(task->nthreads < task_max_nthreads(task))) {
                 return -EAGAIN;
         }
 

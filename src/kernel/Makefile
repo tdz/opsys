@@ -21,10 +21,12 @@ CSOURCES = bitset.c \
            pde.c \
            pit.c \
            pte.c \
+           sched.c \
            string.c \
            syscall.c \
            task.c \
-           taskmngr.c \
+           taskhlp.c \
+           tcbhlp.c \
            tid.c \
            virtmem.c
 

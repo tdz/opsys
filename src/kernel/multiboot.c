@@ -36,11 +36,13 @@
 #include "page.h"
 #include "pte.h"
 #include "mmu.h"
-#include "tcb.h"
 #include "task.h"
-#include "loader.h"
+#include "taskhlp.h"
 #include "tid.h"
-#include "taskmngr.h"
+#include "tcb.h"
+#include "tcbhlp.h"
+#include "loader.h"
+#include "sched.h"
 #include "multiboot.h"
 
 static int
@@ -306,7 +308,6 @@ multiboot_main(const struct multiboot_header *mb_header,
 {
         int err;
         struct task *tsk;
-        long pgindex;
         struct tcb *tcb;
 
         console_printf("opsys booting...\n");
@@ -367,35 +368,16 @@ multiboot_main(const struct multiboot_header *mb_header,
         idt_install_segfault_handler(virtmem_segfault_handler);
         idt_install_pagefault_handler(virtmem_pagefault_handler);
 
-        if ((err = taskmngr_init()) < 0) {
-                console_perror("taskmngr_init", -err);
+        if ((err = task_helper_allocate_kernel_task(&tsk)) < 0) {
+                console_perror("task_helper_init_kernel_task", -err);
                 return;
         }
 
         /* setup kernel as thread 0 of kernel task
          */
 
-        tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID);
-
-        if (!tsk) {
-                console_perror("taskmngr_get_task", ENOMEM);
-                return;
-        }
-
-        pgindex = virtmem_alloc_pages_in_area(tsk->pd,
-                                              page_count(0, sizeof(*tcb)),
-                                              g_virtmem_area+VIRTMEM_AREA_KERNEL,
-                                              PTE_FLAG_PRESENT|
-                                              PTE_FLAG_WRITEABLE);
-        if (pgindex < 0) {
-                console_perror("virtmem_alloc_pages_in_area", -pgindex);
-                return;
-        }
-
-        tcb = page_address(pgindex);
-
-        if ((err = tcb_init(tcb, tsk, stack)) < 0) {
-                console_perror("tcb_init", -err);
+        if ((err = tcb_helper_allocate_tcb(tsk, stack, &tcb)) < 0) {
+                console_perror("tcb_helper_allocate_tcb", -err);
                 return;
         }
 
@@ -407,7 +389,21 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        tcb_switch_to(tcb, tcb);
+        /* setup scheduler with kernel thread 0 */
+
+        if ((err = sched_init()) < 0) {
+                console_perror("sched_init", -err);
+                return;
+        }
+
+        if ((err = sched_add_thread(tcb)) < 0) {
+                console_perror("sched_add_thread", -err);
+                return;
+        }
+
+        sched_switch();
+
+/*        tcb_switch_to(tcb, tcb);*/
 }
 
 /* dead code */
@@ -415,13 +411,13 @@ multiboot_main(const struct multiboot_header *mb_header,
 int
 test_alloc(void)
 {
-        struct task *tsk;
+        struct tcb *tcb;
         int *addr;
 
-        tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID);
- 
+        tcb = sched_get_current_thread();
+
         addr = page_address(virtmem_alloc_pages_in_area(
-                            tsk->pd,
+                            tcb->task->pd,
                             2,
                             g_virtmem_area+VIRTMEM_AREA_USER,
                             PTE_FLAG_PRESENT|
@@ -434,10 +430,10 @@ test_alloc(void)
 
         memset(addr, 0, 2*PAGE_SIZE);
 
-        tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID);
+        tcb = sched_get_current_thread();
 
         addr = page_address(virtmem_alloc_pages_in_area(
-                            tsk->pd,
+                            tcb->task->pd,
                             1023,
                             g_virtmem_area+VIRTMEM_AREA_USER,
                             PTE_FLAG_PRESENT|

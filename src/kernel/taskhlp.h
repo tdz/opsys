@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,26 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct task
-{
-        struct page_directory *pd;
-        unsigned int  id;
-        unsigned char nthreads;
-        unsigned char threadid[8];
-};
+int
+task_helper_allocate_kernel_task(struct task **tsk);
 
 int
-task_init(struct task *task, struct page_directory *pd);
-
-void
-task_uninit(struct task *task);
-
-size_t
-task_max_nthreads(const struct task *task);
+task_helper_allocate_task(const struct task *parent, struct task **tsk);
 
 int
-task_ref(struct task *task);
-
-int
-task_unref(struct task *task);
+task_helper_init_task_from_parent(const struct task *parent,
+                                        struct task **tsk);
 

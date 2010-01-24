@@ -22,14 +22,16 @@
 
 #include "bitset.h"
 
+/* virtual memory */
 #include "page.h"
 #include "pte.h"
 #include "pagetbl.h"
 #include "pde.h"
 #include "pagedir.h"
 #include "virtmem.h"
-#include "tcb.h"
+
 #include "task.h"
+#include "tcb.h"
 
 int
 tcb_init_with_id(struct tcb *tcb,
@@ -53,6 +55,8 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->task = task;
         tcb->stack = stack;
         tcb->id = id;
+
+        tcb->esp = (unsigned long)tcb->stack;
 
         return 0;
 

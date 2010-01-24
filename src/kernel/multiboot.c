@@ -297,6 +297,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info,
                void *stack)
 {
+        static struct page_directory g_kernel_pd;
+
         int err;
         struct task *tsk;
         struct tcb *tcb;
@@ -359,7 +361,7 @@ multiboot_main(const struct multiboot_header *mb_header,
         idt_install_segfault_handler(virtmem_segfault_handler);
         idt_install_pagefault_handler(virtmem_pagefault_handler);
 
-        if ((err = task_helper_allocate_kernel_task(&tsk)) < 0) {
+        if ((err = task_helper_allocate_kernel_task(&g_kernel_pd, &tsk)) < 0) {
                 console_perror("task_helper_init_kernel_task", -err);
                 return;
         }
@@ -409,7 +411,7 @@ test_alloc(void)
         addr = page_address(virtmem_alloc_pages_in_area(
                             tcb->task->pd,
                             2,
-                            g_virtmem_area+VIRTMEM_AREA_USER,
+                            VIRTMEM_AREA_USER,
                             PTE_FLAG_PRESENT|
                             PTE_FLAG_WRITEABLE));
         if (!addr) {
@@ -425,7 +427,7 @@ test_alloc(void)
         addr = page_address(virtmem_alloc_pages_in_area(
                             tcb->task->pd,
                             1023,
-                            g_virtmem_area+VIRTMEM_AREA_USER,
+                            VIRTMEM_AREA_USER,
                             PTE_FLAG_PRESENT|
                             PTE_FLAG_WRITEABLE));
         if (!addr) {

@@ -16,25 +16,38 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "errno.h"
-#include "stddef.h"
+#include <types.h>
+#include <errno.h>
+#include <stddef.h>
+#include <string.h>
+
 #include "minmax.h"
-#include "membar.h"
-#include "string.h"
+#include <membar.h>
+#include <mmu.h>
+
+/* physical memory */
 #include "pageframe.h"
 #include "physmem.h"
+
+/* virtual memory */
 #include "page.h"
 #include "pte.h"
 #include "pagetbl.h"
 #include "pde.h"
 #include "pagedir.h"
-#include "mmu.h"
 #include "virtmem.h"
+
 #include "tcb.h"
 #include "task.h"
 
-const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
+struct virtmem_area
+{
+        os_index_t   pgindex;
+        size_t       npages;
+        unsigned int flags;
+};
+
+static const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
         {/* low kernel virtual memory: <4 MiB */
          .pgindex = 1,
          .npages  = 1023,
@@ -185,7 +198,7 @@ virtmem_get_index_tmp(os_index_t pgindex)
 }
 
 int
-virtmem_install(struct page_directory *pd)
+virtmem_init(struct page_directory *pd)
 {
         int err;
         const struct virtmem_area *beg, *end;
@@ -646,13 +659,17 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
         return err;
 }
 
-unsigned long
-virtmem_alloc_pages_in_area(struct page_directory *pd, unsigned long npages,
-                      const struct virtmem_area *area,
+os_index_t
+virtmem_alloc_pages_in_area(struct page_directory *pd,
+                            unsigned long npages,
+                            enum virtmem_area_name areaname,
                             unsigned int pteflags)
 {
         int err;
-        unsigned long pgindex;
+        os_index_t pgindex;
+        const struct virtmem_area *area;
+
+        area = g_virtmem_area+areaname;
 
         pgindex = virtmem_find_empty_pages(pd, npages, area->pgindex,
                                                        area->pgindex+
@@ -673,20 +690,6 @@ virtmem_alloc_pages_in_area(struct page_directory *pd, unsigned long npages,
 err_page_directory_alloc_pages_at:
 err_page_directory_find_empty_pages:
         return err;
-}
-
-void *
-virtmem_alloc_in_area(struct page_directory *pd, unsigned long npages,
-                const struct virtmem_area *area,
-                      unsigned int pteflags)
-{
-        console_printf("%s:%x pd=%x, npages=%x, area=%x, pteflags=%x.\n", __FILE__, __LINE__,
-                        pd, npages, area, pteflags);
-
-        return page_address(virtmem_alloc_pages_in_area(pd,
-                                                        npages,
-                                                        area,
-                                                        pteflags));
 }
 
 static int

@@ -34,17 +34,8 @@ enum virtmem_area_flags {
         VIRTMEM_AREA_FLAG_USER       = 1<<5
 };
 
-struct virtmem_area
-{
-        unsigned long pgindex;
-        unsigned long npages;
-        unsigned long flags;
-};
-
-const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA];
-
 int
-virtmem_install(struct page_directory *pd);
+virtmem_init(struct page_directory *pd);
 
 int
 virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
@@ -57,17 +48,11 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                                                unsigned long pgcount,
                                                unsigned int flags);
 
-unsigned long
+os_index_t
 virtmem_alloc_pages_in_area(struct page_directory *pd,
                             unsigned long npages,
-                      const struct virtmem_area *area,
+                            enum virtmem_area_name areaname,
                             unsigned int flags);
-
-void *
-virtmem_alloc_in_area(struct page_directory *pd,
-                      unsigned long npages,
-                const struct virtmem_area *area,
-                      unsigned int pteflags);
 
 int
 virtmem_flat_copy_areas(const struct page_directory *pd,

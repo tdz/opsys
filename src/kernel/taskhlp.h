@@ -17,7 +17,8 @@
  */
 
 int
-task_helper_allocate_kernel_task(struct task **tsk);
+task_helper_allocate_kernel_task(struct page_directory *kernel_pd,
+                                 struct task **tsk);
 
 int
 task_helper_allocate_task(const struct task *parent, struct task **tsk);

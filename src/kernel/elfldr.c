@@ -131,7 +131,7 @@ elf_loader_exec(struct tcb *tcb, const unsigned char *img)
 
         /* init TCB of first thread */
 
-        tcb_set_ip(tcb, (address_type)elf_ehdr->e_entry);
+        tcb_set_ip(tcb, (void*)elf_ehdr->e_entry);
 
         return 0;
 

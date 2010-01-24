@@ -19,10 +19,15 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+/* POSIX types */
+
 typedef unsigned long size_t;
 typedef   signed long ssize_t;
+typedef   signed long off_t;
 
-typedef unsigned long address_type;
+/* opsys types */
+
+typedef signed long os_index_t; /* index of pages, page tables, etc */
 
 #endif
 

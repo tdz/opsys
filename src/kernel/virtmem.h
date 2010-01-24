@@ -74,13 +74,12 @@ virtmem_flat_copy_areas(const struct page_directory *pd,
                               struct page_directory *dst,
                               unsigned long flags);
 
-unsigned long
-virtmem_lookup_physical_page(const struct page_directory *pt,
-                             unsigned long virt_pgindex);
+os_index_t
+virtmem_lookup_pageframe(const struct page_directory *pt, os_index_t pgindex);
 
 void
-virtmem_segfault_handler(address_type ip);
+virtmem_segfault_handler(void *ip);
 
 void
-virtmem_pagefault_handler(address_type ip, address_type addr);
+virtmem_pagefault_handler(void *ip, void *addr);
 

@@ -260,7 +260,6 @@ multiboot_init_physmem_modules(const struct multiboot_info *mb_info)
 static int
 multiboot_load_modules(struct tcb *tcb, const struct multiboot_info *mb_info)
 {
-/*        struct task *tsk;*/
         int err;
         const struct multiboot_module *mod;
         size_t i;
@@ -268,11 +267,6 @@ multiboot_load_modules(struct tcb *tcb, const struct multiboot_info *mb_info)
         if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MODS)) {
                 return 0;
         }
-
-/*        if (!(tsk = taskmngr_get_task(TASKMNGR_ROOTTASKID))) {
-                err = -ENOMEM;
-                goto err_taskmngr_get_roottask;
-        }*/
 
         mod = (const struct multiboot_module*)mb_info->mods_addr;
 
@@ -290,15 +284,12 @@ multiboot_load_modules(struct tcb *tcb, const struct multiboot_info *mb_info)
         }
 
         return 0;
-
-/*err_taskmngr_get_roottask:
-        return err;*/
 }
 
 static void
-main_invalop_handler(address_type ip)
+main_invalop_handler(void *ip)
 {
-        console_printf("invalid opcode ip=%x.\n", ip);
+        console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
 }
 
 void
@@ -373,7 +364,7 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        /* setup kernel as thread 0 of kernel task
+        /* setup current execution as thread 0 of kernel task
          */
 
         if ((err = tcb_helper_allocate_tcb(tsk, stack, &tcb)) < 0) {
@@ -389,7 +380,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        /* setup scheduler with kernel thread 0 */
+        /* setup scheduler with kernel thread 0
+         */
 
         if ((err = sched_init()) < 0) {
                 console_perror("sched_init", -err);
@@ -402,8 +394,6 @@ multiboot_main(const struct multiboot_header *mb_header,
         }
 
         sched_switch();
-
-/*        tcb_switch_to(tcb, tcb);*/
 }
 
 /* dead code */

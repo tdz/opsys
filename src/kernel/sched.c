@@ -85,7 +85,22 @@ sched_get_thread(unsigned int i)
 static int
 sched_switch_to(unsigned int i)
 {
-        return tcb_switch_to(g_thread[g_current_thread], g_thread[i]);
+        int err;
+        unsigned int current;
+
+        current = g_current_thread;
+
+        g_current_thread = i;
+
+        if ((err = tcb_switch(g_thread[current], g_thread[i])) < 0) {
+                goto err_tcb_load;
+        }
+        
+        return 0;
+
+err_tcb_load:
+        g_current_thread = current;
+        return err;
 }
 
 int

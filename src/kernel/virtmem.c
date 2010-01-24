@@ -164,7 +164,7 @@ virtmem_get_page_table_tmp(void)
                             g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].npages);
 }
 
-static unsigned long
+static os_index_t
 virtmem_get_page_tmp(size_t i)
 {
         return g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].pgindex + i;
@@ -178,8 +178,8 @@ virtmem_page_is_tmp(unsigned long pgindex)
                            g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].npages));
 }
 
-static unsigned long
-virtmem_get_index_tmp(unsigned long pgindex)
+static os_index_t
+virtmem_get_index_tmp(os_index_t pgindex)
 {
         return pgindex - g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].pgindex;
 }
@@ -286,12 +286,12 @@ virtmem_install(struct page_directory *pd)
         return err;
 }
 
-static unsigned long
+static os_index_t
 virtmem_install_page_frame_tmp(unsigned long pfindex)
 {
         volatile pde_type *ptebeg, *pteend, *pte;
         struct page_table *pt;
-        unsigned long pgindex;
+        os_index_t pgindex;
 
         pt = virtmem_get_page_table_tmp();
 
@@ -307,7 +307,7 @@ virtmem_install_page_frame_tmp(unsigned long pfindex)
 
         if (!(pteend-pte)) {
                 /* none found */
-                return 0;
+                return -EBUSY;
         }
 
         /* establish mapping to page frame */
@@ -323,16 +323,16 @@ virtmem_install_page_frame_tmp(unsigned long pfindex)
         return pgindex;
 }
 
-static unsigned long
+static os_index_t
 virtmem_uninstall_page_tmp(unsigned long pgindex)
 {
         struct page_table *pt;
-        unsigned long index;
+        os_index_t index;
         int err;
 
         if (!virtmem_page_is_tmp(pgindex)) {
                 /* not temporarily mapped */
-                return 0;
+                return -EINVAL;
         }
 
         pt = virtmem_get_page_table_tmp();
@@ -379,7 +379,7 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
                                       1024-pagetable_page_index(pgindex));
                 } else {
 
-                        unsigned long ptpgindex;
+                        os_index_t ptpgindex;
                         const struct page_table *pt;
                         size_t i;
 
@@ -387,7 +387,7 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
 
                         ptpgindex = virtmem_install_page_frame_tmp(pfindex);
 
-                        if (!ptpgindex) {
+                        if (ptpgindex < 0) {
                                 break;
                         }
 
@@ -412,6 +412,7 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
 
         return nempty;
 }
+
 #include "console.h"
 
 static unsigned long
@@ -459,7 +460,7 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
         for (err = 0, i = 0; (i < ptcount) && !(err < 0); ++i) {
 
                 unsigned long ptpfindex;
-                unsigned long ptpgindex;
+                os_index_t ptpgindex;
                 struct page_table *pt;
                 size_t j;
 
@@ -479,8 +480,8 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
 
                         ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
 
-                        if (!ptpgindex) {
-                                err = -1;
+                        if (ptpgindex < 0) {
+                                err = ptpgindex;
                                 break;
                         }
 
@@ -509,8 +510,8 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
 
                         ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
 
-                        if (!ptpgindex) {
-                                err = -1;
+                        if (ptpgindex < 0) {
+                                err = ptpgindex;
                                 break;
                         }
 
@@ -576,8 +577,8 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
 
                         ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
 
-                        if (!ptpgindex) {
-                                err = -EBUSY;
+                        if (ptpgindex < 0) {
+                                err = ptpgindex;
                                 break;
                         }
 
@@ -606,8 +607,8 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
 
                         ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
 
-                        if (!ptpgindex) {
-                                err = -EBUSY;
+                        if (ptpgindex < 0) {
+                                err = ptpgindex;
                                 break;
                         }
 
@@ -729,25 +730,58 @@ virtmem_flat_copy_areas(const struct page_directory *pd,
         return 0;
 }
 
-unsigned long
-virtmem_lookup_physical_page(const struct page_directory *pd,
-                             unsigned long pgindex)
+os_index_t
+virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
 {
-        return 0;
+        os_index_t ptindex;
+        os_index_t ptpgindex;
+        os_index_t ptpfindex;
+        struct page_table *pt;
+        os_index_t pfindex;
+        int err;
+
+        ptindex = pagetable_index(page_offset(pgindex));
+
+        ptpfindex = pde_get_pageframe_index(pd->entry[ptindex]);
+
+        /* map page table of page address */
+
+        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+
+        if (ptpgindex < 0) {
+                err = ptpgindex;
+                goto err_virtmem_install_page_frame_tmp;
+        }
+
+        /* read page frame */
+
+        pt = page_address(ptpgindex);
+
+        pfindex = pte_get_pageframe_index(pt->entry[pgindex&0x3ff]);
+
+        /* unmap page table */
+
+        virtmem_uninstall_page_tmp(ptpgindex);
+
+        return pfindex;
+
+err_virtmem_install_page_frame_tmp:
+        return err;
 }
 
 #include "console.h"
 
 void
-virtmem_segfault_handler(address_type ip)
+virtmem_segfault_handler(void *ip)
 {
-        console_printf("segmentation fault: ip=%x.\n", ip);
+        console_printf("segmentation fault: ip=%x.\n", (unsigned long)ip);
 }
 
 void
-virtmem_pagefault_handler(address_type ip, address_type addr)
+virtmem_pagefault_handler(void *ip, void *addr)
 {
-        console_printf("page fault: ip=%x, addr=%x.\n", ip, addr);
+        console_printf("page fault: ip=%x, addr=%x.\n", (unsigned long)ip,
+                                                        (unsigned long)addr);
 }
 
 

@@ -22,6 +22,8 @@
 
 #include "bitset.h"
 
+#include "interupt.h"
+
 /* virtual memory */
 #include "page.h"
 #include "pte.h"
@@ -52,11 +54,14 @@ tcb_init_with_id(struct tcb *tcb,
 
         memset(tcb, 0, sizeof(*tcb));
 
+        tcb->state = THREAD_STATE_ZOMBIE;
         tcb->task = task;
         tcb->stack = stack;
         tcb->id = id;
 
         tcb->esp = (unsigned long)tcb->stack;
+
+        tcb_set_page_directory(tcb, tcb->task->pd);
 
         return 0;
 
@@ -92,14 +97,70 @@ tcb_uninit(struct tcb *tcb)
 }
 
 void
-tcb_set_ip(struct tcb *tcb, address_type ip)
+tcb_set_state(struct tcb *tcb, enum thread_state state)
 {
-        tcb->eip = ip;
+        tcb->state = state;
+}
+
+enum thread_state
+tcb_get_state(const struct tcb *tcb)
+{
+        return tcb->state;
+}
+
+void
+tcb_set_ip(struct tcb *tcb, void *ip)
+{
+        tcb->eip = (unsigned long)ip;
 }
 
 int
-tcb_switch_to(struct tcb *tcb, const struct tcb *dst)
+tcb_switch(struct tcb *tcb, struct tcb *dst)
 {
+        cli();
+
+        __asm__(/* save %eax first, as it later contains the tcb address */
+                "pushl %%edx\n\t"
+                "lea 8(%%ebp), %%edx\n\t"
+                "movl %%eax, (%%edx)\n\t"
+                "movl %%edx, %%eax\n\t"
+                "popl %%edx\n\t"
+                /* adjust %eax to point to first register in tcb */
+                "addl $16, %%eax\n\t"
+                /* save other general-purpose registers */
+                "movl %%ebx, 4(%%eax)\n\t"
+                "movl %%ecx, 8(%%eax)\n\t"
+                "movl %%edx, 12(%%eax)\n\t"
+                /* index registers */
+                "movl %%esi, 16(%%eax)\n\t"
+                "movl %%edi, 20(%%eax)\n\t"
+                "movl %%ebp, 24(%%eax)\n\t"
+                "movl %%esp, 32(%%eax)\n\t"
+                /* segmentation registers */
+                "mov %%cs, 36(%%eax)\n\t"
+                "mov %%ds, 38(%%eax)\n\t"
+                "mov %%ss, 40(%%eax)\n\t"
+                "mov %%es, 42(%%eax)\n\t"
+                "mov %%fs, 44(%%eax)\n\t"
+                "mov %%gs, 46(%%eax)\n\t"
+                /* control registers (need intermediate register) */
+                "movl %%cr0, %%ebx\n\t" "movl %%ebx, 48(%%eax)\n\t"
+                "movl %%cr2, %%ebx\n\t" "movl %%ebx, 52(%%eax)\n\t"
+                "movl %%cr3, %%ebx\n\t" "movl %%ebx, 56(%%eax)\n\t"
+                "movl %%cr4, %%ebx\n\t" "movl %%ebx, 60(%%eax)\n\t"
+                /* push flags onto stack */
+/*                "pushf\n\t"*/
+                        :
+                        :
+                        : "%eax" /* used for tcb address */);
+
+        __asm__("movl %0, %%cr3\n\t"
+                        :
+                        : "r"(dst->cr3)
+                        :);
+
+        sti();
+
         __asm__("jmp *%0\n\t"
                         :
                         : "r"(dst->eip) );
@@ -108,7 +169,7 @@ tcb_switch_to(struct tcb *tcb, const struct tcb *dst)
 }
 
 void
-tcb_save(struct tcb *tcb, unsigned long ip, unsigned long eflags)
+tcb_save(struct tcb *tcb, unsigned long ip)
 {
         __asm__(/* save %eax first, as it later contains the tcb address */
                 "pushl %%edx\n\t"
@@ -143,7 +204,7 @@ tcb_save(struct tcb *tcb, unsigned long ip, unsigned long eflags)
                         : "%eax" /* used for tcb address */);
 
         tcb->eip = ip;
-        tcb->eflags = eflags;
+/*        tcb->eflags = eflags;*/
 }
 
 int
@@ -154,18 +215,21 @@ tcb_load(const struct tcb *tcb)
                         : "r"(tcb->cr3)
                         :);
 
+        __asm__("jmp *%0\n\t"
+                        :
+                        : "r"(tcb->eip) );
+
         return 0;
 }
 
 int
-tcb_set_page_directory(struct tcb *tcb, struct page_directory *pd)
+tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)
 {
-        unsigned long phys_pgindex;
+        os_index_t pfindex;
 
-        phys_pgindex = virtmem_lookup_physical_page(pd,
-                                        page_index((unsigned long)pd));
+        pfindex = virtmem_lookup_pageframe(pd, page_index((unsigned long)pd));
 
-        tcb->cr3 = (phys_pgindex<<12) | (tcb->cr3&0xfff);
+        tcb->cr3 = (pfindex<<12) | (tcb->cr3&0xfff);
 
         return 0;
 }

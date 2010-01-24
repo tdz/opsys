@@ -16,8 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+enum thread_state {
+        THREAD_STATE_STARTING = 0, /* not yet executed */
+        THREAD_STATE_READY, /* ready to be executed */
+        THREAD_STATE_BLOCKED, /* blocked by some action */
+        THREAD_STATE_ZOMBIE /* waiting for removal */
+};
+
 struct tcb
 {
+        enum thread_state state;
         struct task *task; /* task of the thread */
         void *stack; /* stack base address */
         unsigned char id; /* task-local id */
@@ -48,7 +56,6 @@ struct tcb
         unsigned long cr3;
         unsigned long cr4;
         unsigned long eip;
-        unsigned long eflags;
         unsigned long tr; /* task register */
 
         /* FPU registers */
@@ -81,19 +88,25 @@ void
 tcb_uninit(struct tcb *tcb);
 
 void
-tcb_set_ip(struct tcb *tcb, address_type ip);
+tcb_set_state(struct tcb *tcb, enum thread_state state);
+
+enum thread_state
+tcb_get_state(const struct tcb *tcb);
+
+void
+tcb_set_ip(struct tcb *tcb, void *ip);
 
 int
-tcb_switch_to(struct tcb *tcb, const struct tcb *dst);
+tcb_switch(struct tcb *tcb, struct tcb *dst);
 
 /* save CPU registers in TCB */
 void
-tcb_save(struct tcb *tcb, unsigned long ip, unsigned long eflags);
+tcb_save(struct tcb *tcb, unsigned long ip);
 
 /* load CPU registers from TCB */
 int
 tcb_load(const struct tcb *tcb);
 
 int
-tcb_set_page_directory(struct tcb *tcb, struct page_directory *pd);
+tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd);
 

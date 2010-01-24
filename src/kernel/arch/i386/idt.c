@@ -26,9 +26,9 @@
 /* system interupts
  */
 
-void (*invalop_handler)(address_type ip);
-void (*segfault_handler)(address_type ip);
-void (*pagefault_handler)(address_type ip, address_type addr);
+void (*invalop_handler)(void *ip);
+void (*segfault_handler)(void *ip);
+void (*pagefault_handler)(void *ip, void *addr);
 
 /* hardware interupts
  */
@@ -125,7 +125,7 @@ idt_install()
 }
 
 int
-idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
+idt_install_invalid_opcode_handler(void (*hdlr)(void*))
 {
         const int ints = int_enabled();
 
@@ -143,7 +143,7 @@ idt_install_invalid_opcode_handler(void (*hdlr)(address_type))
 }
 
 int
-idt_install_segfault_handler(void (*hdlr)(address_type))
+idt_install_segfault_handler(void (*hdlr)(void*))
 {
         const int ints = int_enabled();
 
@@ -161,7 +161,7 @@ idt_install_segfault_handler(void (*hdlr)(address_type))
 }
 
 int
-idt_install_pagefault_handler(void (*hdlr)(address_type, address_type))
+idt_install_pagefault_handler(void (*hdlr)(void*, void*))
 {
         const int ints = int_enabled();
 

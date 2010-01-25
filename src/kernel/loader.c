@@ -29,10 +29,27 @@
 int
 loader_exec(struct tcb *tcb, const void *img)
 {
+        int err;
+
+        /* load image into thread */
+
         if (elf_loader_is_elf(img)) {
-                return elf_loader_exec(tcb, img);
+                err = elf_loader_exec(tcb, img);
+        } else {
+                err = -EINVAL;
         }
 
-        return -EINVAL;
+        if (err < 0) {
+                goto err_is_image;
+        }
+
+        /* set thread to starting state */
+
+        tcb_set_state(tcb, THREAD_STATE_STARTING);
+
+        return 0;
+
+err_is_image:
+        return err;
 }
 

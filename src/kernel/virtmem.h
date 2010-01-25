@@ -17,11 +17,12 @@
  */
 
 enum virtmem_area_name {
-        VIRTMEM_AREA_LOW        = 0,
-        VIRTMEM_AREA_USER       = 1,
-        VIRTMEM_AREA_KERNEL_TMP = 2,
-        VIRTMEM_AREA_KERNEL     = 3,
-        LAST_VIRTMEM_AREA       = 4
+        VIRTMEM_AREA_SYSTEM     = 0,
+        VIRTMEM_AREA_LOW        = 1,
+        VIRTMEM_AREA_USER       = 2,
+        VIRTMEM_AREA_KERNEL_TMP = 3,
+        VIRTMEM_AREA_KERNEL     = 4,
+        LAST_VIRTMEM_AREA       = 5
 };
 
 enum virtmem_area_flags {
@@ -38,19 +39,19 @@ int
 virtmem_init(struct page_directory *pd);
 
 int
-virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
-                                                     unsigned long pgindex,
-                                                     unsigned long pgcount,
+virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
+                                                     os_index_t pgindex,
+                                                     size_t pgcount,
                                                      unsigned int flags);
 
-int
-virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
-                                               unsigned long pgcount,
+os_index_t
+virtmem_alloc_pages(struct page_directory *pd, os_index_t pgindex,
+                                               size_t pgcount,
                                                unsigned int flags);
 
 os_index_t
 virtmem_alloc_pages_in_area(struct page_directory *pd,
-                            unsigned long npages,
+                            size_t pgcount,
                             enum virtmem_area_name areaname,
                             unsigned int flags);
 

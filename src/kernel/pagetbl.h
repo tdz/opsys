@@ -78,21 +78,21 @@ page_table_uninit(struct page_table *pt);
 
 int
 page_table_map_page_frame(struct page_table *pt,
-                          unsigned long pfindex,
-                          unsigned long index,
-                          int flags);
+                          os_index_t pfindex,
+                          os_index_t index,
+                          unsigned int flags);
 
 int
 page_table_map_page_frames(struct page_table *pt,
-                           unsigned long pfindex,
-                           unsigned long index,
-                           unsigned long count,
-                           int flags);
+                           os_index_t pfindex,
+                           os_index_t index,
+                           size_t count,
+                           unsigned int flags);
 
 int
-page_table_unmap_page_frame(struct page_table *pt, unsigned long index);
+page_table_unmap_page_frame(struct page_table *pt, os_index_t index);
 
 int
-page_table_unmap_page_frames(struct page_table *pt, unsigned long index,
-                                                    unsigned long count);
+page_table_unmap_page_frames(struct page_table *pt, os_index_t index,
+                                                    size_t count);
 

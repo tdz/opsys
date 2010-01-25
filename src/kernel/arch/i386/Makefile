@@ -11,7 +11,8 @@ reloc_addr = 0x100000
 
 ASMSOURCES = entry.S \
              idt.S \
-             multiboot.S
+             multiboot.S \
+             tcb.S
 
 CSOURCES = entry.c \
            gdt.c \

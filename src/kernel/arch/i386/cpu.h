@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-void
+static __inline__ void
 hlt(void)
 {
         __asm__("hlt\n\t");

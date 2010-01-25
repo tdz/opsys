@@ -24,6 +24,7 @@
 #include "minmax.h"
 #include <membar.h>
 #include <mmu.h>
+#include <cpu.h>
 
 /* physical memory */
 #include "pageframe.h"
@@ -40,6 +41,8 @@
 #include "tcb.h"
 #include "task.h"
 
+#include "console.h"
+
 struct virtmem_area
 {
         os_index_t   pgindex;
@@ -48,6 +51,10 @@ struct virtmem_area
 };
 
 static const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
+        {/* system: <4 KiB */
+         .pgindex = 0,
+         .npages  = 1,
+         .flags   = 0},
         {/* low kernel virtual memory: <4 MiB */
          .pgindex = 1,
          .npages  = 1023,
@@ -62,25 +69,50 @@ static const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
          .flags   = VIRTMEM_AREA_FLAG_USER},
         {/* high kernel temporary virtual memory: >3 GiB */
          .pgindex = 786432,
-         .npages  = 1,
+         .npages  = 1024,
          .flags   = VIRTMEM_AREA_FLAG_KERNEL|
                     VIRTMEM_AREA_FLAG_PAGETABLES|
                     VIRTMEM_AREA_FLAG_GLOBAL},
         {/* high kernel virtual memory: >3 GiB */
-         .pgindex = 786433,
-         .npages  = 262143,
+         .pgindex = 787456,
+         .npages  = 261120,
          .flags   = VIRTMEM_AREA_FLAG_KERNEL|
                     VIRTMEM_AREA_FLAG_PAGETABLES|
                     VIRTMEM_AREA_FLAG_GLOBAL}
 };
 
 static int
-virtmem_map_page_frame_at_nopg(struct page_directory *pd,
-                                 unsigned long pfindex,
-                                 unsigned long pgindex,
-                                 unsigned int flags)
+virtmem_area_contains_page(const struct virtmem_area *area, os_index_t pgindex)
 {
-        unsigned long ptindex;
+        return (area->pgindex <= pgindex)
+                        && (pgindex < area->pgindex+area->npages);
+}
+
+static const struct virtmem_area *
+find_virtmem_area_with_page(os_index_t pgindex)
+{
+        const struct virtmem_area *beg, *end;
+        
+        beg = g_virtmem_area;
+        end = g_virtmem_area+sizeof(g_virtmem_area)/sizeof(g_virtmem_area[0]);
+
+        while (beg < end) {
+                if (virtmem_area_contains_page(beg, pgindex)) {
+                        return beg;
+                }
+                ++beg;
+        }
+
+        return NULL;
+}
+
+static int
+virtmem_map_page_frame_at_nopg(struct page_directory *pd,
+                               os_index_t pfindex,
+                               os_index_t pgindex,
+                               unsigned int flags)
+{
+        os_index_t ptindex;
         int err;
         struct page_table *pt;
 
@@ -106,10 +138,10 @@ err_nopagetable:
 
 static int
 virtmem_map_page_frames_at_nopg(struct page_directory *pd,
-                                  unsigned long pfindex,
-                                  unsigned long pgindex,
-                                  unsigned long count,
-                                  unsigned int flags)
+                                os_index_t pfindex,
+                                os_index_t pgindex,
+                                size_t count,
+                                unsigned int flags)
 {
         int err = 0;
 
@@ -126,10 +158,11 @@ virtmem_map_page_frames_at_nopg(struct page_directory *pd,
 }
 
 static int
-virtmem_alloc_page_table_nopg(struct page_directory *pd, unsigned long ptindex,
-                                                    unsigned int flags)
+virtmem_alloc_page_table_nopg(struct page_directory *pd,
+                              os_index_t ptindex,
+                              unsigned int flags)
 {
-        unsigned long pfindex;
+        os_index_t pfindex;
         int err;
 
         if (pde_get_pageframe_index(pd->entry[ptindex])) {
@@ -156,9 +189,10 @@ err_physmem_alloc_frames:
 }
 
 static int
-virtmem_alloc_page_tables_nopg(struct page_directory *pd, unsigned long ptindex,
-                                                     unsigned long ptcount,
-                                                     unsigned int flags)
+virtmem_alloc_page_tables_nopg(struct page_directory *pd,
+                               os_index_t ptindex,
+                               size_t ptcount,
+                               unsigned int flags)
 {
         int err;
 
@@ -174,7 +208,7 @@ virtmem_get_page_table_tmp(void)
 {
         return page_address(g_virtmem_area[VIRTMEM_AREA_LOW].pgindex +
                             g_virtmem_area[VIRTMEM_AREA_LOW].npages -
-                            g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].npages);
+                           (g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].npages>>10));
 }
 
 static os_index_t
@@ -184,7 +218,7 @@ virtmem_get_page_tmp(size_t i)
 }
 
 static int
-virtmem_page_is_tmp(unsigned long pgindex)
+virtmem_page_is_tmp(os_index_t pgindex)
 {
         return (g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].pgindex <= pgindex) &&
                (pgindex < (g_virtmem_area[VIRTMEM_AREA_KERNEL_TMP].pgindex +
@@ -248,7 +282,7 @@ virtmem_init(struct page_directory *pd)
                                                               PTE_FLAG_PRESENT|
                                                               PTE_FLAG_WRITEABLE);
                 } else {
-                        unsigned long pfindex = physmem_alloc_frames(
+                        os_index_t pfindex = physmem_alloc_frames(
                                 pageframe_count(page_memory(beg->npages)));
 
                         if (!pfindex) {
@@ -273,10 +307,9 @@ virtmem_init(struct page_directory *pd)
            page frame of identity-mapped low memory. Allows for temporary
            mappings by writing to low-area page.
          */
-
         {
                 struct page_table *pt;
-                unsigned long ptpfindex, index;
+                os_index_t ptpfindex, index;
 
                 pt = virtmem_get_page_table_tmp();
 
@@ -300,7 +333,7 @@ virtmem_init(struct page_directory *pd)
 }
 
 static os_index_t
-virtmem_install_page_frame_tmp(unsigned long pfindex)
+virtmem_install_page_frame_tmp(os_index_t pfindex)
 {
         volatile pde_type *ptebeg, *pteend, *pte;
         struct page_table *pt;
@@ -337,7 +370,7 @@ virtmem_install_page_frame_tmp(unsigned long pfindex)
 }
 
 static os_index_t
-virtmem_uninstall_page_tmp(unsigned long pgindex)
+virtmem_uninstall_page_tmp(os_index_t pgindex)
 {
         struct page_table *pt;
         os_index_t index;
@@ -369,20 +402,20 @@ err_page_table_unmap_page_frame:
         return err;
 }
 
-static unsigned long
+static size_t
 virtmem_check_empty_pages_at(const struct page_directory *pd,
-                             unsigned long pgindex,
-                             unsigned long pgcount)
+                             os_index_t pgindex,
+                             size_t pgcount)
 {
-        unsigned long ptindex, ptcount;
-        unsigned long nempty;
+        os_index_t ptindex;
+        size_t ptcount, nempty;
 
         ptindex = pagetable_index(page_address(pgindex));
         ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
 
         for (nempty = 0; ptcount; --ptcount, ++ptindex) {
 
-                unsigned int pfindex;
+                os_index_t pfindex;
 
                 pfindex = pde_get_pageframe_index(pd->entry[ptindex]);
 
@@ -426,23 +459,18 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
         return nempty;
 }
 
-#include "console.h"
-
-static unsigned long
+static os_index_t
 virtmem_find_empty_pages(const struct page_directory *pd,
-                                unsigned long npages,
-                                unsigned long pgindex_beg,
-                                unsigned long pgindex_end)
+                         size_t npages,
+                         os_index_t pgindex_beg,
+                         os_index_t pgindex_end)
 {
-        /* FIXME: this function subject to integer overflow errors
-         */
-
         /* find continuous area in virtual memory */
 
         while ((pgindex_beg < pgindex_end)
                 && (npages < (pgindex_end-pgindex_beg))) {
 
-                unsigned long nempty;
+                size_t nempty;
 
                 nempty = virtmem_check_empty_pages_at(pd, pgindex_beg, npages);
 
@@ -454,25 +482,27 @@ virtmem_find_empty_pages(const struct page_directory *pd,
                 pgindex_beg += nempty+1;
         }
 
-        return 0;
+        return -ENOMEM;
 }
 
 int
-virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
-                                                     unsigned long pgindex,
-                                                     unsigned long pgcount,
+virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
+                                                     os_index_t pgindex,
+                                                     size_t pgcount,
                                                      unsigned int pteflags)
 {
-        unsigned long ptindex, ptcount;
-        unsigned long i;
+        os_index_t ptindex;
+        size_t ptcount, i;
         int err;
 
         ptindex = pagetable_index(page_address(pgindex));
         ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
 
-        for (err = 0, i = 0; (i < ptcount) && !(err < 0); ++i) {
+        err = 0;
 
-                unsigned long ptpfindex;
+        for (i = 0; (i < ptcount) && !(err < 0); ++i) {
+
+                os_index_t ptpfindex;
                 os_index_t ptpgindex;
                 struct page_table *pt;
                 size_t j;
@@ -555,13 +585,14 @@ virtmem_alloc_page_frames(struct page_directory *pd, unsigned long pfindex,
         return err;
 }
 
-int
-virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
-                                               unsigned long pgcount,
+os_index_t
+virtmem_alloc_pages(struct page_directory *pd, os_index_t pgindex,
+                                               size_t pgcount,
                                                unsigned int pteflags)
 {
-        unsigned long ptindex, ptcount;
-        unsigned long i;
+        os_index_t ptindex;
+        size_t ptcount;
+        size_t i;
         int err;
 
         ptindex = pagetable_index(page_address(pgindex));
@@ -571,8 +602,8 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
 
         for (i = 0; (i < ptcount) && !(err < 0); ++i) {
 
-                unsigned long ptpfindex;
-                unsigned long ptpgindex;
+                os_index_t ptpfindex;
+                os_index_t ptpgindex;
                 struct page_table *pt;
                 size_t j;
 
@@ -637,7 +668,7 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
                      && (j < sizeof(pt->entry)/sizeof(pt->entry[0]))
                      && !(err < 0);
                    --pgcount, ++j, ++pgindex) {
-                        unsigned long pfindex = physmem_alloc_frames(1);
+                        os_index_t pfindex = physmem_alloc_frames(1);
 
                         if (!pfindex) {
                                 err = -ENOMEM;
@@ -663,7 +694,7 @@ virtmem_alloc_pages(struct page_directory *pd, unsigned long pgindex,
 
 os_index_t
 virtmem_alloc_pages_in_area(struct page_directory *pd,
-                            unsigned long npages,
+                            size_t npages,
                             enum virtmem_area_name areaname,
                             unsigned int pteflags)
 {
@@ -676,8 +707,8 @@ virtmem_alloc_pages_in_area(struct page_directory *pd,
         pgindex = virtmem_find_empty_pages(pd, npages, area->pgindex,
                                                        area->pgindex+
                                                        area->npages);
-        if (!pgindex) {
-                err = -ENOMEM;
+        if (pgindex < 0) {
+                err = pgindex;
                 goto err_page_directory_find_empty_pages;
         }
 
@@ -699,7 +730,8 @@ virtmem_flat_copy_area(const struct virtmem_area *area,
                        const struct page_directory *pd,
                              struct page_directory *dst)
 {
-        unsigned long ptindex, ptcount;
+        os_index_t ptindex;
+        size_t ptcount;
 
         ptindex = pagetable_index(page_address(area->pgindex));
 
@@ -784,9 +816,17 @@ virtmem_segfault_handler(void *ip)
 void
 virtmem_pagefault_handler(void *ip, void *addr)
 {
+        const struct virtmem_area *area;
+
         console_printf("page fault: ip=%x, addr=%x.\n", (unsigned long)ip,
                                                         (unsigned long)addr);
+
+        area = find_virtmem_area_with_page(page_index(addr));
+
+        if (area->flags&VIRTMEM_AREA_FLAG_KERNEL) {
+                do {
+                        hlt();
+                } while (1);
+        }
 }
-
-
 

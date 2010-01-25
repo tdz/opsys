@@ -115,6 +115,37 @@ tcb_set_ip(struct tcb *tcb, void *ip)
 }
 
 int
+tcb_switch_to_starting(struct tcb *tcb, struct tcb *dst);
+
+int
+tcb_switch_to_ready(struct tcb *tcb, struct tcb *dst);
+
+static int
+tcb_switch_to_blocked(struct tcb *tcb, struct tcb *dst)
+{
+        return 0;
+}
+
+static int
+tcb_switch_to_zombie(struct tcb *tcb, struct tcb *dst)
+{
+        return 0;
+}
+
+int
+tcb_switch(struct tcb *tcb, struct tcb *dst)
+{
+        static int (* const switch_to[])(struct tcb*, struct tcb*) = {
+                tcb_switch_to_starting,
+                tcb_switch_to_ready,
+                tcb_switch_to_blocked,
+                tcb_switch_to_zombie};
+
+        return switch_to[dst->state](tcb, dst);
+}
+
+#ifdef COMMENT
+int
 tcb_switch(struct tcb *tcb, struct tcb *dst)
 {
         cli();
@@ -167,7 +198,7 @@ tcb_switch(struct tcb *tcb, struct tcb *dst)
 
         return 0;
 }
-
+#endif
 void
 tcb_save(struct tcb *tcb, unsigned long ip)
 {

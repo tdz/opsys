@@ -394,7 +394,6 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("sched_init", -err);
                 return;
         }
-
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);
                 return;

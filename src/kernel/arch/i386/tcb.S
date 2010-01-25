@@ -72,7 +72,7 @@ tcb_save :
         popl %ebp
         ret
 
-/* int tcb_switch_to_ready(struct tcb *src, struct tcb *dst);
+/* int tcb_switch_to_starting(struct tcb *src, struct tcb *dst);
  */
 tcb_switch_to_starting:
         pushl %ebp
@@ -93,16 +93,20 @@ tcb_switch_to_starting:
         movl 52(%eax), %edx
         movl %edx, %cr3
 
+        movl 28(%eax), %esp
+
         sti
 
         jmp * 60(%eax)
 
-    tcb_switch_to_ready_return_address:
+    tcb_switch_to_starting_return_address:
 
         movl $0, %eax
         pop %ebp
         ret
 
+/* int tcb_switch_to_ready(struct tcb *src, struct tcb *dst);
+ */
 tcb_switch_to_ready:
         pushl %ebp
         movl %esp, %ebp

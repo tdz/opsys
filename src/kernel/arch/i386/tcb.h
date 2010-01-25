@@ -93,6 +93,9 @@ tcb_set_state(struct tcb *tcb, enum thread_state state);
 enum thread_state
 tcb_get_state(const struct tcb *tcb);
 
+int
+tcb_is_runnable(const struct tcb *tcb);
+
 void
 tcb_set_ip(struct tcb *tcb, void *ip);
 

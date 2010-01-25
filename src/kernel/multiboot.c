@@ -263,7 +263,8 @@ multiboot_init_physmem_modules(const struct multiboot_info *mb_info)
 }
 
 static int
-multiboot_load_modules(struct tcb *tcb, const struct multiboot_info *mb_info)
+multiboot_load_modules(struct task *parent,
+                       const struct multiboot_info *mb_info)
 {
         int err;
         const struct multiboot_module *mod;
@@ -277,15 +278,57 @@ multiboot_load_modules(struct tcb *tcb, const struct multiboot_info *mb_info)
 
         for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
 
+                struct task *tsk;
+                struct tcb *tcb;
+
                 if (mod->string) {
                         console_printf("loading module '\%s'\n", mod->string);
                 } else {
                         console_printf("loading module %x\n", i);
                 }
 
+                /* allocate task */
+
+                err = task_helper_allocate_task_from_parent(parent, &tsk);
+
+                if (err < 0) {
+                        console_perror("task_helper_allocate_task_from_parent", -err);
+                        goto err_task_helper_allocate_task_from_parent;
+                }
+
+                /* allocate tcb */
+
+                err = tcb_helper_allocate_tcb_and_stack(tsk, 4096, &tcb);
+
+                if (err < 0) {
+                        console_perror("tcb_helper_allocate_tcb_and_stack", -err);
+                        goto err_tcb_helper_allocate_tcb_and_stack;
+                }
+
+                /* load binary image */
+
                 if ((err = loader_exec(tcb, (void*)mod->mod_start)) < 0) {
                         console_perror("loader_exec", -err);
+                        goto err_loader_exec;
                 }
+
+                /* schedule thread */
+                if ((err = sched_add_thread(tcb)) < 0) {
+                        console_perror("sched_add_thread", -err);
+                        goto err_sched_add_thread;
+                }
+
+                console_printf("scheduled as %x.\n", err);
+
+                continue;
+
+                err_sched_add_thread:
+                err_loader_exec:
+                        /* FIXME: free tcb */
+                err_tcb_helper_allocate_tcb_and_stack:
+                        /* FIXME: free task */
+                err_task_helper_allocate_task_from_parent:
+                        continue;
         }
 
         return 0;
@@ -379,14 +422,6 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        /* load modules as ELF binaries
-         */
-
-        if ((err = multiboot_load_modules(tcb, mb_info)) < 0) {
-                console_perror("multiboot_load_modules", -err);
-                return;
-        }
-
         /* setup scheduler with kernel thread 0
          */
 
@@ -396,6 +431,16 @@ multiboot_main(const struct multiboot_header *mb_header,
         }
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);
+                return;
+        }
+
+        tcb_set_state(tcb, THREAD_STATE_BLOCKED);
+
+        /* load modules as ELF binaries
+         */
+
+        if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
+                console_perror("multiboot_load_modules", -err);
                 return;
         }
 

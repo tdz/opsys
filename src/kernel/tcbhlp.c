@@ -69,7 +69,7 @@ tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stacksize,
 
         pgindex = virtmem_alloc_pages_in_area(tsk->pd,
                                               page_count(0, stacksize),
-                                              VIRTMEM_AREA_KERNEL,
+                                              VIRTMEM_AREA_USER,
                                               PTE_FLAG_PRESENT|
                                               PTE_FLAG_WRITEABLE);
         if (pgindex < 0) {

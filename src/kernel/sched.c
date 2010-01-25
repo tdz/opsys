@@ -120,7 +120,7 @@ sched_switch()
 
                 for (i = next; i < sizeof(g_thread)/sizeof(g_thread[0]); ++i) {
 
-                        if (!g_thread[i]) {
+                        if (!g_thread[i] || !tcb_is_runnable(g_thread[i])) {
                                 continue;
                         }
 
@@ -135,7 +135,7 @@ sched_switch()
 
                 for (i = 0; i < next; ++i) {
 
-                        if (!g_thread[i]) {
+                        if (!g_thread[i] || !tcb_is_runnable(g_thread[i])) {
                                 continue;
                         }
 

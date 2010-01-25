@@ -115,6 +115,13 @@ tcb_set_ip(struct tcb *tcb, void *ip)
 }
 
 int
+tcb_is_runnable(const struct tcb *tcb)
+{
+        return (tcb->state == THREAD_STATE_STARTING) ||
+               (tcb->state == THREAD_STATE_READY);
+}
+
+int
 tcb_switch_to_starting(struct tcb *tcb, struct tcb *dst);
 
 int

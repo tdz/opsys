@@ -42,23 +42,18 @@ ssize_t
 bitset_find_unset(const unsigned char *bitset, size_t len)
 {
         ssize_t i, bit;
-        int found;
 
         bit = 0;
-        found = 0;
 
-        for (i = 0; !found && (i < len); ++i) {
+        for (i = 0; i < len; ++i) {
                 ssize_t j;
-                for (j = 0; !found && (j < 8); ++j, ++bit) {
-                        found = (bitset[i] ^ (1<<j));
-                        ++j;
+                for (j = 0; j < 8; ++j, ++bit) {
+                        if (!bitset_isset(bitset, bit)) {
+                                return bit;
+                        }
                 }
         }
 
-        if (!found) {
-                return -EAGAIN;
-        }
-
-        return bit;
+        return -EAGAIN;
 }
 

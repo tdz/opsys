@@ -429,6 +429,10 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("sched_init", -err);
                 return;
         }
+
+        /* connect scheduler to timer interupt */
+        idt_install_irq_handler(0, sched_irq_handler);
+
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);
                 return;
@@ -443,10 +447,6 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
-
-        idt_install_irq_handler(0, sched_irq_handler);
-
-/*        sched_switch();*/
 }
 
 /* dead code */

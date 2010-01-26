@@ -19,60 +19,12 @@
 #include <errno.h>
 #include <types.h>
 
-#include <cpu.h>
-
 #include "pde.h"
 #include "pagedir.h"
 #include "tcb.h"
 #include "task.h"
 #include "elfldr.h"
 #include "loader.h"
-
-static int
-loader_prepare_tcb(struct tcb *tcb, const void *ip)
-{
-        extern void tcb_switch_to_starting_return_address(void);
-        extern void isr_handle_irq_return(void);
-        extern void tcb_ret(void);
-
-        unsigned long *stack;
-
-        /* prepare stack as if tcb was scheduled from irq0 */
-
-        stack = tcb->stack;
-
-        /* stack after irq 0 */
-        stack[-1] = eflags();
-        stack[-2] = /*cs();*/ 8;
-        stack[-3] = (unsigned long)ip;
-        stack[-4] = 0; /* irqno */
-
-        stack[-5] = 0; /* %eax */
-        stack[-6] = 0; /* %ecx */
-        stack[-7] = 0; /* %edx */
-        stack[-8] = 0; /* irqno */ /* pushed by irq handler */
-
-        /* tcb_switch */
-        stack[-9] = (unsigned long)tcb;
-        stack[-10] = (unsigned long)tcb;
-        stack[-11] = (unsigned long)isr_handle_irq_return; /* from irq handler */
-        stack[-11] = (unsigned long)tcb_ret; /* from irq handler */
-        stack[-12] = (unsigned long)(stack-11);
-
-        tcb->cr0 = cr0();
-        tcb->cr2 = cr2();
-/*        tcb->cr3 = cr3();*/
-        tcb->cr4 = cr4();
-        tcb->eflags = eflags();
-        tcb->esp = (unsigned long)(stack-12);
-        tcb->ebp = (unsigned long)(stack-11);
-
-        tcb_set_ip(tcb, tcb_switch_to_starting_return_address);
-
-        tcb_set_state(tcb, THREAD_STATE_STARTING);
-
-        return 0;
-}
 
 int
 loader_exec(struct tcb *tcb, const void *img)
@@ -94,7 +46,7 @@ loader_exec(struct tcb *tcb, const void *img)
 
         /* set thread to starting state */
 
-        loader_prepare_tcb(tcb, ip);
+        tcb_set_ready_state_firsttime(tcb, ip, 0);
 
         return 0;
 

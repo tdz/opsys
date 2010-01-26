@@ -18,6 +18,7 @@
 
 #include "interupt.h"
 #include "ioports.h"
+#include "cpu.h"
 
 /* clear interupts */
 void
@@ -49,13 +50,6 @@ eoi(unsigned char intno)
 int
 int_enabled()
 {
-        unsigned long eflags;
-
-        __asm__("pushf\n\t"
-                "movl (%%esp), %0\n\t"
-                "popf\n\t"
-                        : "=r"(eflags));
-
-        return !!(eflags & (1<<9));
+        return !!(eflags() & EFLAGS_IF);
 }
 

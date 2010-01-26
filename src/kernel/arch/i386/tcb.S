@@ -18,140 +18,9 @@
 
 .text
 
-.global tcb_switch_to_starting
-.global tcb_switch_to_starting_return_address
 .global tcb_switch_to_ready
-
-/* int tcb_switch_to_starting(struct tcb *src, struct tcb *dst);
- */
-tcb_switch_to_starting:
-        pushl %ebp
-        movl %esp, %ebp
-
-        cli
-
-        /* save source regs
-         */
-
-        /* save %eax first, as it later contains the source tcb address */
-        pushl %edx
-        movl 8(%ebp), %edx
-
-        addl $16, %edx /* adjust %edx to point to first register in source */
-        movl %eax, (%edx)
-        movl %edx, %eax
-        popl %edx
-
-        /* save other general-purpose registers */
-        movl %ebx, 4(%eax)
-        movl %ecx, 8(%eax)
-        movl %edx, 12(%eax)
-
-        /* index registers */
-        movl %esi, 16(%eax)
-        movl %edi, 20(%eax)
-        movl %ebp, 24(%eax)
-        movl %esp, 28(%eax)
-
-        /* flags */
-        pushf
-        popl 64(%eax)
-
-        /* segmentation registers */
-        mov %cs, 32(%eax)
-        mov %ds, 34(%eax)
-        mov %ss, 36(%eax)
-        mov %es, 38(%eax)
-        mov %fs, 40(%eax)
-        mov %gs, 42(%eax)
-
-        /* control registers (need intermediate register) */
-        movl %cr0, %edx
-        movl %edx, 44(%eax)
-        movl %cr2, %edx
-        movl %edx, 48(%eax)
-        movl %cr3, %edx
-        movl %edx, 52(%eax)
-        movl %cr4, %edx
-        movl %edx, 56(%eax)
-
-        /* save %eip as return address */
-        movl $tcb_switch_to_starting_return_address, 60(%eax)
-
-        /* restore destination regs
-         */
-
-        movl 12(%ebp), %eax
-        addl $16, %eax
-
-        /* restore page directory */
-        movl 52(%eax), %edx
-        movl %edx, %cr3
-
-        /* restore stack pointer*/
-        movl 28(%eax), %esp
-
-        sti
-
-        /* jump to dst %eip, either tcb_switch_to_starting_return_address or
-           binary's entry point */
-        jmp * 60(%eax)
-
-    tcb_switch_to_starting_return_address:
-
-/*        dohlt:
-                hlt
-                jmp dohlt*/
-
-        /* any previously saved destination will jump here, so %cr3 and %esp
-           are already loaded */
-
-        cli
-
-        /* re-read dst into %eax */
-        movl 12(%ebp), %eax
-        addl $16, %eax
-
-        /* control registers (need intermediate register) */
-        movl 44(%eax), %edx
-        movl %edx, %cr0
-        movl 48(%eax), %edx
-        movl %edx, %cr2
-/*        movl 52(%eax), %edx
-        movl %edx, %cr3*/
-        movl 56(%eax), %edx
-        movl %edx, %cr4
-
-        /* flags */
-        pushl 64(%eax)
-        popf
-
-        /* index registers */
-        movl 16(%eax), %esi
-        movl 20(%eax), %edi
-        movl 24(%eax), %ebp
-/*        movl 28(%eax), %esp*/
-
-        /* general-purpose registers */
-        movl 4(%eax), %ebx
-        movl 8(%eax), %ecx
-        movl 12(%eax), %edx
-
-        sti
-
-        movl $0, %eax
-        popl %ebp
-        ret
-
-.global tcb_ret
-
-tcb_ret:
-        /* remove tcb parameters */
-/*        dohlt:
-                hlt
-                jmp dohlt*/
-        addl $8, %esp;
-        jmp isr_handle_irq_return
+.global tcb_switch_to_ready_entry_point
+.global tcb_switch_to_ready_return_firsttime
 
 /* int tcb_switch_to_ready(struct tcb *src, struct tcb *dst);
  */
@@ -207,11 +76,34 @@ tcb_switch_to_ready:
         movl %edx, 56(%eax)
 
         /* save %eip as return address */
-        movl $tcb_switch_to_ready_return_address, 60(%eax)
+        movl $tcb_switch_to_ready_entry_point, 60(%eax)
 
         /* restore destination regs
          */
 
+        movl 12(%ebp), %eax
+        addl $16, %eax
+
+        /* restore page directory */
+        movl 52(%eax), %edx
+        movl %edx, %cr3
+
+        /* restore stack pointer*/
+        movl 28(%eax), %esp
+
+        sti
+
+        /* jump to dst %eip */
+        jmp * 60(%eax)
+
+tcb_switch_to_ready_entry_point:
+
+        /* any previously saved destination will jump here, so %cr3 and %esp
+           are already loaded */
+
+        cli
+
+        /* re-read dst into %eax */
         movl 12(%ebp), %eax
         addl $16, %eax
 
@@ -220,8 +112,7 @@ tcb_switch_to_ready:
         movl %edx, %cr0
         movl 48(%eax), %edx
         movl %edx, %cr2
-        movl 52(%eax), %edx
-        movl %edx, %cr3
+        /* %cr3 has been restored by src tcb */
         movl 56(%eax), %edx
         movl %edx, %cr4
 
@@ -233,23 +124,21 @@ tcb_switch_to_ready:
         movl 16(%eax), %esi
         movl 20(%eax), %edi
         movl 24(%eax), %ebp
-        movl 28(%eax), %esp
+        /* %esp has been restored by src tcb */
 
-        /* save other general-purpose registers */
+        /* general-purpose registers */
         movl 4(%eax), %ebx
         movl 8(%eax), %ecx
         movl 12(%eax), %edx
 
         sti
 
-        /* jump to dst %eip, either tcb_switch_to_starting_return_address or
-           binary's entry point */
-        jmp * 60(%eax)
-
-        /* any previously saved destination will jump here */
-    tcb_switch_to_ready_return_address:
-
         movl $0, %eax
         popl %ebp
         ret
+
+tcb_switch_to_ready_return_firsttime:
+        /* remove tcb parameters */
+        addl $8, %esp;
+        jmp isr_handle_irq_return
 

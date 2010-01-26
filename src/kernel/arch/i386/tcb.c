@@ -20,9 +20,11 @@
 #include <string.h>
 #include <types.h>
 
+#include "cpu.h"
+#include "interupt.h"
+
 #include "bitset.h"
 
-#include "interupt.h"
 
 /* virtual memory */
 #include "page.h"
@@ -34,6 +36,18 @@
 
 #include "task.h"
 #include "tcb.h"
+
+static int
+tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)
+{
+        os_index_t pfindex;
+
+        pfindex = virtmem_lookup_pageframe(pd, page_index(pd));
+
+        tcb->cr3 = (pfindex<<12) | (tcb->cr3&0xfff);
+
+        return 0;
+}
 
 int
 tcb_init_with_id(struct tcb *tcb,
@@ -117,159 +131,76 @@ tcb_set_ip(struct tcb *tcb, void *ip)
 int
 tcb_is_runnable(const struct tcb *tcb)
 {
-        return (tcb->state == THREAD_STATE_STARTING) ||
-               (tcb->state == THREAD_STATE_READY);
+        return (tcb->state == THREAD_STATE_READY);
 }
 
-int
-tcb_switch_to_starting(struct tcb *tcb, struct tcb *dst);
-
-int
-tcb_switch_to_ready(struct tcb *tcb, struct tcb *dst);
-
 static int
-tcb_switch_to_blocked(struct tcb *tcb, struct tcb *dst)
+tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst)
 {
         return 0;
 }
 
 static int
-tcb_switch_to_zombie(struct tcb *tcb, struct tcb *dst)
+tcb_switch_to_blocked(struct tcb *tcb, const struct tcb *dst)
 {
         return 0;
 }
 
+/* implemented in tcb.S */
 int
-tcb_switch(struct tcb *tcb, struct tcb *dst)
+tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst);
+
+int
+tcb_switch(struct tcb *tcb, const struct tcb *dst)
 {
-        static int (* const switch_to[])(struct tcb*, struct tcb*) = {
-                tcb_switch_to_starting,
+        static int (* const switch_to[])(struct tcb*, const struct tcb*) = {
+                tcb_switch_to_zombie,
                 tcb_switch_to_ready,
-                tcb_switch_to_blocked,
-                tcb_switch_to_zombie};
+                tcb_switch_to_blocked};
 
         return switch_to[dst->state](tcb, dst);
 }
 
-#ifdef COMMENT
 int
-tcb_switch(struct tcb *tcb, struct tcb *dst)
+tcb_set_ready_state_firsttime(struct tcb *tcb,
+                              const void *ip,
+                              unsigned char irqno)
 {
-        cli();
+        extern void tcb_switch_to_ready_entry_point(void);
+        extern void tcb_switch_to_ready_return_firsttime(void);
 
-        __asm__(/* save %eax first, as it later contains the tcb address */
-                "pushl %%edx\n\t"
-                "lea 8(%%ebp), %%edx\n\t"
-                "movl %%eax, (%%edx)\n\t"
-                "movl %%edx, %%eax\n\t"
-                "popl %%edx\n\t"
-                /* adjust %eax to point to first register in tcb */
-                "addl $16, %%eax\n\t"
-                /* save other general-purpose registers */
-                "movl %%ebx, 4(%%eax)\n\t"
-                "movl %%ecx, 8(%%eax)\n\t"
-                "movl %%edx, 12(%%eax)\n\t"
-                /* index registers */
-                "movl %%esi, 16(%%eax)\n\t"
-                "movl %%edi, 20(%%eax)\n\t"
-                "movl %%ebp, 24(%%eax)\n\t"
-                "movl %%esp, 32(%%eax)\n\t"
-                /* segmentation registers */
-                "mov %%cs, 36(%%eax)\n\t"
-                "mov %%ds, 38(%%eax)\n\t"
-                "mov %%ss, 40(%%eax)\n\t"
-                "mov %%es, 42(%%eax)\n\t"
-                "mov %%fs, 44(%%eax)\n\t"
-                "mov %%gs, 46(%%eax)\n\t"
-                /* control registers (need intermediate register) */
-                "movl %%cr0, %%ebx\n\t" "movl %%ebx, 48(%%eax)\n\t"
-                "movl %%cr2, %%ebx\n\t" "movl %%ebx, 52(%%eax)\n\t"
-                "movl %%cr3, %%ebx\n\t" "movl %%ebx, 56(%%eax)\n\t"
-                "movl %%cr4, %%ebx\n\t" "movl %%ebx, 60(%%eax)\n\t"
-                /* push flags onto stack */
-/*                "pushf\n\t"*/
-                        :
-                        :
-                        : "%eax" /* used for tcb address */);
+        unsigned long *stack;
 
-        __asm__("movl %0, %%cr3\n\t"
-                        :
-                        : "r"(dst->cr3)
-                        :);
+        /* prepare stack as if tcb was scheduled from irq */
 
-        sti();
+        stack = tcb->stack;
 
-        __asm__("jmp *%0\n\t"
-                        :
-                        : "r"(dst->eip) );
+        /* stack after irq */
+        stack[-1] = eflags();
+        stack[-2] = cs();
+        stack[-3] = (unsigned long)ip;
+        stack[-4] = irqno;
 
-        return 0;
-}
+        stack[-5] = 0; /* %eax */
+        stack[-6] = 0; /* %ecx */
+        stack[-7] = 0; /* %edx */
+        stack[-8] = irqno; /* pushed by irq handler */
 
-void
-tcb_save(struct tcb *tcb, unsigned long ip)
-{
-        __asm__(/* save %eax first, as it later contains the tcb address */
-                "pushl %%edx\n\t"
-                "lea 8(%%ebp), %%edx\n\t"
-                "movl %%eax, (%%edx)\n\t"
-                "movl %%edx, %%eax\n\t"
-                "popl %%edx\n\t"
-                /* save other general-purpose registers */
-                "movl %%ebx, 4(%%eax)\n\t"
-                "movl %%ecx, 8(%%eax)\n\t"
-                "movl %%edx, 12(%%eax)\n\t"
-                /* index registers */
-                "movl %%esi, 16(%%eax)\n\t"
-                "movl %%edi, 20(%%eax)\n\t"
-                "movl %%ebp, 24(%%eax)\n\t"
-                "movl %%esp, 32(%%eax)\n\t"
-                /* segmentation registers */
-                "mov %%cs, 36(%%eax)\n\t"
-                "mov %%ds, 38(%%eax)\n\t"
-                "mov %%ss, 40(%%eax)\n\t"
-                "mov %%es, 42(%%eax)\n\t"
-                "mov %%fs, 44(%%eax)\n\t"
-                "mov %%gs, 46(%%eax)\n\t"
-                /* control registers (need intermediate register) */
-                "movl %%cr0, %%ebx\n\t" "movl %%ebx, 48(%%eax)\n\t"
-                "movl %%cr2, %%ebx\n\t" "movl %%ebx, 52(%%eax)\n\t"
-                "movl %%cr3, %%ebx\n\t" "movl %%ebx, 56(%%eax)\n\t"
-                "movl %%cr4, %%ebx\n\t" "movl %%ebx, 60(%%eax)\n\t"
-                /* instruction pointer and flags come from outside */
-                        :
-                        :
-                        : "%eax" /* used for tcb address */);
+        /* tcb_switch */
+        stack[-9] = (unsigned long)tcb;
+        stack[-10] = (unsigned long)tcb;
+        stack[-11] = (unsigned long)tcb_switch_to_ready_return_firsttime;
+        stack[-12] = (unsigned long)(stack-11);
 
-        tcb->eip = ip;
-/*        tcb->eflags = eflags;*/
-}
+        tcb->cr0 = cr0();
+        tcb->cr2 = cr2();
+        tcb->cr4 = cr4();
+        tcb->eflags = eflags();
+        tcb->esp = (unsigned long)(stack-12);
+        tcb->ebp = (unsigned long)(stack-11);
 
-int
-tcb_load(const struct tcb *tcb)
-{
-        __asm__("movl %0, %%cr3\n\t"
-                        :
-                        : "r"(tcb->cr3)
-                        :);
-
-        __asm__("jmp *%0\n\t"
-                        :
-                        : "r"(tcb->eip) );
-
-        return 0;
-}
-
-#endif
-
-int
-tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)
-{
-        os_index_t pfindex;
-
-        pfindex = virtmem_lookup_pageframe(pd, page_index(pd));
-
-        tcb->cr3 = (pfindex<<12) | (tcb->cr3&0xfff);
+        tcb_set_ip(tcb, tcb_switch_to_ready_entry_point);
+        tcb_set_state(tcb, THREAD_STATE_READY);
 
         return 0;
 }

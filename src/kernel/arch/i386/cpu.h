@@ -16,24 +16,24 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-static __inline__ void
-hlt(void)
-{
-        __asm__("hlt\n\t");
-}
-
-static __inline__ unsigned long
-eflags(void)
-{
-        unsigned long eflags;
-
-        __asm__("pushf\n\t"
-                "movl (%%esp), %0\n\t"
-                "popf\n\t"
-                        : "=r"(eflags));
-
-        return eflags;
-}
+enum {
+        EFLAGS_CF  = 1<<0,
+        EFLAGS_PF  = 1<<2,
+        EFLAGS_AF  = 1<<4,
+        EFLAGS_ZF  = 1<<6,
+        EFLAGS_SF  = 1<<7,
+        EFLAGS_TF  = 1<<8,
+        EFLAGS_IF  = 1<<9,
+        EFLAGS_DF  = 1<<10,
+        EFLAGS_OF  = 1<<11,
+        EFLAGS_NT  = 1<<14,
+        EFLAGS_RF  = 1<<16,
+        EFLAGS_VM  = 1<<17,
+        EFLAGS_AC  = 1<<18,
+        EFLAGS_VIF = 1<<19,
+        EFLAGS_VIP = 1<<20,
+        EFLAGS_ID  = 1<<21
+};
 
 static __inline__ unsigned long
 cr0(void)
@@ -77,5 +77,34 @@ cr4(void)
                         : "=r"(cr4));
 
         return cr4;
+}
+
+static __inline__ unsigned long
+cs(void)
+{
+        unsigned long cs;
+
+        __asm__("movl %%cs, %0\n\t"
+                        : "=r"(cs));
+
+        return cs;
+}
+
+static __inline__ void
+hlt(void)
+{
+        __asm__("hlt\n\t");
+}
+
+static __inline__ unsigned long
+eflags(void)
+{
+        unsigned long eflags;
+
+        __asm__("pushf\n\t"
+                "popl %0\n\t"
+                        : "=r"(eflags));
+
+        return eflags;
 }
 

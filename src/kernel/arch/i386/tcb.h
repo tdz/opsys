@@ -17,10 +17,9 @@
  */
 
 enum thread_state {
-        THREAD_STATE_STARTING = 0, /* not yet executed */
+        THREAD_STATE_ZOMBIE = 0, /* waiting for removal */
         THREAD_STATE_READY, /* ready to be executed */
-        THREAD_STATE_BLOCKED, /* blocked by some action */
-        THREAD_STATE_ZOMBIE /* waiting for removal */
+        THREAD_STATE_BLOCKED /* blocked by some action */
 };
 
 struct tcb
@@ -97,12 +96,18 @@ tcb_get_state(const struct tcb *tcb);
 int
 tcb_is_runnable(const struct tcb *tcb);
 
+int
+tcb_set_ready_state_firsttime(struct tcb *tcb,
+                              const void *ip,
+                              unsigned char irqno);
+
 void
 tcb_set_ip(struct tcb *tcb, void *ip);
 
 int
-tcb_switch(struct tcb *tcb, struct tcb *dst);
+tcb_switch(struct tcb *tcb, const struct tcb *dst);
 
+#ifdef COMMENT
 /* save CPU registers in TCB */
 void
 tcb_save(struct tcb *tcb);
@@ -110,9 +115,10 @@ tcb_save(struct tcb *tcb);
 /* load CPU registers from TCB */
 int
 tcb_load(const struct tcb *tcb);
+#endif
 
-int
-tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd);
+/*int
+tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd);*/
 
 int
 tcb_init_regs(void *ip);

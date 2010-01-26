@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include <cpu.h>
+#include <interupt.h>
 
 /* physical memory */
 #include "pageframe.h"
@@ -55,17 +56,30 @@ sched_init()
 ssize_t
 sched_add_thread(struct tcb *tcb)
 {
-        ssize_t i = 0;
+        int ints;
+        ssize_t i;
+
+        ints = int_enabled();
+
+        if (ints) {
+                cli();
+        }
+
+        i = 0;
 
         while ((i < sizeof(g_thread)/sizeof(g_thread[0])) && g_thread[i]) {
                 ++i;
         }
 
-        if (i == sizeof(g_thread)/sizeof(g_thread[0])) {
-                return -EAGAIN;
+        if (i < sizeof(g_thread)/sizeof(g_thread[0])) {
+                g_thread[i] = tcb;
+        } else {
+                i = -EAGAIN;
         }
 
-        g_thread[i] = tcb;
+        if (ints) {
+                sti();
+        }
 
         return i;
 }
@@ -159,7 +173,7 @@ err_sched_switch_to:
 void
 sched_irq_handler(unsigned char irqno)
 {
-/*        console_printf("sched\n");*/
+        console_printf("sched\n");
         sched_switch();
 }
 

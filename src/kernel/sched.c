@@ -82,6 +82,8 @@ sched_get_thread(unsigned int i)
         return g_thread[i];
 }
 
+#include "console.h"
+
 static int
 sched_switch_to(unsigned int i)
 {
@@ -92,8 +94,8 @@ sched_switch_to(unsigned int i)
 
         g_current_thread = i;
 
-        console_printf("%s:%x src=%x dst=%x.\n", __FILE__, __LINE__,
-                        g_thread[current], g_thread[i]);
+/*        console_printf("%s:%x src=%x dst=%x.\n", __FILE__, __LINE__,
+                        g_thread[current], g_thread[i]);*/
 
         if ((err = tcb_switch(g_thread[current], g_thread[i])) < 0) {
                 goto err_tcb_load;
@@ -152,5 +154,12 @@ sched_switch()
 
 err_sched_switch_to:
         return err;
+}
+
+void
+sched_irq_handler(unsigned char irqno)
+{
+/*        console_printf("sched\n");*/
+        sched_switch();
 }
 

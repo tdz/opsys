@@ -40,6 +40,8 @@
 .global isr_handle_irq15
 .global isr_handle_syscall
 
+.global isr_handle_irq_return
+
 isr_drop_interupt:
         iret
 
@@ -109,6 +111,7 @@ isr_handle_irq:
         /* call irq_table[irqno] */
         pushl 12(%esp)
         call *(%eax)
+isr_handle_irq_return:
         addl $4, %esp
 isr_handle_irq_ret:
         /* signal eoi to PIC */

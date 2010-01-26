@@ -31,3 +31,6 @@ sched_get_thread(unsigned int i);
 int
 sched_switch(void);
 
+void
+sched_irq_handler(unsigned char irqno);
+

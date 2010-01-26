@@ -205,7 +205,7 @@ tcb_switch(struct tcb *tcb, struct tcb *dst)
 
         return 0;
 }
-#endif
+
 void
 tcb_save(struct tcb *tcb, unsigned long ip)
 {
@@ -259,6 +259,8 @@ tcb_load(const struct tcb *tcb)
 
         return 0;
 }
+
+#endif
 
 int
 tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)

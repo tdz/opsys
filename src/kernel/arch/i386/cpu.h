@@ -22,3 +22,60 @@ hlt(void)
         __asm__("hlt\n\t");
 }
 
+static __inline__ unsigned long
+eflags(void)
+{
+        unsigned long eflags;
+
+        __asm__("pushf\n\t"
+                "movl (%%esp), %0\n\t"
+                "popf\n\t"
+                        : "=r"(eflags));
+
+        return eflags;
+}
+
+static __inline__ unsigned long
+cr0(void)
+{
+        unsigned long cr0;
+
+        __asm__("movl %%cr0, %0\n\t"
+                        : "=r"(cr0));
+
+        return cr0;
+}
+
+static __inline__ unsigned long
+cr2(void)
+{
+        unsigned long cr2;
+
+        __asm__("movl %%cr2, %0\n\t"
+                        : "=r"(cr2));
+
+        return cr2;
+}
+
+static __inline__ unsigned long
+cr3(void)
+{
+        unsigned long cr3;
+
+        __asm__("movl %%cr3, %0\n\t"
+                        : "=r"(cr3));
+
+        return cr3;
+}
+
+static __inline__ unsigned long
+cr4(void)
+{
+        unsigned long cr4;
+
+        __asm__("movl %%cr4, %0\n\t"
+                        : "=r"(cr4));
+
+        return cr4;
+}
+

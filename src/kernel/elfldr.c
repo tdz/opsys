@@ -89,7 +89,7 @@ elf_loader_construct_phdr(struct page_directory *pd,
 }
 
 int
-elf_loader_exec(struct tcb *tcb, const unsigned char *img)
+elf_loader_exec(struct tcb *tcb, void **ip, const unsigned char *img)
 {
         const Elf32_Ehdr *elf_ehdr;
         size_t i;
@@ -131,7 +131,7 @@ elf_loader_exec(struct tcb *tcb, const unsigned char *img)
 
         /* init TCB of first thread */
 
-        tcb_set_ip(tcb, (void*)elf_ehdr->e_entry);
+        *ip = (void*)elf_ehdr->e_entry;
 
         return 0;
 

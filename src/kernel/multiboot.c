@@ -444,7 +444,9 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        sched_switch();
+        idt_install_irq_handler(0, sched_irq_handler);
+
+/*        sched_switch();*/
 }
 
 /* dead code */

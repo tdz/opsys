@@ -56,6 +56,7 @@ struct tcb
         unsigned long cr3;
         unsigned long cr4;
         unsigned long eip;
+        unsigned long eflags;
         unsigned long tr; /* task register */
 
         /* FPU registers */
@@ -104,7 +105,7 @@ tcb_switch(struct tcb *tcb, struct tcb *dst);
 
 /* save CPU registers in TCB */
 void
-tcb_save(struct tcb *tcb, unsigned long ip);
+tcb_save(struct tcb *tcb);
 
 /* load CPU registers from TCB */
 int
@@ -112,4 +113,7 @@ tcb_load(const struct tcb *tcb);
 
 int
 tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd);
+
+int
+tcb_init_regs(void *ip);
 

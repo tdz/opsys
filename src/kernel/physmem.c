@@ -216,3 +216,15 @@ physmem_unref_frames(unsigned long pfindex, unsigned long nframes)
         /* FIXME: unlock here */
 }
 
+size_t
+physmem_get_nframes()
+{
+        return g_physmap_nframes;
+}
+
+size_t
+physmem_get_size()
+{
+        return physmem_get_nframes()*PAGEFRAME_SIZE;
+}
+

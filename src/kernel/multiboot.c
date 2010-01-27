@@ -32,6 +32,8 @@
 #include "physmem.h"
 #include "pde.h"
 #include "pagedir.h"
+
+#include "vmemarea.h"
 #include "virtmem.h"
 #include "kbd.h"
 #include "page.h"
@@ -438,7 +440,7 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        tcb_set_state(tcb, THREAD_STATE_BLOCKED);
+        tcb_set_state(tcb, THREAD_STATE_READY);
 
         /* load modules as ELF binaries
          */

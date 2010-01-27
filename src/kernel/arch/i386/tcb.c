@@ -25,13 +25,13 @@
 
 #include "bitset.h"
 
-
 /* virtual memory */
 #include "page.h"
 #include "pte.h"
 #include "pagetbl.h"
 #include "pde.h"
 #include "pagedir.h"
+#include "vmemarea.h"
 #include "virtmem.h"
 
 #include "task.h"
@@ -162,9 +162,9 @@ tcb_switch(struct tcb *tcb, const struct tcb *dst)
 }
 
 int
-tcb_set_ready_state_firsttime(struct tcb *tcb,
-                              const void *ip,
-                              unsigned char irqno)
+tcb_set_initial_ready_state(struct tcb *tcb,
+                            const void *ip,
+                            unsigned char irqno)
 {
         extern void tcb_switch_to_ready_entry_point(void);
         extern void tcb_switch_to_ready_return_firsttime(void);

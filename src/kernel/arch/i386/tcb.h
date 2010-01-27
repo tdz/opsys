@@ -34,7 +34,7 @@ struct tcb
         unsigned long ebx;
         unsigned long ecx;
         unsigned long edx;
-        
+
         /* index registers */
         unsigned long esi;
         unsigned long edi;
@@ -94,32 +94,16 @@ enum thread_state
 tcb_get_state(const struct tcb *tcb);
 
 int
-tcb_is_runnable(const struct tcb *tcb);
+tcb_set_initial_ready_state(struct tcb *tcb,
+                            const void *ip,
+                            unsigned char irqno);
 
 int
-tcb_set_ready_state_firsttime(struct tcb *tcb,
-                              const void *ip,
-                              unsigned char irqno);
+tcb_is_runnable(const struct tcb *tcb);
 
 void
 tcb_set_ip(struct tcb *tcb, void *ip);
 
 int
 tcb_switch(struct tcb *tcb, const struct tcb *dst);
-
-#ifdef COMMENT
-/* save CPU registers in TCB */
-void
-tcb_save(struct tcb *tcb);
-
-/* load CPU registers from TCB */
-int
-tcb_load(const struct tcb *tcb);
-#endif
-
-/*int
-tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd);*/
-
-int
-tcb_init_regs(void *ip);
 

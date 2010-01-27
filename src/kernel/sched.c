@@ -34,6 +34,7 @@
 #include <pagetbl.h>
 #include <pde.h>
 #include <pagedir.h>
+#include "vmemarea.h"
 #include "virtmem.h"
 
 #include "task.h"
@@ -108,8 +109,8 @@ sched_switch_to(unsigned int i)
 
         g_current_thread = i;
 
-/*        console_printf("%s:%x src=%x dst=%x.\n", __FILE__, __LINE__,
-                        g_thread[current], g_thread[i]);*/
+        console_printf("%s:%x src=%x dst=%x.\n", __FILE__, __LINE__,
+                        g_thread[current], g_thread[i]);
 
         if ((err = tcb_switch(g_thread[current], g_thread[i])) < 0) {
                 goto err_tcb_load;
@@ -173,7 +174,6 @@ err_sched_switch_to:
 void
 sched_irq_handler(unsigned char irqno)
 {
-        console_printf("sched\n");
         sched_switch();
 }
 

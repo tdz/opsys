@@ -30,6 +30,7 @@
 #include <pte.h>
 #include <pde.h>
 #include <pagedir.h>
+#include "vmemarea.h"
 #include "virtmem.h"
 
 #include "task.h"

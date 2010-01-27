@@ -35,7 +35,7 @@ loader_exec(struct tcb *tcb, const void *img)
         /* load image into thread */
 
         if (elf_loader_is_elf(img)) {
-                err = elf_loader_exec(tcb, &ip, img);
+                err = elf_loader_exec(tcb->task->pd, &ip, img);
         } else {
                 err = -EINVAL;
         }
@@ -46,7 +46,7 @@ loader_exec(struct tcb *tcb, const void *img)
 
         /* set thread to starting state */
 
-        tcb_set_ready_state_firsttime(tcb, ip, 0);
+        tcb_set_initial_ready_state(tcb, ip, 0);
 
         return 0;
 

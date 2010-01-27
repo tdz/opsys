@@ -28,7 +28,8 @@ CSOURCES = bitset.c \
            taskhlp.c \
            tcbhlp.c \
            tid.c \
-           virtmem.c
+           virtmem.c \
+           vmemarea.c
 
 LDFLAGS += -Ttext=$(reloc_addr) -L$(archdir)/$(target_cpu)
 

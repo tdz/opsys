@@ -16,25 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum virtmem_area_name {
-        VIRTMEM_AREA_SYSTEM     = 0,
-        VIRTMEM_AREA_LOW        = 1,
-        VIRTMEM_AREA_USER       = 2,
-        VIRTMEM_AREA_KERNEL_TMP = 3,
-        VIRTMEM_AREA_KERNEL     = 4,
-        LAST_VIRTMEM_AREA       = 5
-};
-
-enum virtmem_area_flags {
-        VIRTMEM_AREA_FLAG_EMPTY      = 0,
-        VIRTMEM_AREA_FLAG_KERNEL     = 1<<0,
-        VIRTMEM_AREA_FLAG_POLUTE     = 1<<1,
-        VIRTMEM_AREA_FLAG_IDENTITY   = 1<<2,
-        VIRTMEM_AREA_FLAG_PAGETABLES = 1<<3,
-        VIRTMEM_AREA_FLAG_GLOBAL     = 1<<4,
-        VIRTMEM_AREA_FLAG_USER       = 1<<5
-};
-
 int
 virtmem_init(struct page_directory *pd);
 
@@ -45,9 +26,9 @@ virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
                                                      unsigned int flags);
 
 os_index_t
-virtmem_alloc_pages(struct page_directory *pd, os_index_t pgindex,
-                                               size_t pgcount,
-                                               unsigned int flags);
+virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
+                                                  size_t pgcount,
+                                                  unsigned int flags);
 
 os_index_t
 virtmem_alloc_pages_in_area(struct page_directory *pd,

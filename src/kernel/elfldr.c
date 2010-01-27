@@ -20,14 +20,17 @@
 #include <string.h>
 #include <types.h>
 
+/* physical memory */
 #include "pageframe.h"
+
+/* virtual memory */
 #include "page.h"
 #include "pte.h"
 #include "pde.h"
 #include "pagedir.h"
+#include "vmemarea.h"
 #include "virtmem.h"
-#include "tcb.h"
-#include "task.h"
+
 #include "elf.h"
 #include "elfldr.h"
 
@@ -89,7 +92,7 @@ elf_loader_construct_phdr(struct page_directory *pd,
 }
 
 int
-elf_loader_exec(struct tcb *tcb, void **ip, const unsigned char *img)
+elf_loader_exec(struct page_directory *pd, void **ip, const unsigned char *img)
 {
         const Elf32_Ehdr *elf_ehdr;
         size_t i;
@@ -122,7 +125,7 @@ elf_loader_exec(struct tcb *tcb, void **ip, const unsigned char *img)
                         elf_ehdr->e_phoff +
                         elf_ehdr->e_phentsize*i);
 
-                err = elf_loader_construct_phdr(tcb->task->pd, elf_phdr, img);
+                err = elf_loader_construct_phdr(pd, elf_phdr, img);
 
                 if (err < 0) {
                         goto err_elf_loader_construct_phdr;

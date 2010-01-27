@@ -24,6 +24,7 @@
 #include "pde.h"
 #include "pagedir.h"
 #include "task.h"
+#include "vmemarea.h"
 #include "virtmem.h"
 
 #include <tcb.h>

@@ -43,3 +43,9 @@ physmem_ref_frames(unsigned long pfindex, unsigned long nframes);
 void
 physmem_unref_frames(unsigned long pfindex, unsigned long nframes);
 
+size_t
+physmem_get_nframes(void);
+
+size_t
+physmem_get_size(void);
+

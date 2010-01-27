@@ -31,6 +31,9 @@ virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
                                                   unsigned int flags);
 
 os_index_t
+virtmem_lookup_pageframe(const struct page_directory *pt, os_index_t pgindex);
+
+os_index_t
 virtmem_alloc_pages_in_area(struct page_directory *pd,
                             size_t pgcount,
                             enum virtmem_area_name areaname,
@@ -40,9 +43,6 @@ int
 virtmem_flat_copy_areas(const struct page_directory *pd,
                               struct page_directory *dst,
                               unsigned long flags);
-
-os_index_t
-virtmem_lookup_pageframe(const struct page_directory *pt, os_index_t pgindex);
 
 void
 virtmem_segfault_handler(void *ip);

@@ -36,11 +36,8 @@
 #include "pagetbl.h"
 #include "pde.h"
 #include "pagedir.h"
-
 #include "vmemarea.h"
 #include "virtmem.h"
-
-#include "console.h"
 
 static int
 virtmem_map_page_frame_at_nopg(struct page_directory *pd,
@@ -643,6 +640,45 @@ virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
 }
 
 os_index_t
+virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
+{
+        os_index_t ptindex;
+        os_index_t ptpgindex;
+        os_index_t ptpfindex;
+        struct page_table *pt;
+        os_index_t pfindex;
+        int err;
+
+        ptindex = pagetable_index(page_address(pgindex));
+
+        ptpfindex = pde_get_pageframe_index(pd->entry[ptindex]);
+
+        /* map page table of page address */
+
+        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+
+        if (ptpgindex < 0) {
+                err = ptpgindex;
+                goto err_virtmem_install_page_frame_tmp;
+        }
+
+        /* read page frame */
+
+        pt = page_address(ptpgindex);
+
+        pfindex = pte_get_pageframe_index(pt->entry[pgindex&0x3ff]);
+
+        /* unmap page table */
+
+        virtmem_uninstall_page_tmp(ptpgindex);
+
+        return pfindex;
+
+err_virtmem_install_page_frame_tmp:
+        return err;
+}
+
+os_index_t
 virtmem_alloc_pages_in_area(struct page_directory *pd,
                             size_t npages,
                             enum virtmem_area_name areaname,
@@ -715,45 +751,6 @@ virtmem_flat_copy_areas(const struct page_directory *pd,
         }
 
         return 0;
-}
-
-os_index_t
-virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
-{
-        os_index_t ptindex;
-        os_index_t ptpgindex;
-        os_index_t ptpfindex;
-        struct page_table *pt;
-        os_index_t pfindex;
-        int err;
-
-        ptindex = pagetable_index(page_address(pgindex));
-
-        ptpfindex = pde_get_pageframe_index(pd->entry[ptindex]);
-
-        /* map page table of page address */
-
-        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-        if (ptpgindex < 0) {
-                err = ptpgindex;
-                goto err_virtmem_install_page_frame_tmp;
-        }
-
-        /* read page frame */
-
-        pt = page_address(ptpgindex);
-
-        pfindex = pte_get_pageframe_index(pt->entry[pgindex&0x3ff]);
-
-        /* unmap page table */
-
-        virtmem_uninstall_page_tmp(ptpgindex);
-
-        return pfindex;
-
-err_virtmem_install_page_frame_tmp:
-        return err;
 }
 
 #include "console.h"

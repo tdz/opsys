@@ -32,6 +32,14 @@ bitset_unset(unsigned char *bitset, size_t bit)
         bitset[bit>>3] &= ~(1<<(bit&0x07));
 }
 
+void
+bitset_setto(unsigned char *bitset, size_t bit, int set)
+{
+        static void (* const setto[])(unsigned char*, size_t) = {bitset_set,
+                                                                 bitset_unset};
+        setto[!set](bitset, bit);
+}
+
 int
 bitset_isset(const unsigned char *bitset, size_t bit)
 {

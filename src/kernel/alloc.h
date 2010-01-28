@@ -16,18 +16,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-void
-bitset_set(unsigned char *bitset, size_t bit);
+void *
+kmalloc(struct page_directory *pd, size_t nbytes);
+
+void *
+kcalloc(struct page_directory *pd, size_t nmemb, size_t nbytes);
 
 void
-bitset_unset(unsigned char *bitset, size_t bit);
-
-void
-bitset_setto(unsigned char *bitset, size_t bit, int set);
-
-int
-bitset_isset(const unsigned char *bitset, size_t bit);
-
-ssize_t
-bitset_find_unset(const unsigned char *bitset, size_t len);
+kfree(struct page_directory *pd, void *mem);
 

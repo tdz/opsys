@@ -769,6 +769,9 @@ virtmem_pagefault_handler(void *ip, void *addr)
         console_printf("page fault: ip=%x, addr=%x.\n", (unsigned long)ip,
                                                         (unsigned long)addr);
 
+        while (1) {
+                hlt();
+        }
         area = virtmem_area_get_by_page(page_index(addr));
 
         if (area->flags&VIRTMEM_AREA_FLAG_KERNEL) {

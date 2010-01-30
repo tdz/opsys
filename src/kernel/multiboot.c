@@ -35,6 +35,7 @@
 
 #include "vmemarea.h"
 #include "virtmem.h"
+#include "alloc.h"
 #include "kbd.h"
 #include "page.h"
 #include "pte.h"
@@ -46,6 +47,7 @@
 #include "tcbhlp.h"
 #include "loader.h"
 #include "sched.h"
+
 #include "multiboot.h"
 
 static void*
@@ -414,6 +416,28 @@ multiboot_main(const struct multiboot_header *mb_header,
         if ((err = task_helper_allocate_kernel_task(&g_kernel_pd, &tsk)) < 0) {
                 console_perror("task_helper_init_kernel_task", -err);
                 return;
+        }
+
+        /* setup memory allocator
+         */
+
+        if ((err = allocator_init(&g_kernel_pd)) < 0) {
+                console_perror("allocator_init", -err);
+                return;
+        }
+
+        {
+                size_t i;
+                unsigned char *mem = kmalloc(56);
+
+                console_printf("%s:%x mem=%x.\n", __FILE__, __LINE__, (unsigned long)mem);
+
+                for (i = 0; mem[i] == 0x3f; ++i) {
+                }
+
+                console_printf("%s:%x i=%x.\n", __FILE__, __LINE__, i+8);
+
+                kfree(mem);
         }
 
         /* setup current execution as thread 0 of kernel task

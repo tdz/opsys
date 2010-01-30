@@ -16,15 +16,29 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct memzone
+{
+        size_t                 flagslen;
+        unsigned char         *flags;
+        size_t                 chunksize;
+        size_t                 nchunks;
+        struct page_directory *pd;
+        enum virtmem_area_name areaname;
+};
+
 int
-allocator_init(struct page_directory *pd);
+memzone_init(struct memzone *mz,
+             struct page_directory *pd, enum virtmem_area_name areaname);
 
-void *
-kmalloc(size_t nbytes);
+size_t
+memzone_get_nchunks(struct memzone *mz, size_t nbytes);
 
-void *
-kcalloc(size_t nmemb, size_t nbytes);
+os_index_t
+memzone_alloc(struct memzone *mz, size_t nchunks);
 
 void
-kfree(void *mem);
+memzone_free(struct memzone *mz, os_index_t chunk, size_t nchunks);
+
+void*
+memzone_address(struct memzone *mz, os_index_t chunk);
 

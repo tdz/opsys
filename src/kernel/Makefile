@@ -15,6 +15,7 @@ CSOURCES = alloc.c \
            errno.c \
            kbd.c \
            loader.c \
+           memzone.c \
            multiboot.c \
            physmem.c \
            pagedir.c \

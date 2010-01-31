@@ -16,17 +16,31 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct page_directory;
+struct list
+{
+        struct list *next;
+        void        *data;
+        struct list *prev;
+};
 
-int
-allocator_init(struct page_directory *pd);
+struct list *
+list_append(struct list *prev, void *data);
 
-void *
-kmalloc(size_t nbytes);
-
-void *
-kcalloc(size_t nmemb, size_t nbytes);
+struct list *
+list_prepend(struct list *next, void *data);
 
 void
-kfree(void *mem);
+list_free(struct list *list);
+
+struct list *
+list_deque(struct list *list);
+
+struct list *
+list_next(const struct list *list);
+
+struct list *
+list_prev(const struct list *list);
+
+void *
+list_data(const struct list *list);
 

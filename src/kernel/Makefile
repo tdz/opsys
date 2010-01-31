@@ -14,6 +14,7 @@ CSOURCES = alloc.c \
            elfldr.c \
            errno.c \
            kbd.c \
+           list.c \
            loader.c \
            memzone.c \
            multiboot.c \

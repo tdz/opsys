@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "string.h"
+#include <string.h>
+#include <sys/types.h>
 
 int
 memcmp(const void *s1, const void *s2, size_t n)

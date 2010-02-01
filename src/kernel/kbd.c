@@ -16,9 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
+
 #include <ioports.h>
+
 #include "kbd.h"
-#include "errno.h"
 
 enum {
         IOPORT_CTRL = 0x64,

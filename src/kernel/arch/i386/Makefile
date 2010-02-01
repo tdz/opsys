@@ -9,13 +9,11 @@ include ../../../flags.mk
 # kernel resides at 1 MiB
 reloc_addr = 0x100000
 
-ASMSOURCES = entry.S \
-             idt.S \
+ASMSOURCES = idt.S \
              multiboot.S \
              tcb.S
 
-CSOURCES = entry.c \
-           gdt.c \
+CSOURCES = gdt.c \
            idt.c \
            idtentry.c \
            interupt.c \
@@ -23,7 +21,7 @@ CSOURCES = entry.c \
            pic.c \
            tcb.c
 
-CPPFLAGS += -I$(srcdir)/kernel
+CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel
 
 LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel -e_start
 

@@ -190,46 +190,20 @@ isr_handle_irq15:
         jmp isr_handle_irq
 
 isr_handle_syscall:
+        cmp $0, syscall_handler
+        je isr_handle_syscall_ret_enosys
         pushl %edx
         pushl %ecx
         pushl %ebx
         pushl %eax
-
-        cmp $0, syscall_handler
-        je isr_handle_syscall_ret_enosys
         movl syscall_handler, %eax
         call *%eax
-
         addl $4, %esp /* preserve return value in %eax */
         popl %ebx
         popl %ecx
         popl %edx
         iret
 isr_handle_syscall_ret_enosys:
-
-        addl $16, %esp /* preserve return value in %eax */
-        /* invalid sysno, return -ENOSYS */
-        movl $-81, %eax
-        iret
-
-/*FIXME: deadcode */
-
-__isr_handle_syscall:
-        /* syscalls use cdecl convention and the application is responsible
-           for saving the GP registers. The code below doesn't have to care
-           about this. */
-
-        /* read sysno from stack */
-        movl 12(%esp), %eax
-        /* compare sysno to length of entry table */
-        cmp entry_table_length, %eax
-        jnl __isr_handle_syscall_err_sysno
-        /* call system-call handler */
-        shl $2, %eax /* offset = sysno*4 = sysno<<2 */
-        addl $entry_table, %eax
-        call *(%eax)
-        iret
-__isr_handle_syscall_err_sysno:
         /* invalid sysno, return -ENOSYS */
         movl $-81, %eax
         iret

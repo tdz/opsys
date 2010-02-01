@@ -16,53 +16,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
+#include <errno.h>
+#include <sys/types.h>
+
+#include "tid.h"
+#include "sched.h"
 #include "syscall.h"
-#include "crt.h"
 
 #include "console.h"
-
-int
-syscall_task_quit()
-{
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-        return 0;
-}
-
-int
-syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
-{
-        unsigned short row, col;
-        volatile unsigned char *vidmem;
-
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-
-        crt_getpos(&row, &col);
-        vidmem = crt_getaddress(row, col);
-
-        return crt_write(vidmem, buf, buflen, attr);
-}
-
-int
-syscall_crt_getmaxpos(unsigned short *row, unsigned short *col)
-{
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-        return 0;
-}
-
-int
-syscall_crt_getpos(unsigned short *row, unsigned short *col)
-{
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-        return 0;
-}
-
-int
-syscall_crt_setpos(unsigned short row, unsigned short col)
-{
-        console_printf("%s:%x\n", __FILE__, __LINE__);
-        return 0;
-}
 
 int
 syscall_entry_handler(unsigned long r0,
@@ -70,9 +31,34 @@ syscall_entry_handler(unsigned long r0,
                       unsigned long r2,
                       unsigned long r3)
 {
+        int err;
+        struct tcb *snd, *rcv;
+
         console_printf("%s:%x: r0=%x r1=%x r2=%x r3=%x.\n", __FILE__, __LINE__,
                         r0, r1, r2, r3);
 
+        /* get current thread */
+
+        if (!(snd = sched_get_current_thread())) {
+                err = -EAGAIN;
+                goto err_sched_get_current_thread;
+        }
+
+        /* get receiver thread */
+
+        rcv = sched_search_thread(threadid_get_taskid(r0),
+                                  threadid_get_tcbid(r0));
+        if (!rcv) {
+                err = -EAGAIN;
+                goto err_sched_search_thread;
+        }
+
+        /* create IPC message */
+
         return 0;
+
+err_sched_search_thread:
+err_sched_get_current_thread:
+        return err;
 }
 

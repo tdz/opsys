@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "errno.h"
+#include <errno.h>
 
 const char const * sys_errlist[] = {
         "no error",

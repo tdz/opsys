@@ -16,37 +16,34 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <types.h>
+#include <sys/types.h>
 #include <syscall.h>
 
 int
-syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
+syscall(unsigned long r0,
+        unsigned long r1,
+        unsigned long r2,
+        unsigned long r3)
 {
         int res;
 
         __asm__("int $0x80\n\t"
                         : "=a"(res) /* save result from %eax */
-                        : "a"((unsigned long)SYSCALL_CRT_WRITE),
-                          "b"((unsigned long)buf),
-                          "c"((unsigned long)buflen),
-                          "d"((unsigned long)attr)
+                        : "a"(r0),
+                          "b"(r1),
+                          "c"(r2),
+                          "d"(r3)
                         : );
 
         return res;
+}
 
-        __asm__("pushl %4\n\t" /* push attr */
-                "pushl %3\n\t" /* push buflen */
-                "pushl %2\n\t" /* push buf */
-                "pushl %1\n\t" /* push syscall number */
-                "int $0x80\n\t"
-                "addl $16, %%esp\n\t" /* restore stack pointer */
-                        : "=a"(res) /* save result from %eax */
-                        : "r"(SYSCALL_CRT_WRITE),
-                          "r"(buf),
-                          "r"(buflen),
-                          "r"((int)attr)
-                        : "ecx", "edx");
-
-        return res;
+int
+syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
+{
+        return syscall((unsigned long)SYSCALL_CRT_WRITE,
+                       (unsigned long)buf,
+                       (unsigned long)buflen,
+                       (unsigned long)attr);
 }
 

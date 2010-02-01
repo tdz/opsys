@@ -17,7 +17,7 @@
  */
 
 #include <errno.h>
-#include <types.h>
+#include <sys/types.h>
 
 #include "bitset.h"
 

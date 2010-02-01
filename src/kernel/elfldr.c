@@ -18,7 +18,7 @@
 
 #include <errno.h>
 #include <string.h>
-#include <types.h>
+#include <sys/types.h>
 
 /* physical memory */
 #include "pageframe.h"

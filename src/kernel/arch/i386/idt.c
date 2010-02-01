@@ -17,7 +17,8 @@
  */
 
 #include <stddef.h>
-#include <types.h>
+#include <sys/types.h>
+
 #include "syscall.h"
 #include "idt.h"
 #include "idtentry.h"

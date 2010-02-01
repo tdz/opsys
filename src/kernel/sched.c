@@ -16,9 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <types.h>
-#include <stddef.h>
 #include <errno.h>
+#include <stddef.h>
+#include <sys/types.h>
 
 #include <cpu.h>
 #include <interupt.h>
@@ -95,7 +95,7 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
 
                 struct tcb *tcb = *beg;
 
-                if ((tcb->id != tcbid) || (tcb->task->id != taskid)) {
+                if (!tcb || (tcb->id != tcbid) || (tcb->task->id != taskid)) {
                         continue;
                 }
                 return *beg;
@@ -103,8 +103,6 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
 
         return NULL;
 }
-
-#include "console.h"
 
 static int
 sched_switch_to(unsigned int i)
@@ -115,9 +113,6 @@ sched_switch_to(unsigned int i)
         current = g_current_thread;
 
         g_current_thread = i;
-
-/*        console_printf("%s:%x src=%x dst=%x.\n", __FILE__, __LINE__,
-                        g_thread[current], g_thread[i]);*/
 
         if ((err = tcb_switch(g_thread[current], g_thread[i])) < 0) {
                 goto err_tcb_load;

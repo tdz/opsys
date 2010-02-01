@@ -17,7 +17,7 @@
  */
 
 #include <errno.h>
-#include <types.h>
+#include <sys/types.h>
 
 #include "tcb.h"
 #include "task.h"

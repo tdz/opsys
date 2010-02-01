@@ -36,7 +36,7 @@ CSOURCES = alloc.c \
 
 LDFLAGS += -Ttext=$(reloc_addr) -L$(archdir)/$(target_cpu)
 
-CPPFLAGS += -I$(archdir)/$(target_cpu)
+CPPFLAGS += -I$(archdir)/$(target_cpu) -I./include 
 
 .PHONY : all clean
 

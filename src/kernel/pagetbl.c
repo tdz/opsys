@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "string.h"
+#include <string.h>
+#include <sys/types.h>
 
 #include "pageframe.h"
 #include "physmem.h"

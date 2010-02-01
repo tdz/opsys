@@ -17,7 +17,7 @@
  */
 
 #include <stddef.h>
-#include <types.h>
+#include <sys/types.h>
 
 #include <alloc.h>
 

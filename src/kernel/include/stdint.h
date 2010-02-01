@@ -19,7 +19,7 @@
 #ifndef STDINT_H
 #define STDINT_H
 
-#include "types.h"
+#include <sys/types.h>
 
 /* exactly sized integer types */
 

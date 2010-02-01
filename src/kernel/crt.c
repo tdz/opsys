@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "stddef.h"
-#include "types.h"
+#include <stddef.h>
+#include <sys/types.h>
 #include "ioports.h"
 
 #define MAX_ROW 25

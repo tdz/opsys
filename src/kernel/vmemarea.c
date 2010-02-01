@@ -17,7 +17,8 @@
  */
 
 #include <stddef.h>
-#include <types.h>
+#include <sys/types.h>
+
 #include "vmemarea.h"
 
 static const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {

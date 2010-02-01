@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ioports.h>
 #include "pit.h"
-#include "ioports.h"
 
 void
 pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode)

@@ -18,7 +18,7 @@
 
 #include <stddef.h>
 #include <string.h>
-#include <types.h>
+#include <sys/types.h>
 
 /* virtual memory */
 #include <vmemarea.h>

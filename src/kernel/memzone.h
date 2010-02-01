@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+enum virtmem_area_name;
+struct page_directory;
+
 struct memzone
 {
         size_t                 flagslen;
@@ -39,6 +42,6 @@ memzone_alloc(struct memzone *mz, size_t nchunks);
 void
 memzone_free(struct memzone *mz, os_index_t chunk, size_t nchunks);
 
-void*
+void *
 memzone_address(struct memzone *mz, os_index_t chunk);
 

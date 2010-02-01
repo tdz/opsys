@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct page_directory;
+
 int
 elf_loader_exec(struct page_directory *pd, void **ip, const unsigned char *img);
 

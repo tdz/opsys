@@ -24,6 +24,16 @@ syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
 {
         int res;
 
+        __asm__("int $0x80\n\t"
+                        : "=a"(res) /* save result from %eax */
+                        : "a"((unsigned long)SYSCALL_CRT_WRITE),
+                          "b"((unsigned long)buf),
+                          "c"((unsigned long)buflen),
+                          "d"((unsigned long)attr)
+                        : );
+
+        return res;
+
         __asm__("pushl %4\n\t" /* push attr */
                 "pushl %3\n\t" /* push buflen */
                 "pushl %2\n\t" /* push buf */

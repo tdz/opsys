@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct tcb;
+
 int
 sched_init(void);
 
@@ -27,6 +29,9 @@ sched_get_current_thread(void);
 
 struct tcb *
 sched_get_thread(unsigned int i);
+
+struct tcb *
+sched_search_thread(unsigned int taskid, unsigned char tcbid);
 
 int
 sched_switch(void);

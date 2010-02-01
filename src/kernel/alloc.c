@@ -21,11 +21,6 @@
 #include <types.h>
 
 /* virtual memory */
-#include <page.h>
-#include <pte.h>
-#include <pagetbl.h>
-#include <pde.h>
-#include <pagedir.h>
 #include <vmemarea.h>
 
 #include <memzone.h>

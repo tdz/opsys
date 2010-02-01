@@ -16,10 +16,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
+#include <string.h>
+#include <types.h>
+
 #include "minmax.h"
-#include "stddef.h"
-#include "types.h"
-#include "string.h"
+
 #include "pageframe.h"
 #include "physmem.h"
 

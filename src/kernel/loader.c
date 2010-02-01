@@ -19,8 +19,6 @@
 #include <errno.h>
 #include <types.h>
 
-#include "pde.h"
-#include "pagedir.h"
 #include "tcb.h"
 #include "task.h"
 #include "elfldr.h"

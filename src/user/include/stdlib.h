@@ -19,6 +19,11 @@
 #ifndef STDLIB_H
 #define STDLIB_H
 
+enum {
+        EXIT_SUCCESS = 0,
+        EXIT_FAILURE
+};
+
 void
 exit(int status) __attribute__((noreturn));
 

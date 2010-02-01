@@ -16,10 +16,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types.h"
-#include "string.h"
+#include <types.h>
+#include <string.h>
+
 #include "pageframe.h"
 #include "physmem.h"
+
 #include "pde.h"
 #include "pagedir.h"
 

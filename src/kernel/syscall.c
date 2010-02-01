@@ -64,3 +64,15 @@ syscall_crt_setpos(unsigned short row, unsigned short col)
         return 0;
 }
 
+int
+syscall_entry_handler(unsigned long r0,
+                      unsigned long r1,
+                      unsigned long r2,
+                      unsigned long r3)
+{
+        console_printf("%s:%x: r0=%x r1=%x r2=%x r3=%x.\n", __FILE__, __LINE__,
+                        r0, r1, r2, r3);
+
+        return 0;
+}
+

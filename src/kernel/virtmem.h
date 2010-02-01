@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+enum virtmem_area_name;
+struct page_directory;
+
 int
 virtmem_init(struct page_directory *pd);
 

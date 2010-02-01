@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct task;
+
 enum thread_state {
         THREAD_STATE_ZOMBIE = 0, /* waiting for removal */
         THREAD_STATE_READY, /* ready to be executed */
@@ -75,6 +77,9 @@ struct tcb
         unsigned long dr3;
         unsigned long dr6;
         unsigned long dr7;
+
+        /* list of incoming IPC */
+        struct list *ipcin;
 } __attribute__ (( aligned(256) ));
 
 int

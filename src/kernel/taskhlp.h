@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct page_directory;
+struct task;
+
 int
 task_helper_allocate_kernel_task(struct page_directory *kernel_pd,
                                  struct task **tsk);

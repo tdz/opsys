@@ -24,13 +24,19 @@
 _start:
         pushl $0 /* TODO: push argv */
         pushl $0 /* TODO: push argc */
+
         call main
+
         pushl %eax /* push exit status */
+        subl $4, %esp
+
 exit:
-        /* when we jump here, the exit status should be on the stack already */
-        pushl $0 /* push exit system-call number */
-        hlt
-        int $0x80 /* this never returns */
+        /* when we jump here, the exit status should already be on the stack */
+        movl $0, %eax /* receiver (0:0) */
+        movl $0, %ebx /* command exit */
+        movl 4(%esp), %ecx /* exit status */
+        xor %edx, %edx /* clear %edx */
+        int $0x80      /* this never returns */
 
 /* Temporary workaround, as opsys does not yet quit tasks */
 do_hlt: 

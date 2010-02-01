@@ -25,7 +25,7 @@ CSOURCES = entry.c \
 
 CPPFLAGS += -I$(srcdir)/kernel
 
-LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel
+LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel -e_start
 
 LDADD += -lkernel
 

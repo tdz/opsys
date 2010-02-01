@@ -39,3 +39,9 @@ syscall_crt_getpos(unsigned short *row, unsigned short *col);
 int
 syscall_crt_setpos(unsigned short row, unsigned short col);
 
+int
+syscall_entry_handler(unsigned long r0,
+                      unsigned long r1,
+                      unsigned long r2,
+                      unsigned long r3);
+

@@ -17,25 +17,11 @@
  */
 
 #include <types.h>
-#include <errno.h>
 #include <stddef.h>
-#include <string.h>
+#include <errno.h>
 
 #include <cpu.h>
 #include <interupt.h>
-
-/* physical memory */
-#include "pageframe.h"
-#include "physmem.h"
-
-/* virtual memory */
-#include <page.h>
-#include <pte.h>
-#include <pagetbl.h>
-#include <pde.h>
-#include <pagedir.h>
-#include "vmemarea.h"
-#include "virtmem.h"
 
 #include "task.h"
 #include <tcb.h>
@@ -95,6 +81,27 @@ struct tcb *
 sched_get_thread(unsigned int i)
 {
         return g_thread[i];
+}
+
+struct tcb *
+sched_search_thread(unsigned int taskid, unsigned char tcbid)
+{
+        struct tcb **beg, **end;
+
+        beg = g_thread;
+        end = g_thread+sizeof(g_thread)/sizeof(g_thread[0]);
+
+        for (; beg < end; ++beg) {
+
+                struct tcb *tcb = *beg;
+
+                if ((tcb->id != tcbid) || (tcb->task->id != taskid)) {
+                        continue;
+                }
+                return *beg;
+        }
+
+        return NULL;
 }
 
 #include "console.h"

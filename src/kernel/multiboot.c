@@ -47,6 +47,7 @@
 #include "tcbhlp.h"
 #include "loader.h"
 #include "sched.h"
+#include "syscall.h"
 
 #include "multiboot.h"
 
@@ -473,6 +474,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
+
+        idt_install_syscall_handler(syscall_entry_handler);
 }
 
 /* dead code */

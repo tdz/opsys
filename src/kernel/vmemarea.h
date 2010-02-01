@@ -42,7 +42,7 @@ struct virtmem_area
         unsigned int flags;
 };
 
-const struct virtmem_area*
+const struct virtmem_area *
 virtmem_area_get_by_name(enum virtmem_area_name name);
 
 const struct virtmem_area *

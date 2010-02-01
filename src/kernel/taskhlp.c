@@ -17,7 +17,6 @@
  */
 
 #include <types.h>
-#include <errno.h>
 
 #include <mmu.h>
 

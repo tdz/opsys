@@ -21,12 +21,10 @@
 /* virtual memory */
 #include "page.h"
 #include "pte.h"
-#include "pde.h"
-#include "pagedir.h"
-#include "task.h"
 #include "vmemarea.h"
 #include "virtmem.h"
 
+#include "task.h"
 #include <tcb.h>
 #include "tcbhlp.h"
 

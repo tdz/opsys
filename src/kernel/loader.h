@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct tcb;
+
 int
 loader_exec(struct tcb *tcb, const void *img);
 

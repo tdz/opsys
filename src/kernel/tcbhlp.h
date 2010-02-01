@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct task;
+struct tcb;
+
 int
 tcb_helper_allocate_tcb(struct task *task, void *stack, struct tcb **tcb);
 

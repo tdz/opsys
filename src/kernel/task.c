@@ -23,8 +23,8 @@
 #include "bitset.h"
 
 /* virtual memory */
-#include "pde.h"
-#include "pagedir.h"
+#include <pde.h>
+#include <pagedir.h>
 
 #include "task.h"
 

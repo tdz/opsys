@@ -20,11 +20,7 @@ CSOURCES = alloc.c \
            memzone.c \
            multiboot.c \
            physmem.c \
-           pagedir.c \
-           pagetbl.c \
-           pde.c \
            pit.c \
-           pte.c \
            sched.c \
            string.c \
            syscall.c \

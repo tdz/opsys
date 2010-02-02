@@ -29,20 +29,21 @@
 
 #include "pic.h"
 #include "pit.h"
-#include "kbd.h"
 
 /* physical memory */
-#include "pageframe.h"
+#include <pageframe.h>
 #include "physmem.h"
 
 /* virtual memory */
-#include "pde.h"
-#include "pagedir.h"
+#include <pde.h>
+#include <pagedir.h>
 #include "virtmem.h"
 #include "alloc.h"
 
+#include "kbd.h"
+
 #include "taskhlp.h"
-#include "tcb.h"
+#include <tcb.h>
 #include "tcbhlp.h"
 #include "sched.h"
 #include "loader.h"

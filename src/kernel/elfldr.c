@@ -21,11 +21,11 @@
 #include <sys/types.h>
 
 /* physical memory */
-#include "pageframe.h"
+#include <pageframe.h>
 
 /* virtual memory */
-#include "page.h"
-#include "pte.h"
+#include <page.h>
+#include <pte.h>
 #include "virtmem.h"
 
 #include "elf.h"

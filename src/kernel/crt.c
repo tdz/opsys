@@ -18,10 +18,13 @@
 
 #include <stddef.h>
 #include <sys/types.h>
-#include "ioports.h"
 
-#define MAX_ROW 25
-#define MAX_COL 80
+#include <ioports.h>
+
+enum {
+        MAX_ROW = 25,
+        MAX_COL = 80
+};
 
 static unsigned long
 crt_getindex(unsigned short row, unsigned short col)

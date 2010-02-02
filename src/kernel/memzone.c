@@ -29,7 +29,7 @@
 #include <pde.h>
 #include <pagedir.h>
 #include <vmemarea.h>
-#include <virtmem.h>
+#include "virtmem.h"
 
 #include "memzone.h"
 

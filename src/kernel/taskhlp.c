@@ -21,7 +21,7 @@
 #include <mmu.h>
 
 /* physical memory */
-#include "pageframe.h"
+#include <pageframe.h>
 #include "physmem.h"
 
 /* virtual memory */

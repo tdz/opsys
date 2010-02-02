@@ -18,7 +18,11 @@ CSOURCES = gdt.c \
            idtentry.c \
            interupt.c \
            ioports.c \
+           pagedir.c \
+           pagetbl.c \
+           pde.c \
            pic.c \
+           pte.c \
            tcb.c
 
 CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel

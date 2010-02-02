@@ -19,8 +19,8 @@
 #include <sys/types.h>
 
 /* virtual memory */
-#include "page.h"
-#include "pte.h"
+#include <page.h>
+#include <pte.h>
 #include "vmemarea.h"
 #include "virtmem.h"
 

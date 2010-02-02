@@ -17,6 +17,7 @@
  */
 
 #include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "bitset.h"
@@ -49,6 +50,7 @@ task_init(struct task *task, struct page_directory *pd)
         task->pd = pd;
         task->nthreads = 0;
         task->id = taskid;
+        memset(task->threadid, 0, sizeof(task->threadid));
 
         return 0;
 

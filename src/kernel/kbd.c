@@ -87,47 +87,43 @@ enum kbd_enc_cmd {
 /* I/O port interface
  */
 
-static void
-kbd_ctrl_inb(unsigned char *byte)
+static unsigned char
+kbd_ctrl_inb(void)
 {
-        io_inb(IOPORT_CTRL, byte);
+        unsigned char byte;
+
+        io_inb(IOPORT_CTRL, &byte);
+
+        return byte;
 }
 
 static void
 kbd_ctrl_outb(unsigned char byte)
 {
-        unsigned char state;
-
         /* wait for completion of previous command */
-        do {
-                kbd_ctrl_inb(&state);
-        } while (state & KBD_CTRL_FLAGS_INBUF_FULL);
+        while (kbd_ctrl_inb() & KBD_CTRL_FLAGS_INBUF_FULL);
 
         io_outb(IOPORT_CTRL, byte);
 }
 
-static void
-kbd_enc_inb(unsigned char *byte)
+static unsigned char
+kbd_enc_inb(void)
 {
-        unsigned char state;
+        unsigned char byte;
 
         /* wait for input to appear in buffer */
-        do {
-                kbd_ctrl_inb(&state);
-        } while (!(state & KBD_CTRL_FLAGS_OUTBUF_FULL));
+        while (!(kbd_ctrl_inb() & KBD_CTRL_FLAGS_OUTBUF_FULL));
 
-        io_inb(IOPORT_ENCD, byte);
+        io_inb(IOPORT_ENCD, &byte);
+
+        return byte;
 }
 
 static void
 kbd_enc_outb(unsigned char byte)
 {
-        unsigned char state;
-
         /* wait for completion of previous command */
-        do {
-                kbd_ctrl_inb(&state);
-        } while (state & KBD_CTRL_FLAGS_INBUF_FULL);
+        while (kbd_ctrl_inb() & KBD_CTRL_FLAGS_INBUF_FULL);
 
         io_outb(IOPORT_ENCD, byte);
 }
@@ -142,11 +138,11 @@ kbd_ctrl_outcmd(enum kbd_ctrl_cmd cmd, unsigned char byte)
         kbd_enc_outb(byte);
 }
 
-static void
-kbd_ctrl_incmd(enum kbd_ctrl_cmd cmd, unsigned char *byte)
+static unsigned char
+kbd_ctrl_incmd(enum kbd_ctrl_cmd cmd)
 {
         kbd_ctrl_outb(cmd);
-        kbd_enc_inb(byte);
+        return kbd_enc_inb();
 }
 
 #ifdef ENCCMD
@@ -157,11 +153,11 @@ kbd_enc_outcmd(enum kbd_enc_cmd cmd, unsigned char byte)
         kbd_enc_outb(byte);
 }
 
-static void
-kbd_enc_incmd(enum kbd_enc_cmd cmd, unsigned char *byte)
+static unsigned char 
+kbd_enc_incmd(enum kbd_enc_cmd cmd)
 {
         kbd_enc_outb(cmd);
-        kbd_enc_inb(byte);
+        return kbd_enc_inb();
 }
 #endif 
 
@@ -170,36 +166,21 @@ kbd_enc_incmd(enum kbd_enc_cmd cmd, unsigned char *byte)
 static int
 kbd_selftest(void)
 {
-        unsigned char state;
-
         /* self test */
-
-        kbd_ctrl_incmd(KBD_CTRL_CMD_SELFTEST, &state);
-
-/*        kbd_ctrl_outb(KBD_CTRL_CMD_SELFTEST);
-        kbd_enc_inb(&state);*/
-
-        return (state==0x55) ? 0 : -ENODEV;
+        return (kbd_ctrl_incmd(KBD_CTRL_CMD_SELFTEST)==0x55) ? 0 : -ENODEV;
 }
 
 static int
 kbd_interfacetest(void)
 {
-        unsigned char state;
-
         /* interface test */
-        kbd_ctrl_incmd(KBD_CTRL_CMD_KBDITFTEST, &state);
-
-        return state ? -EIO : 0;
+        return kbd_ctrl_incmd(KBD_CTRL_CMD_KBDITFTEST) ? -EIO : 0;
 }
-
-#include "console.h"
 
 int
 kbd_init()
 {
         int err;
-        unsigned char byte;
 
         /* enable keyboard */
         kbd_ctrl_outb(KBD_CTRL_CMD_ENABLEKBD);
@@ -224,22 +205,14 @@ kbd_init()
                 }
         }
 
-        /* enable interrupts */
-
-        kbd_ctrl_incmd(KBD_CTRL_CMD_RDCMDBYTE, &byte);
-
-        console_printf("command byte = %x.\n", (unsigned long)byte);
+        /* enable interrupts, set XT scancode set */
 
         kbd_ctrl_outcmd(KBD_CTRL_CMD_WRCMDBYTE,
-                        (byte|
+                        (kbd_ctrl_incmd(KBD_CTRL_CMD_RDCMDBYTE)|
                          KBD_CTRL_CMDBYTE_KBDUSEIRQ|
                          KBD_CTRL_CMDBYTE_DISABLE_AUX) &
                                 ~(KBD_CTRL_CMDBYTE_DISABLE_KBD|
                                   KBD_CTRL_CMDBYTE_SCANCODE_XT));
-
-        kbd_ctrl_incmd(KBD_CTRL_CMD_RDCMDBYTE, &byte);
-
-        console_printf("command byte = %x.\n", (unsigned long)byte);
 
         return 0;
 
@@ -254,10 +227,11 @@ kbd_get_scancode()
         unsigned char byte;
 
         io_inb(IOPORT_ENCD, &byte);
-/*        kbd_enc_inb(&byte);*/
 
         return byte;
 }
+
+#include "console.h"
 
 void
 kbd_irq_handler(unsigned char irqno)

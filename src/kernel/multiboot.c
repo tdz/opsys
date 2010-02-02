@@ -344,7 +344,7 @@ main_invalop_handler(void *ip)
 {
         console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
 }
-#include <cpu.h>
+
 void
 multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info,
@@ -424,7 +424,6 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* setup memory allocator
          */
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
         if ((err = allocator_init(&g_kernel_pd)) < 0) {
                 console_perror("allocator_init", -err);
                 return;
@@ -433,43 +432,35 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* setup current execution as thread 0 of kernel task
          */
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
         if ((err = tcb_helper_allocate_tcb(tsk, stack, &tcb)) < 0) {
                 console_perror("tcb_helper_allocate_tcb", -err);
                 return;
         }
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
         tcb_set_state(tcb, THREAD_STATE_READY);
 
         /* setup scheduler with kernel thread 0
          */
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
         if ((err = sched_init()) < 0) {
                 console_perror("sched_init", -err);
                 return;
         }
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         /* connect scheduler to timer interupt */
         idt_install_irq_handler(0, sched_irq_handler);
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);
                 return;
         }
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         /* load modules as ELF binaries
          */
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
 }
 

@@ -52,11 +52,10 @@ crt_write(volatile unsigned char *vidmem,
 int
 crt_getpos(unsigned short *row, unsigned short *col)
 {
-        unsigned char curh, curl;
-        unsigned long cur;
+        unsigned long curh, curl, cur;
 
-        io_inb_index(0x3d4, 0x0e, 0x03d5, &curh);
-        io_inb_index(0x3d4, 0x0f, 0x03d5, &curl);
+        curh = io_inb_index(0x3d4, 0x0e, 0x03d5);
+        curl = io_inb_index(0x3d4, 0x0f, 0x03d5);
 
         cur = (curh<<8) | curl;
 

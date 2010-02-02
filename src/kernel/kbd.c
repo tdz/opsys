@@ -90,11 +90,7 @@ enum kbd_enc_cmd {
 static unsigned char
 kbd_ctrl_inb(void)
 {
-        unsigned char byte;
-
-        io_inb(IOPORT_CTRL, &byte);
-
-        return byte;
+        return io_inb(IOPORT_CTRL);
 }
 
 static void
@@ -109,14 +105,10 @@ kbd_ctrl_outb(unsigned char byte)
 static unsigned char
 kbd_enc_inb(void)
 {
-        unsigned char byte;
-
         /* wait for input to appear in buffer */
         while (!(kbd_ctrl_inb() & KBD_CTRL_FLAGS_OUTBUF_FULL));
 
-        io_inb(IOPORT_ENCD, &byte);
-
-        return byte;
+        return io_inb(IOPORT_ENCD);
 }
 
 static void
@@ -224,11 +216,7 @@ err_kbd_selftest:
 int
 kbd_get_scancode()
 {
-        unsigned char byte;
-
-        io_inb(IOPORT_ENCD, &byte);
-
-        return byte;
+        return io_inb(IOPORT_ENCD);
 }
 
 #include "console.h"
@@ -236,9 +224,7 @@ kbd_get_scancode()
 void
 kbd_irq_handler(unsigned char irqno)
 {
-        int scancode;
-
-        scancode = kbd_get_scancode();
+        int scancode = kbd_get_scancode();
 
         console_printf("%s:%x: keyboard handler scancode=%x.\n", __FILE__,
                                                                  __LINE__,

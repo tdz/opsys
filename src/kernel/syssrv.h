@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,15 +17,5 @@
  */
 
 void
-io_outb(unsigned short port, unsigned char byte);
-
-void
-io_outb_index(unsigned short iport, unsigned char index,
-              unsigned short dport, unsigned char byte);
-
-unsigned char
-io_inb(unsigned short port);
-
-unsigned char
-io_inb_index(unsigned short iport, unsigned char index, unsigned short dport);
+system_srv_start(struct tcb *self);
 

@@ -16,16 +16,20 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct task;
-struct tcb;
+#include "tid.h"
+#include "ipcmsg.h"
 
 int
-tcb_helper_allocate_tcb(struct task *task, void *stack, struct tcb **tcb);
+ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
+                                  unsigned long flags,
+                                  unsigned long msg0,
+                                  unsigned long msg1)
+{
+        msg->snd = snd;
+        msg->flags = flags;
+        msg->msg0 = msg0;
+        msg->msg1 = msg1;
 
-int
-tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stacksize,
-                                  struct tcb **tcb);
-
-int
-tcb_helper_run_thread(struct tcb *tcb, void (*func)(struct tcb*));
+        return 0;
+}
 

@@ -22,32 +22,32 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "console.h"
-#include "gdt.h"
-#include "idt.h"
-#include "interupt.h"
+#include <mmu.h>
+#include <interupt.h>
+#include <gdt.h>
+#include <idt.h>
+
 #include "pic.h"
 #include "pit.h"
+#include "kbd.h"
+
+/* physical memory */
 #include "pageframe.h"
 #include "physmem.h"
+
+/* virtual memory */
 #include "pde.h"
 #include "pagedir.h"
-
-#include "vmemarea.h"
 #include "virtmem.h"
 #include "alloc.h"
-#include "kbd.h"
-#include "page.h"
-#include "pte.h"
-#include "mmu.h"
-#include "task.h"
+
 #include "taskhlp.h"
-#include "tid.h"
 #include "tcb.h"
 #include "tcbhlp.h"
-#include "loader.h"
 #include "sched.h"
+#include "loader.h"
 #include "syscall.h"
+#include "console.h"
 
 #include "multiboot.h"
 
@@ -344,7 +344,7 @@ main_invalop_handler(void *ip)
 {
         console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
 }
-
+#include <cpu.h>
 void
 multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info,
@@ -406,6 +406,8 @@ multiboot_main(const struct multiboot_header *mb_header,
         pit_install(0, 20, PIT_MODE_RATEGEN);
         idt_install_irq_handler(0, pit_irq_handler);
 
+        idt_install_syscall_handler(syscall_entry_handler);
+
         sti();
 
         /* build initial task and address space
@@ -422,102 +424,52 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* setup memory allocator
          */
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
         if ((err = allocator_init(&g_kernel_pd)) < 0) {
                 console_perror("allocator_init", -err);
                 return;
         }
 
-        {
-                size_t i;
-                unsigned char *mem = kmalloc(56);
-
-                console_printf("%s:%x mem=%x.\n", __FILE__, __LINE__, (unsigned long)mem);
-
-                for (i = 0; mem[i] == 0x3f; ++i) {
-                }
-
-                console_printf("%s:%x i=%x.\n", __FILE__, __LINE__, i+8);
-
-                kfree(mem);
-        }
-
         /* setup current execution as thread 0 of kernel task
          */
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
         if ((err = tcb_helper_allocate_tcb(tsk, stack, &tcb)) < 0) {
                 console_perror("tcb_helper_allocate_tcb", -err);
                 return;
         }
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+        tcb_set_state(tcb, THREAD_STATE_READY);
+
         /* setup scheduler with kernel thread 0
          */
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
         if ((err = sched_init()) < 0) {
                 console_perror("sched_init", -err);
                 return;
         }
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         /* connect scheduler to timer interupt */
         idt_install_irq_handler(0, sched_irq_handler);
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);
                 return;
         }
-
-        tcb_set_state(tcb, THREAD_STATE_READY);
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         /* load modules as ELF binaries
          */
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
-
-        idt_install_syscall_handler(syscall_entry_handler);
-}
-
-/* dead code */
-
-int
-test_alloc(void)
-{
-        struct tcb *tcb;
-        int *addr;
-
-        tcb = sched_get_current_thread();
-
-        addr = page_address(virtmem_alloc_pages_in_area(
-                            tcb->task->pd,
-                            2,
-                            VIRTMEM_AREA_USER,
-                            PTE_FLAG_PRESENT|
-                            PTE_FLAG_WRITEABLE));
-        if (!addr) {
-                console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-        }
-
-        console_printf("alloced addr=%x.\n", addr);
-
-        memset(addr, 0, 2*PAGE_SIZE);
-
-        tcb = sched_get_current_thread();
-
-        addr = page_address(virtmem_alloc_pages_in_area(
-                            tcb->task->pd,
-                            1023,
-                            VIRTMEM_AREA_USER,
-                            PTE_FLAG_PRESENT|
-                            PTE_FLAG_WRITEABLE));
-        if (!addr) {
-                console_printf("alloc error %s %x.\n", __FILE__, __LINE__);
-        }
-
-        console_printf("alloced addr=%x.\n", addr);
-
-        memset(addr, 0, 1023*PAGE_SIZE);
-
-        return 0;
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 }
 

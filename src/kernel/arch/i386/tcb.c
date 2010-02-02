@@ -134,15 +134,21 @@ tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst)
         return 0;
 }
 
+/* implemented in tcb.S */
+int
+tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst);
+
 static int
-tcb_switch_to_blocked(struct tcb *tcb, const struct tcb *dst)
+tcb_switch_to_send(struct tcb *tcb, const struct tcb *dst)
 {
         return 0;
 }
 
-/* implemented in tcb.S */
-int
-tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst);
+static int
+tcb_switch_to_recv(struct tcb *tcb, const struct tcb *dst)
+{
+        return 0;
+}
 
 int
 tcb_switch(struct tcb *tcb, const struct tcb *dst)
@@ -150,7 +156,8 @@ tcb_switch(struct tcb *tcb, const struct tcb *dst)
         static int (* const switch_to[])(struct tcb*, const struct tcb*) = {
                 tcb_switch_to_zombie,
                 tcb_switch_to_ready,
-                tcb_switch_to_blocked};
+                tcb_switch_to_send,
+                tcb_switch_to_recv};
 
         return switch_to[dst->state](tcb, dst);
 }
@@ -197,5 +204,14 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         tcb_set_state(tcb, THREAD_STATE_READY);
 
         return 0;
+}
+
+void
+tcb_pushl(struct tcb *tcb, unsigned long value)
+{
+        unsigned long *stack = (void*)tcb->esp;
+
+        stack[-1] = value;
+        tcb->esp -= 4;
 }
 

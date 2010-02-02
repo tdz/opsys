@@ -65,7 +65,7 @@ task_uninit(struct task *task)
 size_t
 task_max_nthreads(const struct task *task)
 {
-        return sizeof(task->threadid)<<8;
+        return sizeof(task->threadid)*8;
 }
 
 int

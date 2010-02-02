@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,16 +16,26 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct task;
-struct tcb;
+enum {
+        SYSCALL_TASK_QUIT = 0,
+        SYSCALL_CRT_WRITE,
+        SYSCALL_CRT_GETSIZE,
+        SYSCALL_CRT_GETPOS,
+        SYSCALL_CRT_SETPOS
+};
 
 int
-tcb_helper_allocate_tcb(struct task *task, void *stack, struct tcb **tcb);
+syscall_task_quit(void);
 
 int
-tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stacksize,
-                                  struct tcb **tcb);
+syscall_crt_write(const char *buf, size_t buflen, unsigned char attr);
 
 int
-tcb_helper_run_thread(struct tcb *tcb, void (*func)(struct tcb*));
+syscall_crt_getmaxpos(unsigned short *row, unsigned short *col);
+
+int
+syscall_crt_getpos(unsigned short *row, unsigned short *col);
+
+int
+syscall_crt_setpos(unsigned short row, unsigned short col);
 

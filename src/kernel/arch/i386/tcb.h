@@ -21,7 +21,8 @@ struct task;
 enum thread_state {
         THREAD_STATE_ZOMBIE = 0, /* waiting for removal */
         THREAD_STATE_READY, /* ready to be executed */
-        THREAD_STATE_BLOCKED /* blocked by some action */
+        THREAD_STATE_SEND, /* blocked by send action */
+        THREAD_STATE_RECV /* blocked by receive action */
 };
 
 struct tcb
@@ -111,4 +112,7 @@ tcb_set_ip(struct tcb *tcb, void *ip);
 
 int
 tcb_switch(struct tcb *tcb, const struct tcb *dst);
+
+void
+tcb_pushl(struct tcb *tcb, unsigned long value);
 

@@ -90,3 +90,17 @@ err_virtmem_alloc_pages_in_area:
         return err;
 }
 
+int
+tcb_helper_run_thread(struct tcb *tcb, void (*func)(struct tcb*))
+{
+        /* FIXME: rewrite tcb_set_initial_ready_state to use tcb_pushl */
+
+        tcb_pushl(tcb, (unsigned long)func);
+        tcb_set_initial_ready_state(tcb, (void*)func, 0);
+        
+        tcb_set_ip(tcb, (void*)func);
+        tcb_set_state(tcb, THREAD_STATE_READY);
+
+        return 0;
+}
+

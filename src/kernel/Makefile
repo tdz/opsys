@@ -13,6 +13,7 @@ CSOURCES = alloc.c \
            crt.c \
            elfldr.c \
            errno.c \
+           ipcmsg.c \
            kbd.c \
            list.c \
            loader.c \
@@ -27,6 +28,7 @@ CSOURCES = alloc.c \
            sched.c \
            string.c \
            syscall.c \
+           syssrv.c \
            task.c \
            taskhlp.c \
            tcbhlp.c \

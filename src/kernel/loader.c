@@ -44,7 +44,7 @@ loader_exec(struct tcb *tcb, const void *img)
 
         /* set thread to starting state */
 
-        tcb_set_initial_ready_state(tcb, ip, 0);
+        tcb_set_initial_ready_state(tcb, ip, 0, 0);
 
         return 0;
 

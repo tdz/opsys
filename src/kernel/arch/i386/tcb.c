@@ -17,6 +17,7 @@
  */
 
 #include <errno.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -68,6 +69,7 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->id = id;
 
         tcb->esp = (unsigned long)tcb->stack;
+        tcb->ebp = tcb->esp;
 
         tcb_set_page_directory(tcb, tcb->task->pd);
 
@@ -128,6 +130,21 @@ tcb_is_runnable(const struct tcb *tcb)
         return (tcb->state == THREAD_STATE_READY);
 }
 
+unsigned char *
+tcb_stack_top(struct tcb *tcb)
+{
+        return (void*)tcb->esp;
+}
+
+void
+tcb_stack_push4(struct tcb *tcb, unsigned long value)
+{
+        unsigned long *stack = (void*)tcb->esp;
+
+        stack[-1] = value;
+        tcb->esp -= 4;
+}
+
 static int
 tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst)
 {
@@ -165,53 +182,58 @@ tcb_switch(struct tcb *tcb, const struct tcb *dst)
 int
 tcb_set_initial_ready_state(struct tcb *tcb,
                             const void *ip,
-                            unsigned char irqno)
+                            unsigned char irqno,
+                            int nargs, ...)
 {
         extern void tcb_switch_to_ready_entry_point(void);
         extern void tcb_switch_to_ready_return_firsttime(void);
 
-        unsigned long *stack;
+        va_list ap;
+
+        /* generate thread execution stack */
+
+        va_start(ap, nargs);
+
+        while (nargs) {
+                unsigned long arg = va_arg(ap, unsigned long);
+
+                tcb_stack_push4(tcb, arg);
+
+                --nargs;
+        }
+
+        va_end(ap);
+
+        tcb_stack_push4(tcb, 0); /* no return ip */
 
         /* prepare stack as if tcb was scheduled from irq */
 
-        stack = tcb->stack;
-
         /* stack after irq */
-        stack[-1] = eflags();
-        stack[-2] = cs();
-        stack[-3] = (unsigned long)ip;
-        stack[-4] = irqno;
+        tcb_stack_push4(tcb, eflags());
+        tcb_stack_push4(tcb, cs());
+        tcb_stack_push4(tcb, (unsigned long)ip);
+        tcb_stack_push4(tcb, irqno);
 
-        stack[-5] = 0; /* %eax */
-        stack[-6] = 0; /* %ecx */
-        stack[-7] = 0; /* %edx */
-        stack[-8] = irqno; /* pushed by irq handler */
+        tcb_stack_push4(tcb, 0); /* %eax */
+        tcb_stack_push4(tcb, 0); /* %ecx */
+        tcb_stack_push4(tcb, 0); /* %edx */
+        tcb_stack_push4(tcb, irqno); /* pushed by irq handler */
 
         /* tcb_switch */
-        stack[-9] = (unsigned long)tcb;
-        stack[-10] = (unsigned long)tcb;
-        stack[-11] = (unsigned long)tcb_switch_to_ready_return_firsttime;
-        stack[-12] = (unsigned long)(stack-11);
+        tcb_stack_push4(tcb, (unsigned long)tcb);
+        tcb_stack_push4(tcb, (unsigned long)tcb);
+        tcb_stack_push4(tcb, (unsigned long)tcb_switch_to_ready_return_firsttime);
+        tcb_stack_push4(tcb, tcb->ebp); /* %ebp */
+        tcb->ebp = (unsigned long)tcb_stack_top(tcb);
 
         tcb->cr0 = cr0();
         tcb->cr2 = cr2();
         tcb->cr4 = cr4();
         tcb->eflags = eflags();
-        tcb->esp = (unsigned long)(stack-12);
-        tcb->ebp = (unsigned long)(stack-11);
 
         tcb_set_ip(tcb, tcb_switch_to_ready_entry_point);
         tcb_set_state(tcb, THREAD_STATE_READY);
 
         return 0;
-}
-
-void
-tcb_pushl(struct tcb *tcb, unsigned long value)
-{
-        unsigned long *stack = (void*)tcb->esp;
-
-        stack[-1] = value;
-        tcb->esp -= 4;
 }
 

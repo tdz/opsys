@@ -102,7 +102,7 @@ tcb_get_state(const struct tcb *tcb);
 int
 tcb_set_initial_ready_state(struct tcb *tcb,
                             const void *ip,
-                            unsigned char irqno);
+                            unsigned char irqno, int nargs, ...);
 
 int
 tcb_is_runnable(const struct tcb *tcb);
@@ -113,6 +113,9 @@ tcb_set_ip(struct tcb *tcb, void *ip);
 int
 tcb_switch(struct tcb *tcb, const struct tcb *dst);
 
+unsigned char *
+tcb_stack_top(struct tcb *tcb);
+
 void
-tcb_pushl(struct tcb *tcb, unsigned long value);
+tcb_stack_push4(struct tcb *tcb, unsigned long value);
 

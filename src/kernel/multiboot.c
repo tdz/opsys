@@ -50,6 +50,7 @@
 #include "syscall.h"
 #include "console.h"
 
+#include "syssrv.h"
 #include "multiboot.h"
 
 static void*
@@ -450,6 +451,25 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         /* connect scheduler to timer interupt */
         idt_install_irq_handler(0, sched_irq_handler);
+
+        if ((err = sched_add_thread(tcb)) < 0) {
+                console_perror("sched_add_thread", -err);
+                return;
+        }
+
+        /* create and schedule system service */
+
+        if ((err = tcb_helper_allocate_tcb_and_stack(tsk, 4096, &tcb)) < 0) {
+                console_perror("tcb_helper_allocate_tcb_and_stack", -err);
+                return;
+        }
+
+        if ((err = tcb_set_initial_ready_state(tcb,
+                                               system_srv_start,
+                                               0, 1, tcb)) < 0) {
+                console_perror("tcb_set_initial_ready_state", -err);
+                return;
+        }
 
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);

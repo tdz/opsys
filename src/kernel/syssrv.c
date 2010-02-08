@@ -34,7 +34,7 @@ system_srv_handle_msg(struct ipc_msg *msg)
 {
         switch (msg->msg0) {
                 case 0: /* thread quit */
-                        /* mark thread for removal */
+                        /* mark sender thread for removal */
                         tcb_set_state(msg->snd, THREAD_STATE_ZOMBIE);
                         break;
                 default:
@@ -44,6 +44,7 @@ system_srv_handle_msg(struct ipc_msg *msg)
         return 0;
 }
 
+#include "console.h"
 void
 system_srv_start(struct tcb *self)
 {
@@ -51,6 +52,8 @@ system_srv_start(struct tcb *self)
                 struct ipc_msg *msg;
 
                 tcb_set_state(self, THREAD_STATE_RECV);
+
+                console_printf("%s:%x self=%x.\n", __FILE__, __LINE__, self);
 
                 sched_switch();
 

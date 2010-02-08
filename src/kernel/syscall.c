@@ -124,11 +124,9 @@ syscall_entry_handler(unsigned long r0,
 
         sched_switch();
 
-        /* before returning, sender should have received a reply */
+        /* sender is always ready when returning here */
 
-        if (tcb_get_state(snd) == THREAD_STATE_RECV) {
-                tcb_set_state(snd, THREAD_STATE_READY);
-        }
+        /* before returning, sender should have received a reply */
 
         return 0;
 

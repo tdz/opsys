@@ -20,8 +20,9 @@
 
 #include <interupt.h>
 
-#include <list.h>
+#include "list.h"
 #include "ipcmsg.h"
+#include "ipc.h"
 
 #include <tcb.h>
 
@@ -48,44 +49,25 @@ system_srv_handle_msg(struct ipc_msg *msg)
         return 0;
 }
 
-#include "console.h"
 void
 system_srv_start(struct tcb *self)
 {
         while (1) {
+                int err;
                 struct ipc_msg *msg;
-
-                tcb_set_state(self, THREAD_STATE_RECV);
 
                 console_printf("%s:%x self=%x.\n", __FILE__, __LINE__, self);
 
-                sched_switch(0);
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-
-                if (!self->ipcin) {
-                        continue;
+                if ((err = ipc_recv(&msg, self)) < 0) {
+                        goto err_ipc_recv;
                 }
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-
-                /* deque first IPC message */                
-
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-                cli();
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-                msg = list_data(self->ipcin);
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-                list_deque(self->ipcin);
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-                sti();
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
-
-                if (!msg) {
-                        continue;
-                }
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
 
                 system_srv_handle_msg(msg);
+
                 console_printf("%s:%x.\n", __FILE__, __LINE__);
+
+        err_ipc_recv:
+                continue;
         }
 }
 

@@ -26,6 +26,7 @@
 #include "alloc.h"
 #include "list.h"
 #include "ipcmsg.h"
+#include "ipc.h"
 
 #include "tid.h"
 #include "task.h"
@@ -36,10 +37,6 @@
 
 #include "console.h"
 
-enum {
-        TIMEOUT_NOW   = 0,
-        TIMEOUT_NEVER = 0x7fffffff
-};
 
 #define R0_THREADID(x_)         ((x_)&0xffffffff)
 
@@ -48,13 +45,6 @@ enum {
 
 /* sender waits for reply */
 #define R1_TIMEOUT(x_)          (((x_)&0xfffffffe)>>1)
-
-static int
-r1_has_timeout(unsigned long flags)
-{
-        return (R1_TIMEOUT(flags) != TIMEOUT_NOW) &&
-               (R1_TIMEOUT(flags) != TIMEOUT_NEVER);
-}
 
 int
 syscall_entry_handler(unsigned long r0,
@@ -65,10 +55,8 @@ syscall_entry_handler(unsigned long r0,
         int enable_int;
         int err;
         struct tcb *snd, *rcv;
-/*        struct ipc_msg *msg;
-        struct list *ipcin;*/
 
-        enable_int = 0;int_enabled();
+        enable_int = int_enabled();
 
         if (enable_int) {
                 cli();
@@ -84,10 +72,6 @@ syscall_entry_handler(unsigned long r0,
                 goto err_sched_get_current_thread;
         }
 
-        console_printf("%s:%x %x:%x.\n", __FILE__, __LINE__,
-                        threadid_get_taskid(R0_THREADID(r0)),
-                        threadid_get_tcbid(R0_THREADID(r0)));
-
         /* get receiver thread */
 
         rcv = sched_search_thread(threadid_get_taskid(R0_THREADID(r0)),
@@ -99,51 +83,21 @@ syscall_entry_handler(unsigned long r0,
 
         /* check if rcv is ready to receive */
 
-        if ((R1_TIMEOUT(r1) == TIMEOUT_NOW)
+        if ((R1_TIMEOUT(r1) == IPC_TIMEOUT_NOW)
                 && (tcb_get_state(rcv) != THREAD_STATE_RECV)) {
                 err = -EBUSY;
                 goto err_r1_sync;
         }
 
-        /* create IPC message */
+        /* send message to receiver */
 
         if ((err = ipc_msg_init(&snd->msg, snd, r1, r2, r3)) < 0) {
                 goto err_ipc_msg_init;
         }
 
-        if (rcv->ipcin) {
-                rcv->ipcin = list_init(&snd->ipcout, rcv->ipcin->prev,
-                                                     rcv->ipcin,
-                                                    &snd->msg);
-        } else {
-                rcv->ipcin = list_init(&snd->ipcout, NULL, NULL, &snd->msg);
+        if ((err = ipc_send_and_recv(&snd->msg, rcv)) < 0) {
+                goto err_ipc_send_and_recv;
         }
-
-        /* sender state */
-
-        tcb_set_state(snd, THREAD_STATE_RECV);
-
-        if (r1_has_timeout(r1)) {
-                /* TODO: implement timeout */
-        }
-
-        /* wake up receiver if necessary, and schedule */
-
-        if (tcb_get_state(rcv) == THREAD_STATE_RECV) {
-                tcb_set_state(rcv, THREAD_STATE_READY);
-        }
-
-        console_printf("%s:%x cr3=%x pd=%x.\n", __FILE__, __LINE__,
-                                snd->cr3, snd->task->pd);
-
-        console_printf("%s:%x current=%x s%%eps=%x r%%eps=%x.\n", __FILE__, __LINE__, snd, snd->esp, rcv->esp);
-
-        sched_switch(1);
-
-        console_printf("%s:%x current=%x.\n", __FILE__, __LINE__, sched_get_current_thread());
-
-/*        __asm__("dohlt: hlt\n\t"
-                "jmp dohlt\n\t");*/
 
         /* sender is always ready when returning here */
 
@@ -153,11 +107,9 @@ syscall_entry_handler(unsigned long r0,
                 sti();
         }
 
-        console_printf("%s:%x cr3=%x pd=%x.\n", __FILE__, __LINE__,
-                                snd->cr3, snd->task->pd);
-
         return 0;
 
+err_ipc_send_and_recv:
 err_ipc_msg_init:
 err_r1_sync:
 err_sched_search_thread:

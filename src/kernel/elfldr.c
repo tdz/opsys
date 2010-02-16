@@ -49,14 +49,19 @@ elf_loader_construct_phdr_load(const struct page_directory *pd,
                                const unsigned char *img,
                                      struct page_directory *dst_pd)
 {
-        virtmem_alloc_page_frames(dst_pd,
-                                  pageframe_index(elf_phdr->p_offset+img),
-                                  page_index((void*)elf_phdr->p_vaddr),
-                                  page_count((void*)elf_phdr->p_vaddr,
-                                                    elf_phdr->p_filesz),
-                                  PTE_FLAG_PRESENT|
-                                  PTE_FLAG_WRITEABLE|
-                                  PTE_FLAG_USERMODE);
+        int err;
+
+        err = virtmem_alloc_page_frames(dst_pd,
+                                        pageframe_index(elf_phdr->p_offset+img),
+                                        page_index((void*)elf_phdr->p_vaddr),
+                                        page_count((void*)elf_phdr->p_vaddr,
+                                                          elf_phdr->p_filesz),
+                                        PTE_FLAG_PRESENT|
+                                        PTE_FLAG_WRITEABLE|
+                                        PTE_FLAG_USERMODE);
+        if (err < 0) {
+                goto err_virtmem_alloc_page_frames;
+        }
 
         /* set remaining bytes to zero */
 
@@ -67,6 +72,9 @@ elf_loader_construct_phdr_load(const struct page_directory *pd,
         }
 
         return 0;
+
+err_virtmem_alloc_page_frames:
+        return err;
 }
 
 static int

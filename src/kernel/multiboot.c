@@ -425,7 +425,7 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         idt_install_syscall_handler(syscall_entry_handler);
 
-/*        sti();*/
+        sti();
 
         /* build initial task and address space
          */

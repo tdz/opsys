@@ -16,8 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tid.h"
 #include "ipcmsg.h"
+
+/* sender waits for reply */
+#define IPC_MSG_FLAGS_TIMEOUT(x_)          (((x_)&0xfffffffe)>>1)
 
 int
 ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
@@ -31,5 +33,12 @@ ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
         msg->msg1 = msg1;
 
         return 0;
+}
+
+int
+ipc_msg_has_timeout(struct ipc_msg *msg)
+{
+        return (IPC_MSG_FLAGS_TIMEOUT(msg->flags) != IPC_TIMEOUT_NOW) &&
+               (IPC_MSG_FLAGS_TIMEOUT(msg->flags) != IPC_TIMEOUT_NEVER);
 }
 

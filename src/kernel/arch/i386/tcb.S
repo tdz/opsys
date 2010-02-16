@@ -104,19 +104,6 @@ tcb_switch_to_ready_entry_point:
 
         cli
 
-        /* re-read dst into %eax */
-        movl 8(%ebp), %eax
-        
-/*        cmpl $0xc0805000, %eax
-        jne skiphlt
-        dohlt:
-        hlt
-        jmp dohlt
-        skiphlt:*/
-
-        
-        addl $16, %eax
-
         /* control registers (need intermediate register) */
         movl 44(%eax), %edx
         movl %edx, %cr0

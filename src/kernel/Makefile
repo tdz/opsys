@@ -13,6 +13,7 @@ CSOURCES = alloc.c \
            crt.c \
            elfldr.c \
            errno.c \
+           ipc.c \
            ipcmsg.c \
            kbd.c \
            list.c \

@@ -198,8 +198,6 @@ tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt)
                 tcb_switch_to_send,
                 tcb_switch_to_recv};
 
-/*        console_printf("%s:%x dst=%x dst->state=%x.\n", __FILE__, __LINE__, dst, dst->state);*/
-
         return switch_to[dst->state](tcb, dst, dohalt | (dst == (void*)0xc0805000));
 }
 

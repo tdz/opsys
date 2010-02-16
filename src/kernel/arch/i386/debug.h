@@ -16,19 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct task;
-struct tcb;
+enum db_length {
+        DB_LENGTH_1 = 0,
+        DB_LENGTH_2,
+        DB_LENGTH_4
+};
 
-int
-tcb_helper_allocate_tcb(struct task *task, void *stack, struct tcb **tcb);
+enum db_mode {
+        DB_MODE_IFETCH = 0,
+        DB_MODE_DWRITE,
+        DB_MODE_DRDWR
+};
 
-int
-tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
-                                  struct tcb **tcb);
-
-int
-tcb_helper_run_kernel_thread(struct tcb *tcb, void (*func)(struct tcb*));
-
-int
-tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip);
+void
+db0_setup(unsigned long addr, enum db_length len,
+                              enum db_mode mode, int enabled);
 

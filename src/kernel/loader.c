@@ -29,14 +29,17 @@
 #include "loader.h"
 
 int
-loader_exec(struct tcb *tcb, void **ip, const void *img)
+loader_exec(const struct tcb *tcb,
+            const void *img,
+                  void **ip,
+                  struct tcb *dst_tcb)
 {
         int err;
 
         /* load image into address space */
 
         if (elf_loader_is_elf(img)) {
-                err = elf_loader_exec(tcb->task->pd, ip, img);
+                err = elf_loader_exec(tcb->task->pd, img, ip, dst_tcb->task->pd);
         } else {
                 err = -EINVAL;
         }

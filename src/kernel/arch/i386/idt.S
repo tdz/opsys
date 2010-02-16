@@ -83,8 +83,6 @@ isr_handle_segfault_ret:
         iret
 
 isr_handle_pagefault:
-        hlt
-        jmp isr_handle_pagefault
         cmp $0, pagefault_handler
         je isr_handle_pagefault_ret
         pushl %eax

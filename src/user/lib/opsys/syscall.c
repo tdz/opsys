@@ -28,8 +28,8 @@ syscall(unsigned long r0,
         int res;
 
         __asm__("int $0x80\n\t"
-                "dohlt: hlt\n\t"
-                "jmp dohlt\n\t" 
+/*                "dohlt: hlt\n\t"
+                "jmp dohlt\n\t" */
                         : "=a"(res) /* save result from %eax */
                         : "a"(r0),
                           "b"(r1),

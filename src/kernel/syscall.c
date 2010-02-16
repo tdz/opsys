@@ -142,8 +142,8 @@ syscall_entry_handler(unsigned long r0,
 
         console_printf("%s:%x current=%x.\n", __FILE__, __LINE__, sched_get_current_thread());
 
-        __asm__("dohlt: hlt\n\t"
-                "jmp dohlt\n\t");
+/*        __asm__("dohlt: hlt\n\t"
+                "jmp dohlt\n\t");*/
 
         /* sender is always ready when returning here */
 

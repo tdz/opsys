@@ -319,14 +319,19 @@ multiboot_load_modules(struct task *parent,
 
                 /* load binary image */
 
-                if ((err = loader_exec(tcb, &ip, (void*)mod->mod_start)) < 0) {
+                if ((err = loader_exec(tcb, (void*)mod->mod_start, &ip, tcb)) < 0) {
                         console_perror("loader_exec", -err);
                         goto err_loader_exec;
                 }
 
-
                 /* set thread to starting state */
-                tcb_set_initial_ready_state(tcb, ip, 0, 0);
+                err = tcb_helper_run_user_thread(sched_get_current_thread(),
+                                                 tcb,
+                                                 ip);
+
+                if (err < 0) {
+                        goto err_tcb_helper_run_user_thread;
+                }
 
                 /* schedule thread */
                 if ((err = sched_add_thread(tcb)) < 0) {
@@ -338,13 +343,14 @@ multiboot_load_modules(struct task *parent,
 
                 continue;
 
-                err_sched_add_thread:
-                err_loader_exec:
-                        /* FIXME: free tcb */
-                err_tcb_helper_allocate_tcb_and_stack:
-                        /* FIXME: free task */
-                err_task_helper_allocate_task_from_parent:
-                        continue;
+        err_sched_add_thread:
+        err_tcb_helper_run_user_thread:
+        err_loader_exec:
+                /* FIXME: free tcb */
+        err_tcb_helper_allocate_tcb_and_stack:
+                /* FIXME: free task */
+        err_task_helper_allocate_task_from_parent:
+                continue;
         }
 
         return 0;
@@ -476,9 +482,8 @@ multiboot_main(const struct multiboot_header *mb_header,
         console_printf("%s:%x %x:%x.\n", __FILE__, __LINE__, tcb->task->id,
                         tcb->id);
 
-        if ((err = tcb_set_initial_ready_state(tcb,
-                                               system_srv_start,
-                                               0, 1, tcb)) < 0) {
+        if ((err = tcb_helper_run_kernel_thread(tcb,
+                                                system_srv_start)) < 0) {
                 console_perror("tcb_set_initial_ready_state", -err);
                 return;
         }
@@ -495,9 +500,9 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* load modules as ELF binaries
          */
 
-/*        if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
+        if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
                 console_perror("multiboot_load_modules", -err);
                 return;
-        }*/
+        }
 }
 

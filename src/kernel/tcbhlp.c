@@ -71,7 +71,7 @@ tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
 
         pgindex = virtmem_alloc_pages_in_area(tsk->pd,
                                               stackpages,
-                                              VIRTMEM_AREA_KERNEL,
+                                              VIRTMEM_AREA_USER,
                                               PTE_FLAG_PRESENT|
                                               PTE_FLAG_WRITEABLE);
         if (pgindex < 0) {
@@ -94,14 +94,52 @@ err_virtmem_alloc_pages_in_area:
 }
 
 int
-tcb_helper_run_thread(struct tcb *tcb, void (*func)(struct tcb*))
+tcb_helper_run_kernel_thread(struct tcb *tcb, void (*func)(struct tcb*))
 {
-        tcb_stack_push4(tcb, (unsigned long)func);
-        tcb_set_initial_ready_state(tcb, (void*)func, 0, 1, (unsigned long)tcb);
-        
-        tcb_set_ip(tcb, (void*)func);
+        tcb_set_initial_ready_state(tcb,
+                                    (void*)func,
+                                    0,
+                                    tcb->stack,
+                                    1,
+                                    (unsigned long)tcb);
+
         tcb_set_state(tcb, THREAD_STATE_READY);
 
         return 0;
+}
+
+int
+tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip)
+{
+        int err;
+        os_index_t stackpage;
+
+        stackpage = virtmem_map_pages_in_area(usr_tcb->task->pd,
+                                              page_index(usr_tcb->stack-PAGE_SIZE),
+                                              1,
+                                              cur_tcb->task->pd,
+                                              VIRTMEM_AREA_KERNEL,
+                                              PTE_FLAG_PRESENT|
+                                              PTE_FLAG_WRITEABLE);
+        if (stackpage < 0) {
+                err = stackpage;
+                goto err_virtmem_map_pages_in_area;
+        }
+
+        /* set thread to starting state */
+        tcb_set_initial_ready_state(usr_tcb,
+                                    ip,
+                                    0,
+                                    page_address(stackpage)+PAGE_SIZE,
+                                    0);
+
+        tcb_set_state(usr_tcb, THREAD_STATE_READY);
+
+        /* TODO: unmap stack from current address space */
+
+        return 0;
+
+err_virtmem_map_pages_in_area:
+        return err;
 }
 

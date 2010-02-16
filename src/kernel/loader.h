@@ -19,5 +19,8 @@
 struct tcb;
 
 int
-loader_exec(struct tcb *tcb, void **ip, const void *img);
+loader_exec(const struct tcb *tcb,
+            const void *img,
+                  void **ip,
+                  struct tcb *dst_tcb);
 

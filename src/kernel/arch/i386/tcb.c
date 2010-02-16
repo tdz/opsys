@@ -153,17 +153,17 @@ tcb_is_runnable(const struct tcb *tcb)
 }
 
 unsigned char *
-tcb_stack_top(struct tcb *tcb)
+tcb_get_esp(struct tcb *tcb)
 {
         return (void*)tcb->esp;
 }
 
 void
-tcb_stack_push4(struct tcb *tcb, unsigned long value)
+tcb_stack_push4(struct tcb *tcb, unsigned long **stack, unsigned long value)
 {
-        unsigned long *stack = (void*)tcb->esp;
+        --(*stack);
+        (*stack)[0] = value;
 
-        stack[-1] = value;
         tcb->esp -= 4;
 }
 
@@ -207,6 +207,7 @@ int
 tcb_set_initial_ready_state(struct tcb *tcb,
                             const void *ip,
                             unsigned char irqno,
+                            unsigned long *stack,
                             int nargs, ...)
 {
         extern void tcb_switch_to_ready_entry_point(void);
@@ -215,7 +216,6 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         va_list ap;
 
         console_printf("%s:%x tcb=%x pd=%x stack=%x.\n", __FILE__, __LINE__, tcb, tcb->cr3, tcb->stack);
-        
 
         /* generate thread execution stack */
 
@@ -224,35 +224,35 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         while (nargs) {
                 unsigned long arg = va_arg(ap, unsigned long);
 
-                tcb_stack_push4(tcb, arg);
+                tcb_stack_push4(tcb, &stack, arg);
 
                 --nargs;
         }
 
         va_end(ap);
 
-        tcb_stack_push4(tcb, 0x1); /* no return ip */
+        tcb_stack_push4(tcb, &stack, 0x1); /* no return ip */
 
         /* prepare stack as if tcb was scheduled from irq */
 
         /* stack after irq */
-        tcb_stack_push4(tcb, eflags());
-        tcb_stack_push4(tcb, cs());
-        tcb_stack_push4(tcb, (unsigned long)ip);
-        tcb_stack_push4(tcb, irqno);
+        tcb_stack_push4(tcb, &stack, eflags());
+        tcb_stack_push4(tcb, &stack, cs());
+        tcb_stack_push4(tcb, &stack, (unsigned long)ip);
+        tcb_stack_push4(tcb, &stack, irqno);
 
-        tcb_stack_push4(tcb, 0xdeadbeef); /* %eax */
-        tcb_stack_push4(tcb, 0xdeadbeef); /* %ecx */
-        tcb_stack_push4(tcb, 0xdeadbeef); /* %edx */
-        tcb_stack_push4(tcb, irqno); /* pushed by irq handler */
+        tcb_stack_push4(tcb, &stack, 0xdeadbeef); /* %eax */
+        tcb_stack_push4(tcb, &stack, 0xdeadbeef); /* %ecx */
+        tcb_stack_push4(tcb, &stack, 0xdeadbeef); /* %edx */
+        tcb_stack_push4(tcb, &stack, irqno); /* pushed by irq handler */
 
         /* tcb_switch */
-        tcb_stack_push4(tcb, 1);
-        tcb_stack_push4(tcb, (unsigned long)tcb);
-        tcb_stack_push4(tcb, (unsigned long)tcb);
-        tcb_stack_push4(tcb, (unsigned long)tcb_switch_to_ready_return_firsttime);
-        tcb_stack_push4(tcb, tcb->ebp); /* %ebp */
-        tcb->ebp = (unsigned long)tcb_stack_top(tcb);
+        tcb_stack_push4(tcb, &stack, 1);
+        tcb_stack_push4(tcb, &stack, (unsigned long)tcb);
+        tcb_stack_push4(tcb, &stack, (unsigned long)tcb);
+        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_switch_to_ready_return_firsttime);
+        tcb_stack_push4(tcb, &stack, tcb->ebp); /* %ebp */
+        tcb->ebp = (unsigned long)tcb_get_esp(tcb);
 
         tcb->cr0 = cr0();
         tcb->cr2 = cr2();

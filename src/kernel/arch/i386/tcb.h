@@ -104,7 +104,8 @@ tcb_get_state(const struct tcb *tcb);
 int
 tcb_set_initial_ready_state(struct tcb *tcb,
                             const void *ip,
-                            unsigned char irqno, int nargs, ...);
+                            unsigned char irqno,
+                            unsigned long *stack, int nargs, ...);
 
 int
 tcb_is_runnable(const struct tcb *tcb);
@@ -116,8 +117,8 @@ int
 tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt);
 
 unsigned char *
-tcb_stack_top(struct tcb *tcb);
+tcb_get_esp(struct tcb *tcb);
 
 void
-tcb_stack_push4(struct tcb *tcb, unsigned long value);
+tcb_stack_push4(struct tcb *tcb, unsigned long **stack, unsigned long value);
 

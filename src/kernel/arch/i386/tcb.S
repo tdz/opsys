@@ -107,12 +107,12 @@ tcb_switch_to_ready_entry_point:
         /* re-read dst into %eax */
         movl 8(%ebp), %eax
         
-        cmpl $0xc0805000, %eax
+/*        cmpl $0xc0805000, %eax
         jne skiphlt
         dohlt:
         hlt
         jmp dohlt
-        skiphlt:
+        skiphlt:*/
 
         
         addl $16, %eax

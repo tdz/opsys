@@ -19,7 +19,10 @@
 struct page_directory;
 
 int
-elf_loader_exec(struct page_directory *pd, void **ip, const unsigned char *img);
+elf_loader_exec(const struct page_directory *pd,
+                const unsigned char *img,
+                      void **ip,
+                      struct page_directory *dst_pd);
 
 int
 elf_loader_is_elf(const unsigned char *img);

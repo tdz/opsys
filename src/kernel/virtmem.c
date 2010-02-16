@@ -666,7 +666,7 @@ virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
 
         pt = page_address(ptpgindex);
 
-        if (pte_is_present(pt->entry[pgindex&0x3ff])) {
+        if (!pte_is_present(pt->entry[pgindex&0x3ff])) {
                 err = -EFAULT;
                 goto err_pte_is_present;
         }

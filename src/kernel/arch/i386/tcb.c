@@ -41,13 +41,20 @@
 static int
 tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)
 {
+        int err;
         os_index_t pfindex;
 
-        pfindex = virtmem_lookup_pageframe(pd, page_index(pd));
+        if ((pfindex = virtmem_lookup_pageframe(pd, page_index(pd))) < 0) {
+                err = pfindex;
+                goto err_virtmem_lookup_pageframe;
+        }
 
         tcb->cr3 = (pfindex<<12) | (tcb->cr3&0xfff);
 
         return 0;
+
+err_virtmem_lookup_pageframe:
+        return err;
 }
 
 int
@@ -55,7 +62,7 @@ tcb_init_with_id(struct tcb *tcb,
                  struct task *task, unsigned char id, void *stack)
 {
         int err;
-        
+
         console_printf("tcb id=%x.\n", id);
 
         if ((err = task_ref(task)) < 0) {
@@ -82,10 +89,14 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->esp = (unsigned long)tcb->stack;
         tcb->ebp = tcb->esp;
 
-        tcb_set_page_directory(tcb, tcb->task->pd);
+        if ((err = tcb_set_page_directory(tcb, tcb->task->pd)) < 0) {
+                goto err_tcb_set_page_directory;
+        }
 
         return 0;
 
+err_tcb_set_page_directory:
+        bitset_unset(task->threadid, id);
 err_bitset_isset:
         task_unref(task);
 err_task_ref:

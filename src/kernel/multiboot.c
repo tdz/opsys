@@ -495,9 +495,9 @@ multiboot_main(const struct multiboot_header *mb_header,
         /* load modules as ELF binaries
          */
 
-        if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
+/*        if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
                 console_perror("multiboot_load_modules", -err);
                 return;
-        }
+        }*/
 }
 

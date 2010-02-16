@@ -18,6 +18,7 @@
 
 #include <errno.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -30,7 +31,12 @@
 #include "virtmem.h"
 
 #include "task.h"
+#include <ipcmsg.h>
+#include <list.h>
+
 #include "tcb.h"
+
+#include "console.h"
 
 static int
 tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)
@@ -49,6 +55,8 @@ tcb_init_with_id(struct tcb *tcb,
                  struct task *task, unsigned char id, void *stack)
 {
         int err;
+        
+        console_printf("tcb id=%x.\n", id);
 
         if ((err = task_ref(task)) < 0) {
                 goto err_task_ref;
@@ -67,6 +75,9 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->task = task;
         tcb->stack = stack;
         tcb->id = id;
+        tcb->ipcin = NULL;
+
+        list_init(&tcb->ipcout, NULL, NULL, NULL);
 
         tcb->esp = (unsigned long)tcb->stack;
         tcb->ebp = tcb->esp;
@@ -146,37 +157,39 @@ tcb_stack_push4(struct tcb *tcb, unsigned long value)
 }
 
 static int
-tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst)
+tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst, int dohalt)
 {
         return 0;
 }
 
 /* implemented in tcb.S */
 int
-tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst);
+tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst, int dohalt);
 
 static int
-tcb_switch_to_send(struct tcb *tcb, const struct tcb *dst)
+tcb_switch_to_send(struct tcb *tcb, const struct tcb *dst, int dohalt)
 {
         return 0;
 }
 
 static int
-tcb_switch_to_recv(struct tcb *tcb, const struct tcb *dst)
+tcb_switch_to_recv(struct tcb *tcb, const struct tcb *dst, int dohalt)
 {
         return 0;
 }
 
 int
-tcb_switch(struct tcb *tcb, const struct tcb *dst)
+tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt)
 {
-        static int (* const switch_to[])(struct tcb*, const struct tcb*) = {
+        static int (* const switch_to[])(struct tcb*, const struct tcb*, int) = {
                 tcb_switch_to_zombie,
                 tcb_switch_to_ready,
                 tcb_switch_to_send,
                 tcb_switch_to_recv};
 
-        return switch_to[dst->state](tcb, dst);
+/*        console_printf("%s:%x dst=%x dst->state=%x.\n", __FILE__, __LINE__, dst, dst->state);*/
+
+        return switch_to[dst->state](tcb, dst, dohalt | (dst == (void*)0xc0805000));
 }
 
 int
@@ -189,6 +202,9 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         extern void tcb_switch_to_ready_return_firsttime(void);
 
         va_list ap;
+
+        console_printf("%s:%x tcb=%x pd=%x stack=%x.\n", __FILE__, __LINE__, tcb, tcb->cr3, tcb->stack);
+        
 
         /* generate thread execution stack */
 
@@ -204,7 +220,7 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         va_end(ap);
 
-        tcb_stack_push4(tcb, 0); /* no return ip */
+        tcb_stack_push4(tcb, 0x1); /* no return ip */
 
         /* prepare stack as if tcb was scheduled from irq */
 
@@ -214,12 +230,13 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         tcb_stack_push4(tcb, (unsigned long)ip);
         tcb_stack_push4(tcb, irqno);
 
-        tcb_stack_push4(tcb, 0); /* %eax */
-        tcb_stack_push4(tcb, 0); /* %ecx */
-        tcb_stack_push4(tcb, 0); /* %edx */
+        tcb_stack_push4(tcb, 0xdeadbeef); /* %eax */
+        tcb_stack_push4(tcb, 0xdeadbeef); /* %ecx */
+        tcb_stack_push4(tcb, 0xdeadbeef); /* %edx */
         tcb_stack_push4(tcb, irqno); /* pushed by irq handler */
 
         /* tcb_switch */
+        tcb_stack_push4(tcb, 1);
         tcb_stack_push4(tcb, (unsigned long)tcb);
         tcb_stack_push4(tcb, (unsigned long)tcb);
         tcb_stack_push4(tcb, (unsigned long)tcb_switch_to_ready_return_firsttime);
@@ -233,6 +250,8 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         tcb_set_ip(tcb, tcb_switch_to_ready_entry_point);
         tcb_set_state(tcb, THREAD_STATE_READY);
+
+        console_printf("%s:%x tcb=%x esp=%x ebp=%x.\n", __FILE__, __LINE__, tcb, tcb->esp, tcb->ebp);
 
         return 0;
 }

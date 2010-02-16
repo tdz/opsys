@@ -24,6 +24,9 @@
 #include "vmemarea.h"
 #include "virtmem.h"
 
+#include "list.h"
+#include "ipcmsg.h"
+
 #include "task.h"
 #include <tcb.h>
 #include "tcbhlp.h"
@@ -59,15 +62,15 @@ err_virtmem_alloc_pages_in_area:
 }
 
 int
-tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stacksize,
+tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
                                   struct tcb **tcb)
 {
+        os_index_t pgindex;
         int err;
-        long pgindex;
         void *stack;
 
         pgindex = virtmem_alloc_pages_in_area(tsk->pd,
-                                              page_count(0, stacksize),
+                                              stackpages,
                                               VIRTMEM_AREA_USER,
                                               PTE_FLAG_PRESENT|
                                               PTE_FLAG_WRITEABLE);
@@ -76,7 +79,7 @@ tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stacksize,
                 goto err_virtmem_alloc_pages_in_area;
         }
 
-        stack = page_address(pgindex);
+        stack = page_address(pgindex+stackpages);
 
         if ((err = tcb_helper_allocate_tcb(tsk, stack, tcb)) < 0) {
                 goto err_tcb_helper_allocate_tcb;
@@ -93,8 +96,6 @@ err_virtmem_alloc_pages_in_area:
 int
 tcb_helper_run_thread(struct tcb *tcb, void (*func)(struct tcb*))
 {
-        /* FIXME: rewrite tcb_set_initial_ready_state to use tcb_pushl */
-
         tcb_stack_push4(tcb, (unsigned long)func);
         tcb_set_initial_ready_state(tcb, (void*)func, 0, 1, (unsigned long)tcb);
         

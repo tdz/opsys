@@ -23,7 +23,7 @@ int
 tcb_helper_allocate_tcb(struct task *task, void *stack, struct tcb **tcb);
 
 int
-tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stacksize,
+tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
                                   struct tcb **tcb);
 
 int

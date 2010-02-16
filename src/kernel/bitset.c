@@ -23,7 +23,7 @@
 void
 bitset_set(unsigned char *bitset, size_t bit)
 {
-        bitset[bit>>3] |= ~(1<<(bit&0x07));
+        bitset[bit>>3] |= 1<<(bit&0x07);
 }
 
 void
@@ -43,7 +43,7 @@ bitset_setto(unsigned char *bitset, size_t bit, int set)
 int
 bitset_isset(const unsigned char *bitset, size_t bit)
 {
-        return !!(bitset[bit>>3] & ~(1<<(bit&0x07)));
+        return !!(bitset[bit>>3] & (1<<(bit&0x07)));
 }
 
 ssize_t

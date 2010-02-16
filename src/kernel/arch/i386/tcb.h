@@ -81,6 +81,8 @@ struct tcb
 
         /* list of incoming IPC */
         struct list *ipcin;
+        struct list ipcout;
+        struct ipc_msg msg;
 } __attribute__ (( aligned(256) ));
 
 int
@@ -111,7 +113,7 @@ void
 tcb_set_ip(struct tcb *tcb, void *ip);
 
 int
-tcb_switch(struct tcb *tcb, const struct tcb *dst);
+tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt);
 
 unsigned char *
 tcb_stack_top(struct tcb *tcb);

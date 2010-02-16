@@ -21,17 +21,21 @@
 #include <interupt.h>
 
 #include <list.h>
+#include "ipcmsg.h"
 
 #include <tcb.h>
 
 #include "sched.h"
 #include "tid.h"
-#include "ipcmsg.h"
 #include "syssrv.h"
+
+#include "console.h"
 
 static int
 system_srv_handle_msg(struct ipc_msg *msg)
 {
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         switch (msg->msg0) {
                 case 0: /* thread quit */
                         /* mark sender thread for removal */
@@ -55,24 +59,33 @@ system_srv_start(struct tcb *self)
 
                 console_printf("%s:%x self=%x.\n", __FILE__, __LINE__, self);
 
-                sched_switch();
+                sched_switch(0);
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
 
                 if (!self->ipcin) {
                         continue;
                 }
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
 
                 /* deque first IPC message */                
 
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
                 cli();
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
                 msg = list_data(self->ipcin);
-                list_free(list_deque(self->ipcin));
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
+                list_deque(self->ipcin);
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
                 sti();
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
 
                 if (!msg) {
                         continue;
                 }
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
 
                 system_srv_handle_msg(msg);
+                console_printf("%s:%x.\n", __FILE__, __LINE__);
         }
 }
 

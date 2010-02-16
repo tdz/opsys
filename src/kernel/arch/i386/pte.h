@@ -38,3 +38,9 @@ pte_create(unsigned long pfindex, unsigned long flags);
 unsigned long
 pte_get_pageframe_index(pte_type pte);
 
+static __inline__ int
+pte_is_present(pte_type pte)
+{
+        return !!(pte & PTE_FLAG_PRESENT);
+}
+

@@ -29,7 +29,7 @@
 
 void (*invalop_handler)(void *ip);
 void (*segfault_handler)(void *ip);
-void (*pagefault_handler)(void *ip, void *addr);
+void (*pagefault_handler)(void *ip, void *addr, unsigned long);
 int  (*syscall_handler)(unsigned long r0,
                         unsigned long r1,
                         unsigned long r2,
@@ -53,6 +53,7 @@ idt_init()
                        IDT_ENTRY_FLAG_SEGINMEM|IDT_ENTRY_FLAG_32BITINT)
 
         extern void isr_drop_interupt(void);
+        extern void isr_handle_debug(void);
         extern void isr_handle_invalop(void);
         extern void isr_handle_segfault(void);
         extern void isr_handle_pagefault(void);
@@ -82,6 +83,7 @@ idt_init()
 
         /* system interupts */
 
+        IDT_ENTRY_INIT(0x01, isr_handle_invalop);
         IDT_ENTRY_INIT(0x06, isr_handle_invalop);
         IDT_ENTRY_INIT(0x0d, isr_handle_segfault);
         IDT_ENTRY_INIT(0x0e, isr_handle_pagefault);
@@ -166,7 +168,7 @@ idt_install_segfault_handler(void (*hdlr)(void*))
 }
 
 int
-idt_install_pagefault_handler(void (*hdlr)(void*, void*))
+idt_install_pagefault_handler(void (*hdlr)(void*, void*, unsigned long))
 {
         const int ints = int_enabled();
 

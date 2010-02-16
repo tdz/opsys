@@ -29,7 +29,7 @@ list_alloc(void)
         return kmalloc(sizeof(struct list));
 }
 
-static void
+struct list *
 list_init(struct list *list, struct list *prev, struct list *next, void *data)
 {
         list->next = next;
@@ -42,6 +42,8 @@ list_init(struct list *list, struct list *prev, struct list *next, void *data)
         if (next) {
                 next->prev = list;
         }
+
+        return list;
 }
 
 struct list *

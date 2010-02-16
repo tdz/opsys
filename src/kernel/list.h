@@ -24,6 +24,11 @@ struct list
 };
 
 struct list *
+list_init(struct list *list,
+          struct list *prev,
+          struct list *next, void *data);
+
+struct list *
 list_append(struct list *prev, void *data);
 
 struct list *

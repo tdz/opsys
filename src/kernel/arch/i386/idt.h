@@ -29,7 +29,7 @@ int
 idt_install_segfault_handler(void (*hdlr)(void*));
 
 int
-idt_install_pagefault_handler(void (*hdlr)(void*, void*));
+idt_install_pagefault_handler(void (*hdlr)(void*, void*, unsigned long));
 
 int
 idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char));

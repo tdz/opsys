@@ -666,14 +666,20 @@ virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
 
         pt = page_address(ptpgindex);
 
+        if (pte_is_present(pt->entry[pgindex&0x3ff])) {
+                err = -EFAULT;
+                goto err_pte_is_present;
+        }
+
         pfindex = pte_get_pageframe_index(pt->entry[pgindex&0x3ff]);
 
         /* unmap page table */
-
         virtmem_uninstall_page_tmp(ptpgindex);
 
         return pfindex;
 
+err_pte_is_present:
+        virtmem_uninstall_page_tmp(ptpgindex);
 err_virtmem_install_page_frame_tmp:
         return err;
 }
@@ -753,6 +759,158 @@ virtmem_flat_copy_areas(const struct page_directory *pd,
         return 0;
 }
 
+int
+virtmem_map_pages_at(const struct page_directory *src_pd,
+                           os_index_t src_pgindex,
+                           size_t pgcount,
+                           struct page_directory *dst_pd,
+                           os_index_t dst_pgindex,
+                           unsigned long dst_pteflags)
+{
+        os_index_t dst_ptindex, dst_ptcount;
+        int err;
+        os_index_t i;
+
+        dst_ptindex = pagetable_index(page_address(dst_pgindex));
+        dst_ptcount = pagetable_count(page_address(dst_pgindex),
+                                      page_memory(pgcount));
+
+        err = 0;
+
+        for (i = 0; (i < dst_ptcount) && !(err < 0); ++i) {
+
+                os_index_t ptpfindex;
+                os_index_t ptpgindex;
+                struct page_table *dst_pt;
+                size_t j;
+
+                ptpfindex =
+                        pde_get_pageframe_index(dst_pd->entry[dst_ptindex+i]);
+
+                if (!ptpfindex) {
+
+                        /* allocate and map page-table page frames */
+
+                        ptpfindex = physmem_alloc_frames(
+                                pageframe_count(sizeof(struct page_table)));
+
+                        if (!ptpfindex) {
+                                err = -ENOMEM;
+                                break;
+                        }
+
+                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+
+                        if (ptpgindex < 0) {
+                                err = ptpgindex;
+                                break;
+                        }
+
+                        /* init and install page table */
+
+                        dst_pt = page_address(ptpgindex);
+
+                        if ((err = page_table_init(dst_pt)) < 0) {
+                                break;
+                        }
+
+                        err = page_directory_install_page_table(dst_pd,
+                                                        ptpfindex,
+                                                        dst_ptindex+i,
+                                                        PDE_FLAG_PRESENT|
+                                                        PDE_FLAG_WRITEABLE);
+                        if (err < 0) {
+                                break;
+                        }
+
+                        mmu_flush_tlb();
+
+                } else {
+
+                        /* map page-table page frames */
+
+                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+
+                        if (ptpgindex < 0) {
+                                err = ptpgindex;
+                                break;
+                        }
+
+                        dst_pt = page_address(ptpgindex);
+                }
+
+                /* map pages within page table */
+
+                for (j = pagetable_page_index(dst_pgindex);
+                     pgcount
+                     && (j < sizeof(dst_pt->entry)/sizeof(dst_pt->entry[0]))
+                     && !(err < 0);
+                   --pgcount, ++j, ++dst_pgindex) {
+
+                        os_index_t src_pfindex;
+
+                        src_pfindex =
+                                virtmem_lookup_pageframe(src_pd, src_pgindex);
+
+                        if (src_pfindex < 0) {
+                                err = src_pfindex;
+                                /* handle error */
+                        }
+
+                        err = page_table_map_page_frame(dst_pt,
+                                                        src_pfindex, j,
+                                                        dst_pteflags);
+                        if (err < 0) {
+                                break;
+                        }
+                }
+
+                /* unmap page table */
+                virtmem_uninstall_page_tmp(ptpgindex);
+        }
+
+        mmu_flush_tlb();
+
+        return err;
+}
+
+os_index_t
+virtmem_map_pages_in_area(const struct page_directory *src_pd,
+                            os_index_t src_pgindex,
+                            size_t pgcount,
+                            struct page_directory *dst_pd,
+                            enum virtmem_area_name dst_areaname,
+                            unsigned long dst_pteflags)
+{
+        int err;
+        os_index_t dst_pgindex;
+        const struct virtmem_area *dst_area;
+
+        dst_area = virtmem_area_get_by_name(dst_areaname);
+
+        dst_pgindex = virtmem_find_empty_pages(dst_pd,
+                                               pgcount,
+                                               dst_area->pgindex,
+                                               dst_area->pgindex+
+                                               dst_area->npages);
+        if (dst_pgindex < 0) {
+                err = dst_pgindex;
+                goto err_page_directory_find_empty_pages;
+        }
+
+        err = virtmem_map_pages_at(src_pd, src_pgindex, pgcount,
+                                   dst_pd, dst_pgindex, dst_pteflags);
+        if (err < 0) {
+                goto err_page_directory_alloc_pages_at;
+        }
+
+        return dst_pgindex;
+
+err_page_directory_alloc_pages_at:
+err_page_directory_find_empty_pages:
+        return err;
+}
+
 #include "console.h"
 
 void
@@ -762,12 +920,14 @@ virtmem_segfault_handler(void *ip)
 }
 
 void
-virtmem_pagefault_handler(void *ip, void *addr)
+virtmem_pagefault_handler(void *ip, void *addr, unsigned long errcode)
 {
         const struct virtmem_area *area;
 
-        console_printf("page fault: ip=%x, addr=%x.\n", (unsigned long)ip,
-                                                        (unsigned long)addr);
+        console_printf("page fault: ip=%x, addr=%x, errcode=%x.\n",
+                        (unsigned long)ip,
+                        (unsigned long)addr,
+                        (unsigned long)errcode);
 
         while (1) {
                 hlt();

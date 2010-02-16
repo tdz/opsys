@@ -114,7 +114,7 @@ task_helper_allocate_task_from_parent(const struct task *parent,
 
         /* init task from parent */
 
-        if ((err = task_helper_init_task_from_parent(parent, tsk)) < 0) {
+        if ((err = task_helper_init_task_from_parent(parent, *tsk)) < 0) {
                 goto err_task_helper_init_task_from_parent;
         }
 
@@ -128,7 +128,7 @@ err_virtmem_alloc_pages_in_area:
 
 int
 task_helper_init_task_from_parent(const struct task *parent,
-                                        struct task **tsk)
+                                        struct task *tsk)
 {
         int err;
         os_index_t pgindex;
@@ -160,7 +160,7 @@ task_helper_init_task_from_parent(const struct task *parent,
 
         /* init task */
 
-        if ((err = task_init(*tsk, pd)) < 0) {
+        if ((err = task_init(tsk, pd)) < 0) {
                 goto err_task_init;
         }
 

@@ -24,6 +24,10 @@
 #include <interupt.h>
 
 #include "task.h"
+
+#include "list.h"
+#include "ipcmsg.h"
+
 #include <tcb.h>
 #include "sched.h"
 
@@ -39,12 +43,14 @@ sched_init()
 {
         return 0;
 }
-
+#include "console.h"
 ssize_t
 sched_add_thread(struct tcb *tcb)
 {
         int ints;
         ssize_t i;
+
+        console_printf("%s:%x adding tcb=%x.\n", __FILE__, __LINE__, tcb);
 
         ints = int_enabled();
 
@@ -103,9 +109,9 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
 
         return NULL;
 }
-
+#include "console.h"
 static int
-sched_switch_to(unsigned int i)
+sched_switch_to(unsigned int i, int dohalt)
 {
         int err;
         unsigned int current;
@@ -114,9 +120,14 @@ sched_switch_to(unsigned int i)
 
         g_current_thread = i;
 
-        if ((err = tcb_switch(g_thread[current], g_thread[i])) < 0) {
+/*        console_printf("%s:%x c=%x.\n", __FILE__, __LINE__, g_thread[current]->task->pd);
+        console_printf("%s:%x i=%x.\n", __FILE__, __LINE__, g_thread[i]->task->pd);*/
+
+        if ((err = tcb_switch(g_thread[current], g_thread[i], 0)) < 0) {
                 goto err_tcb_load;
         }
+
+/*        console_printf("%s:%x i=%x.\n", __FILE__, __LINE__, g_thread[i]);*/
         
         return 0;
 
@@ -126,7 +137,7 @@ err_tcb_load:
 }
 
 int
-sched_switch()
+sched_switch(int dohalt)
 {
         int err;
 
@@ -143,7 +154,7 @@ sched_switch()
                                 continue;
                         }
 
-                        if ((err = sched_switch_to(i)) < 0) {
+                        if ((err = sched_switch_to(i, dohalt)) < 0) {
                                 goto err_sched_switch_to;
                         }
 
@@ -158,7 +169,7 @@ sched_switch()
                                 continue;
                         }
 
-                        if ((err = sched_switch_to(i)) < 0) {
+                        if ((err = sched_switch_to(i, dohalt)) < 0) {
                                 goto err_sched_switch_to;
                         }
 
@@ -176,6 +187,6 @@ err_sched_switch_to:
 void
 sched_irq_handler(unsigned char irqno)
 {
-        sched_switch();
+        sched_switch(0);
 }
 

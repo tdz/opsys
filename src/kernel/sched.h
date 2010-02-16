@@ -34,7 +34,7 @@ struct tcb *
 sched_search_thread(unsigned int taskid, unsigned char tcbid);
 
 int
-sched_switch(void);
+sched_switch(int dohalt);
 
 void
 sched_irq_handler(unsigned char irqno);

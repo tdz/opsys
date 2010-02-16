@@ -29,5 +29,5 @@ task_helper_allocate_task_from_parent(const struct task *parent,
 
 int
 task_helper_init_task_from_parent(const struct task *parent,
-                                        struct task **tsk);
+                                        struct task *tsk);
 

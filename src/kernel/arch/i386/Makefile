@@ -13,7 +13,8 @@ ASMSOURCES = idt.S \
              multiboot.S \
              tcb.S
 
-CSOURCES = gdt.c \
+CSOURCES = debug.c \
+           gdt.c \
            idt.c \
            idtentry.c \
            interupt.c \

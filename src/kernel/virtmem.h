@@ -47,9 +47,25 @@ virtmem_flat_copy_areas(const struct page_directory *pd,
                               struct page_directory *dst,
                               unsigned long flags);
 
+int
+virtmem_map_pages_at(const struct page_directory *src,
+                            os_index_t src_pgindex,
+                            size_t pgcount,
+                            struct page_directory *dst,
+                            os_index_t dst_pgindex,
+                            unsigned long flags);
+
+os_index_t
+virtmem_map_pages_in_area(const struct page_directory *src,
+                            os_index_t src_pgindex,
+                            size_t pgcount,
+                            struct page_directory *dst,
+                            enum virtmem_area_name areaname,
+                            unsigned long flags);
+
 void
 virtmem_segfault_handler(void *ip);
 
 void
-virtmem_pagefault_handler(void *ip, void *addr);
+virtmem_pagefault_handler(void *ip, void *addr, unsigned long errcode);
 

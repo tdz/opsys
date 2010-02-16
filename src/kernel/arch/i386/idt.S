@@ -19,6 +19,7 @@
 .text
 
 .global isr_drop_interupt
+.global isr_handle_debug
 .global isr_handle_invalop
 .global isr_handle_segfault
 .global isr_handle_pagefault
@@ -45,6 +46,10 @@
 isr_drop_interupt:
         iret
 
+isr_handle_debug:
+        hlt
+        jmp isr_handle_debug
+
 isr_handle_invalop:
         cmp $0, invalop_handler
         je isr_handle_invalop_ret
@@ -67,7 +72,7 @@ isr_handle_segfault:
         pushl %eax
         pushl %ecx
         pushl %edx
-        pushl 12(%esp)
+        pushl 16(%esp)
         movl segfault_handler, %eax
         call *%eax
         addl $4, %esp
@@ -78,17 +83,20 @@ isr_handle_segfault_ret:
         iret
 
 isr_handle_pagefault:
+        hlt
+        jmp isr_handle_pagefault
         cmp $0, pagefault_handler
         je isr_handle_pagefault_ret
         pushl %eax
         pushl %ecx
         pushl %edx
+        pushl 12(%esp)
         movl %cr2, %eax
         pushl %eax
-        pushl 12(%esp)
+        pushl 24(%esp)
         movl pagefault_handler, %eax
         call *%eax
-        addl $8, %esp
+        addl $12, %esp
         popl %edx
         popl %ecx
         popl %eax

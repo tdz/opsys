@@ -19,21 +19,24 @@
 #include <errno.h>
 #include <sys/types.h>
 
+#include "list.h"
+#include "ipcmsg.h"
+
 #include "tcb.h"
+
 #include "task.h"
 #include "elfldr.h"
 #include "loader.h"
 
 int
-loader_exec(struct tcb *tcb, const void *img)
+loader_exec(struct tcb *tcb, void **ip, const void *img)
 {
         int err;
-        void *ip;
 
-        /* load image into thread */
+        /* load image into address space */
 
         if (elf_loader_is_elf(img)) {
-                err = elf_loader_exec(tcb->task->pd, &ip, img);
+                err = elf_loader_exec(tcb->task->pd, ip, img);
         } else {
                 err = -EINVAL;
         }
@@ -41,10 +44,6 @@ loader_exec(struct tcb *tcb, const void *img)
         if (err < 0) {
                 goto err_is_image;
         }
-
-        /* set thread to starting state */
-
-        tcb_set_initial_ready_state(tcb, ip, 0, 0);
 
         return 0;
 

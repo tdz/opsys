@@ -43,6 +43,10 @@
 #include "kbd.h"
 
 #include "taskhlp.h"
+
+#include "list.h"
+#include "ipcmsg.h"
+
 #include <tcb.h>
 #include "tcbhlp.h"
 #include "sched.h"
@@ -287,6 +291,7 @@ multiboot_load_modules(struct task *parent,
 
                 struct task *tsk;
                 struct tcb *tcb;
+                void *ip;
 
                 if (mod->string) {
                         console_printf("loading module '\%s'\n", mod->string);
@@ -305,7 +310,7 @@ multiboot_load_modules(struct task *parent,
 
                 /* allocate tcb */
 
-                err = tcb_helper_allocate_tcb_and_stack(tsk, 4096, &tcb);
+                err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb);
 
                 if (err < 0) {
                         console_perror("tcb_helper_allocate_tcb_and_stack", -err);
@@ -314,10 +319,14 @@ multiboot_load_modules(struct task *parent,
 
                 /* load binary image */
 
-                if ((err = loader_exec(tcb, (void*)mod->mod_start)) < 0) {
+                if ((err = loader_exec(tcb, &ip, (void*)mod->mod_start)) < 0) {
                         console_perror("loader_exec", -err);
                         goto err_loader_exec;
                 }
+
+
+                /* set thread to starting state */
+                tcb_set_initial_ready_state(tcb, ip, 0, 0);
 
                 /* schedule thread */
                 if ((err = sched_add_thread(tcb)) < 0) {
@@ -346,7 +355,7 @@ main_invalop_handler(void *ip)
 {
         console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
 }
-
+#include "task.h"
 void
 multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info,
@@ -410,7 +419,7 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         idt_install_syscall_handler(syscall_entry_handler);
 
-        sti();
+/*        sti();*/
 
         /* build initial task and address space
          */
@@ -459,10 +468,13 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         /* create and schedule system service */
 
-        if ((err = tcb_helper_allocate_tcb_and_stack(tsk, 4096, &tcb)) < 0) {
+        if ((err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb)) < 0) {
                 console_perror("tcb_helper_allocate_tcb_and_stack", -err);
                 return;
         }
+
+        console_printf("%s:%x %x:%x.\n", __FILE__, __LINE__, tcb->task->id,
+                        tcb->id);
 
         if ((err = tcb_set_initial_ready_state(tcb,
                                                system_srv_start,
@@ -474,6 +486,10 @@ multiboot_main(const struct multiboot_header *mb_header,
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);
                 return;
+        }
+
+        while (tcb_get_state(tcb) != THREAD_STATE_RECV) {
+                sched_switch(0);
         }
 
         /* load modules as ELF binaries

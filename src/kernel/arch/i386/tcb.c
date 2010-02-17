@@ -23,6 +23,7 @@
 #include <sys/types.h>
 
 #include "cpu.h"
+#include "spinlock.h"
 
 #include "bitset.h"
 
@@ -85,6 +86,10 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->ipcin = NULL;
 
         list_init(&tcb->ipcout, NULL, NULL, NULL);
+
+        list_init(&tcb->wait, NULL, NULL, tcb);
+
+        spinlock_init(&tcb->lock);
 
         tcb->esp = (unsigned long)tcb->stack;
         tcb->ebp = tcb->esp;
@@ -189,6 +194,12 @@ tcb_switch_to_recv(struct tcb *tcb, const struct tcb *dst, int dohalt)
         return 0;
 }
 
+static int
+tcb_switch_to_waiting(struct tcb *tcb, const struct tcb *dst, int dohalt)
+{
+        return 0;
+}
+
 int
 tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt)
 {
@@ -196,7 +207,8 @@ tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt)
                 tcb_switch_to_zombie,
                 tcb_switch_to_ready,
                 tcb_switch_to_send,
-                tcb_switch_to_recv};
+                tcb_switch_to_recv,
+                tcb_switch_to_waiting};
 
         return switch_to[dst->state](tcb, dst, dohalt | (dst == (void*)0xc0805000));
 }

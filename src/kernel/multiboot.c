@@ -44,6 +44,8 @@
 
 #include "taskhlp.h"
 
+#include "spinlock.h"
+
 #include "list.h"
 #include "ipcmsg.h"
 

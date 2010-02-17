@@ -16,20 +16,27 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-typedef unsigned long   spinlock_type;
+struct list;
+
+struct semaphore
+{
+        spinlock_type lock;
+        unsigned long slots;
+        struct list *waiters;
+};
 
 int
-spinlock_init(spinlock_type *spinlock);
+semaphore_init(struct semaphore *sem, unsigned long slots);
 
 void
-spinlock_uninit(spinlock_type *spinlock);
+semaphore_uninit(struct semaphore *sem);
 
 int
-spinlock_lock(spinlock_type *spinlock, unsigned long unique_id);
+semaphore_enter(struct semaphore *sem, struct tcb *self);
 
 int
-spinlock_try_lock(spinlock_type *spinlock, unsigned long unique_id);
+semaphore_try_enter(struct semaphore *sem, struct tcb *self);
 
 void
-spinlock_unlock(spinlock_type *spinlock);
+semaphore_leave(struct semaphore *sem, struct tcb *self);
 

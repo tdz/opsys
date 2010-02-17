@@ -21,12 +21,30 @@ atomic_xchg(void *addr, unsigned long new_value)
 {
         unsigned long old_value;
 
-        __asm__("xchg %1, %%eax\n\t"
-                 : "=a"(old_value)
-                 : "r"(addr),
-                   "a"(new_value)
-                 );
+        __asm__("lock xchg %1, %%eax\n\t"
+                : "=a"(old_value)
+                : "r"(addr),
+                  "a"(new_value)
+                );
 
         return old_value;
+}
+
+static __inline__ void
+atomic_inc(void *addr)
+{
+        __asm__("lock inc %0\n\t"
+                :
+                : "r"((unsigned long)addr)
+                );
+}
+
+static __inline__ void
+atomic_dec(void *addr)
+{
+        __asm__("lock dec %0\n\t"
+                :
+                : "r"((unsigned long)addr)
+                );
 }
 

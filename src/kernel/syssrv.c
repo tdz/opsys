@@ -20,6 +20,7 @@
 #include <sys/types.h>
 
 #include <interupt.h>
+#include "spinlock.h"
 
 #include "list.h"
 #include "ipcmsg.h"

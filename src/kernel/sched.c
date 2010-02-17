@@ -25,6 +25,7 @@
 
 #include "task.h"
 
+#include "spinlock.h"
 #include "list.h"
 #include "ipcmsg.h"
 

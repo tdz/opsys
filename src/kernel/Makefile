@@ -23,6 +23,7 @@ CSOURCES = alloc.c \
            physmem.c \
            pit.c \
            sched.c \
+           semaphore.c \
            spinlock.c \
            string.c \
            syscall.c \

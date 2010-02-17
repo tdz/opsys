@@ -16,13 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct ipc_msg;
+struct list;
 struct task;
 
 enum thread_state {
         THREAD_STATE_ZOMBIE = 0, /* waiting for removal */
         THREAD_STATE_READY, /* ready to be executed */
         THREAD_STATE_SEND, /* blocked by send action */
-        THREAD_STATE_RECV /* blocked by receive action */
+        THREAD_STATE_RECV, /* blocked by receive action */
+        THREAD_STATE_WAITING /* blocked by waiting for some lock */
 };
 
 struct tcb
@@ -83,6 +86,9 @@ struct tcb
         struct list *ipcin;
         struct list ipcout;
         struct ipc_msg msg;
+        struct list wait;
+        
+        spinlock_type lock;
 } __attribute__ (( aligned(256) ));
 
 int

@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <sys/types.h>
 
+#include "spinlock.h"
+
 #include "list.h"
 #include "ipcmsg.h"
 

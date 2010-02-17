@@ -26,6 +26,7 @@
 
 #include "ipcmsg.h"
 #include "ipc.h"
+#include "spinlock.h"
 
 #include <tcb.h>
 

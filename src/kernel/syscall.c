@@ -22,6 +22,7 @@
 
 #include <debug.h>
 #include <interupt.h>
+#include "spinlock.h"
 
 #include "alloc.h"
 #include "list.h"

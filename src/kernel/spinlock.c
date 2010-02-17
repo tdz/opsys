@@ -24,45 +24,49 @@
 #include "spinlock.h"
 
 int
-spinlock_init(struct spinlock *spinlock)
+spinlock_init(spinlock_type *spinlock)
 {
-        spinlock->owner = NULL;
+        *spinlock = 0;
 
         return 0;
 }
 
 void
-spinlock_uninit(struct spinlock *spinlock)
+spinlock_uninit(spinlock_type *spinlock)
 {
         return;
 }
 
 int
-spinlock_lock(struct spinlock *spinlock, const struct tcb *self)
+spinlock_lock(spinlock_type *spinlock, unsigned long unique_id)
 {
         int err;
 
         do {
-                err = spinlock_try_lock(spinlock, self);
+                err = spinlock_try_lock(spinlock, unique_id);
         } while (err == -EBUSY);
 
         return err;
 }
 
 int
-spinlock_try_lock(struct spinlock *spinlock, const struct tcb *self)
+spinlock_try_lock(spinlock_type *spinlock, unsigned long unique_id)
 {
-        const struct tcb *owner;
-        
-        owner = (const struct tcb *)atomic_xchg(&spinlock->owner,
-                                                (unsigned long)self);
+        unsigned long was_locked;
 
-        return owner ? -EBUSY : 0;
+        if (*spinlock) {
+                /* don't try if already locked, prevents bus lock */
+                was_locked = 1;
+        } else {
+                was_locked = atomic_xchg(spinlock, unique_id);
+        }
+
+        return was_locked ? -EBUSY : 0;
 }
 
 void
-spinlock_unlock(struct spinlock *spinlock)
+spinlock_unlock(spinlock_type *spinlock)
 {
-        spinlock->owner = NULL;
+        *spinlock = 0;
 }
 

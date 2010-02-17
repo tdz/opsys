@@ -32,8 +32,20 @@
 #include "sched.h"
 
 int
-ipc_send_and_recv(struct ipc_msg *msg, struct tcb *rcv)
+ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
 {
+        int err;
+
+        /* check if rcv is ready to receive */
+
+        if ((ipc_msg_flags_get_timeout(msg) == IPC_TIMEOUT_NOW)
+                && (tcb_get_state(rcv) != THREAD_STATE_RECV)) {
+                err = -EBUSY;
+                goto err_ipc_msg_flags_get_timeout;
+        }
+
+        /* enque message */
+
         if (rcv->ipcin) {
                 rcv->ipcin = list_init(&msg->snd->ipcout, rcv->ipcin->prev,
                                                           rcv->ipcin,
@@ -49,7 +61,7 @@ ipc_send_and_recv(struct ipc_msg *msg, struct tcb *rcv)
 
         tcb_set_state(msg->snd, THREAD_STATE_RECV);
 
-        if (ipc_msg_has_timeout(msg)) {
+        if (ipc_msg_flags_has_timeout_value(msg)) {
                 /* TODO: implement timeout */
         }
 
@@ -62,6 +74,27 @@ ipc_send_and_recv(struct ipc_msg *msg, struct tcb *rcv)
         sched_switch(1);
 
         return 0;
+
+err_ipc_msg_flags_get_timeout:
+        return err;
+}
+
+int
+ipc_reply(struct ipc_msg *msg, struct tcb *rcv)
+{
+        int err;
+
+        if (tcb_get_state(rcv) != THREAD_STATE_RECV) {
+                err = -EBUSY;
+                goto err_tcb_get_state;
+        }
+
+        tcb_set_state(rcv, THREAD_STATE_READY);
+
+        return 0;
+
+err_tcb_get_state:
+        return err;
 }
 
 int

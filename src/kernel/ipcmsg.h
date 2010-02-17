@@ -16,9 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum {
+enum ipc_timeout {
         IPC_TIMEOUT_NOW   = 0,
         IPC_TIMEOUT_NEVER = 0x7fffffff
+};
+
+enum ipc_msg_flags {
+        IPC_MSG_FLAG_IS_ERRNO = 1<<0
 };
 
 struct ipc_msg {
@@ -35,5 +39,11 @@ ipc_msg_init(struct ipc_msg *msg, struct tcb   *snd,
                                   unsigned long msg1);
 
 int
-ipc_msg_has_timeout(struct ipc_msg *msg);
+ipc_msg_flags_has_timeout_value(const struct ipc_msg *msg);
+
+unsigned long
+ipc_msg_flags_get_timeout(const struct ipc_msg *msg);
+
+int
+ipc_msg_flags_is_errno(const struct ipc_msg *msg);
 

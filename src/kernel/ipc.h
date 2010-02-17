@@ -18,7 +18,10 @@
 
 
 int
-ipc_send_and_recv(struct ipc_msg *msg, struct tcb *rcv);
+ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv);
+
+int
+ipc_reply(struct ipc_msg *msg, struct tcb *rcv);
 
 int
 ipc_recv(struct ipc_msg **msg, struct tcb *rcv);

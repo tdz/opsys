@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <sys/types.h>
 
 #include <interupt.h>
@@ -33,7 +34,7 @@
 #include "console.h"
 
 static int
-system_srv_handle_msg(struct ipc_msg *msg)
+system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
 {
         console_printf("%s:%x.\n", __FILE__, __LINE__);
 
@@ -43,6 +44,14 @@ system_srv_handle_msg(struct ipc_msg *msg)
                         tcb_set_state(msg->snd, THREAD_STATE_ZOMBIE);
                         break;
                 default:
+                        /* unknown command */
+                        {
+                                struct tcb *rcv = msg->snd;
+                                ipc_msg_init(msg, self,
+                                                  IPC_MSG_FLAG_IS_ERRNO,
+                                                  ENOSYS, 0);
+                                ipc_reply(msg, rcv);
+                        }
                         break;
         }
 
@@ -62,10 +71,15 @@ system_srv_start(struct tcb *self)
                         goto err_ipc_recv;
                 }
 
-                system_srv_handle_msg(msg);
+                if ((err = system_srv_handle_msg(msg, self)) < 0) {
+                        goto err_system_srv_handle_msg;
+                }
 
                 console_printf("%s:%x.\n", __FILE__, __LINE__);
 
+                continue;
+
+        err_system_srv_handle_msg:
         err_ipc_recv:
                 continue;
         }

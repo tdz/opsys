@@ -37,14 +37,7 @@
 
 #include "console.h"
 
-
-#define R0_THREADID(x_)         ((x_)&0xffffffff)
-
-/* asyncronous delivery */
-#define R1_SYNC(x_)             ((x_)&0x00000001)
-
-/* sender waits for reply */
-#define R1_TIMEOUT(x_)          (((x_)&0xfffffffe)>>1)
+#define R0_THREADID(x_)         ((threadid_type)((x_)&0xffffffff))
 
 int
 syscall_entry_handler(unsigned long r0,
@@ -81,25 +74,22 @@ syscall_entry_handler(unsigned long r0,
                 goto err_sched_search_thread;
         }
 
-        /* check if rcv is ready to receive */
-
-        if ((R1_TIMEOUT(r1) == IPC_TIMEOUT_NOW)
-                && (tcb_get_state(rcv) != THREAD_STATE_RECV)) {
-                err = -EBUSY;
-                goto err_r1_sync;
-        }
-
         /* send message to receiver */
 
         if ((err = ipc_msg_init(&snd->msg, snd, r1, r2, r3)) < 0) {
                 goto err_ipc_msg_init;
         }
 
-        if ((err = ipc_send_and_recv(&snd->msg, rcv)) < 0) {
-                goto err_ipc_send_and_recv;
+        if ((err = ipc_send_and_wait(&snd->msg, rcv)) < 0) {
+                goto err_ipc_send_and_wait;
         }
 
         /* sender is always ready when returning here */
+
+        if (ipc_msg_flags_is_errno(&snd->msg)) {
+                err = -snd->msg.msg0;
+                goto err_ipc_msg_flags_is_errno;
+        }
 
         /* before returning, sender should have received a reply */
 
@@ -109,9 +99,9 @@ syscall_entry_handler(unsigned long r0,
 
         return 0;
 
-err_ipc_send_and_recv:
+err_ipc_msg_flags_is_errno:
+err_ipc_send_and_wait:
 err_ipc_msg_init:
-err_r1_sync:
 err_sched_search_thread:
 err_sched_get_current_thread:
         if (enable_int) {

@@ -36,9 +36,22 @@ ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
 }
 
 int
-ipc_msg_has_timeout(struct ipc_msg *msg)
+ipc_msg_flags_has_timeout_value(const struct ipc_msg *msg)
 {
-        return (IPC_MSG_FLAGS_TIMEOUT(msg->flags) != IPC_TIMEOUT_NOW) &&
-               (IPC_MSG_FLAGS_TIMEOUT(msg->flags) != IPC_TIMEOUT_NEVER);
+        unsigned long timeout = ipc_msg_flags_get_timeout(msg);
+
+        return (timeout != IPC_TIMEOUT_NOW) && (timeout != IPC_TIMEOUT_NEVER);
+}
+
+unsigned long
+ipc_msg_flags_get_timeout(const struct ipc_msg *msg)
+{
+        return IPC_MSG_FLAGS_TIMEOUT(msg->flags);
+}
+
+int
+ipc_msg_flags_is_errno(const struct ipc_msg *msg)
+{
+        return !!(msg->flags&IPC_MSG_FLAG_IS_ERRNO);
 }
 

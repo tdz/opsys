@@ -17,7 +17,7 @@ Features
 
 badly needed:
 
-* locking and locking primitives! Opsys only works by chance an fortune ATM
+* locking and locking primitives! Opsys only works by chance and fortune ATM
 * syscalls for receiving IPC messages, however the basic infrastructure is
   there; locking primitives are needed to fully implement IPC
 * userland servers; the kernel needs to work first
@@ -29,14 +29,14 @@ Usage
 This might work:
 
 * install a recent Linux system with gcc, binutils, etc
-* make sure you have sudo permission
+* make sure you have sudo permissions
 * checkout and build the git tree via
 
         git clone git://github.com/tdz/opsys.git opsys
         cd opsys
         make image
 
-* if everything goes well, the resulting file 'opsyshdd.img' can be used
+* if everything goes well the resulting file 'opsyshdd.img' can be used
   from within QEMU, or copied to a disk via dd; opsys is installed in and
   bootable from the disk image's first partition.
 

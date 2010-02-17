@@ -1,4 +1,46 @@
 
+About
+=====
+
+Opsys is a hobbyist operating system, intended for experimentation and
+tinkering. It features a microkernel-based design with similarities to L4.
+
+The project's home is http://github.com/tdz/opsys.
+
+
+Features
+========
+
+* booting (yeah!)
+* support for 32-bit protected mode
+* simple IPC primitives
+
+badly needed:
+
+* locking and locking primitives! Opsys only works by chance an fortune ATM
+* syscalls for receiving IPC messages, however the basic infrastructure is
+  there; locking primitives are needed to fully implement IPC
+* userland servers; the kernel needs to work first
+
+
+Usage
+=====
+
+This might work:
+
+* install a recent Linux system with gcc, binutils, etc
+* make sure you have sudo permission
+* checkout and build the git tree via
+
+        git clone git://github.com/tdz/opsys.git opsys
+        cd opsys
+        make image
+
+* if everything goes well, the resulting file 'opsyshdd.img' can be used
+  from within QEMU, or copied to a disk via dd; opsys is installed in and
+  bootable from the disk image's first partition.
+
+
 Legal info
 ==========
 

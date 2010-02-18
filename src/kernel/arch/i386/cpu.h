@@ -16,25 +16,35 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * \file This file contains functions for reading registers of the i386.
+ */
+
+/**
+ * \brief The bits of the EFLAGS register.
+ */
 enum {
-        EFLAGS_CF  = 1<<0,
-        EFLAGS_PF  = 1<<2,
-        EFLAGS_AF  = 1<<4,
-        EFLAGS_ZF  = 1<<6,
-        EFLAGS_SF  = 1<<7,
-        EFLAGS_TF  = 1<<8,
-        EFLAGS_IF  = 1<<9,
-        EFLAGS_DF  = 1<<10,
-        EFLAGS_OF  = 1<<11,
-        EFLAGS_NT  = 1<<14,
-        EFLAGS_RF  = 1<<16,
-        EFLAGS_VM  = 1<<17,
-        EFLAGS_AC  = 1<<18,
-        EFLAGS_VIF = 1<<19,
-        EFLAGS_VIP = 1<<20,
-        EFLAGS_ID  = 1<<21
+        EFLAGS_CF  = 1<<0, /**< Carry flag */
+        EFLAGS_PF  = 1<<2, /**< Parity flag */
+        EFLAGS_AF  = 1<<4, /**< Adjust flag */
+        EFLAGS_ZF  = 1<<6, /**< Zero flag */
+        EFLAGS_SF  = 1<<7, /**< Signed flag */
+        EFLAGS_TF  = 1<<8, /**< Trap flag (i.e., single step mode) */
+        EFLAGS_IF  = 1<<9, /**< Interupt-enable flag */
+        EFLAGS_DF  = 1<<10, /**< Direction flag */
+        EFLAGS_OF  = 1<<11, /**< Overflow flag */
+        EFLAGS_NT  = 1<<14, /**< Nested-task flag */
+        EFLAGS_RF  = 1<<16, /**< Resume flag */
+        EFLAGS_VM  = 1<<17, /**< Virtual-8086-mode flag */
+        EFLAGS_AC  = 1<<18, /**< Alignment-check flag */
+        EFLAGS_VIF = 1<<19, /**< Virtual-interupt flag */
+        EFLAGS_VIP = 1<<20, /**< Virtual-interupt pending */
+        EFLAGS_ID  = 1<<21 /**< Identification */
 };
 
+/**
+ * \brief Read CPU register CR0
+ */
 static __inline__ unsigned long
 cr0(void)
 {
@@ -46,6 +56,9 @@ cr0(void)
         return cr0;
 }
 
+/**
+ * \brief Read CPU register CR1
+ */
 static __inline__ unsigned long
 cr2(void)
 {
@@ -57,6 +70,9 @@ cr2(void)
         return cr2;
 }
 
+/**
+ * \brief Read CPU register CR3
+ */
 static __inline__ unsigned long
 cr3(void)
 {
@@ -68,6 +84,9 @@ cr3(void)
         return cr3;
 }
 
+/**
+ * \brief Read CPU register CR4
+ */
 static __inline__ unsigned long
 cr4(void)
 {
@@ -79,6 +98,9 @@ cr4(void)
         return cr4;
 }
 
+/**
+ * \brief Read CPU register CS
+ */
 static __inline__ unsigned long
 cs(void)
 {
@@ -90,12 +112,18 @@ cs(void)
         return cs;
 }
 
+/**
+ * \brief Execute hlt instruction
+ */
 static __inline__ void
 hlt(void)
 {
         __asm__("hlt\n\t");
 }
 
+/**
+ * \brief Read CPU register EFLAGS
+ */
 static __inline__ unsigned long
 eflags(void)
 {

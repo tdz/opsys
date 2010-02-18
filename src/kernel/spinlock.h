@@ -25,10 +25,10 @@ void
 spinlock_uninit(spinlock_type *spinlock);
 
 int
-spinlock_lock(spinlock_type *spinlock, unsigned long unique_id);
-
-int
 spinlock_try_lock(spinlock_type *spinlock, unsigned long unique_id);
+
+void
+spinlock_lock(spinlock_type *spinlock, unsigned long unique_id);
 
 void
 spinlock_unlock(spinlock_type *spinlock);

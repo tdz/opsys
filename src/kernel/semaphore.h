@@ -32,11 +32,11 @@ void
 semaphore_uninit(struct semaphore *sem);
 
 int
-semaphore_enter(struct semaphore *sem, struct tcb *self);
-
-int
-semaphore_try_enter(struct semaphore *sem, struct tcb *self);
+semaphore_try_enter(struct semaphore *sem);
 
 void
-semaphore_leave(struct semaphore *sem, struct tcb *self);
+semaphore_enter(struct semaphore *sem);
+
+void
+semaphore_leave(struct semaphore *sem);
 

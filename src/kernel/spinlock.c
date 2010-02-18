@@ -38,18 +38,6 @@ spinlock_uninit(spinlock_type *spinlock)
 }
 
 int
-spinlock_lock(spinlock_type *spinlock, unsigned long unique_id)
-{
-        int err;
-
-        do {
-                err = spinlock_try_lock(spinlock, unique_id);
-        } while (err == -EBUSY);
-
-        return err;
-}
-
-int
 spinlock_try_lock(spinlock_type *spinlock, unsigned long unique_id)
 {
         unsigned long was_locked;
@@ -62,6 +50,16 @@ spinlock_try_lock(spinlock_type *spinlock, unsigned long unique_id)
         }
 
         return was_locked ? -EBUSY : 0;
+}
+
+void
+spinlock_lock(spinlock_type *spinlock, unsigned long unique_id)
+{
+        int err;
+
+        do {
+                err = spinlock_try_lock(spinlock, unique_id);
+        } while (err == -EBUSY);
 }
 
 void

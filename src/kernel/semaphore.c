@@ -28,7 +28,6 @@
 #include "spinlock.h"
 
 #include "tcb.h"
-
 #include "sched.h"
 
 #include "semaphore.h"
@@ -43,6 +42,7 @@ semaphore_init(struct semaphore *sem, unsigned long slots)
         }
 
         sem->slots = slots;
+        sem->waiters = NULL;
 
 err_spinlock_init:
         return err;
@@ -55,9 +55,44 @@ semaphore_uninit(struct semaphore *sem)
 }
 
 int
-semaphore_enter(struct semaphore *sem, struct tcb *self)
+semaphore_try_enter(struct semaphore *sem)
 {
         int avail;
+        int int_enable;
+        struct tcb *self;
+
+        self = sched_get_current_thread();
+
+        int_enable = int_enabled();
+
+        if (int_enable) {
+                cli();
+        }
+
+        spinlock_lock(&sem->lock, (unsigned long)self);
+
+        avail = !!sem->slots;
+
+        if (avail) {
+                --sem->slots;
+        }
+
+        spinlock_unlock(&sem->lock);
+
+        if (int_enable) {
+                sti();
+        }
+
+        return avail ? 0 : -EBUSY;
+}
+
+void
+semaphore_enter(struct semaphore *sem)
+{
+        int avail;
+        struct tcb *self;
+
+        self = sched_get_current_thread();
 
         do {
                 int int_enable;
@@ -127,43 +162,15 @@ semaphore_enter(struct semaphore *sem, struct tcb *self)
                         }
                 }
         } while (!avail);
-
-        return 0;
-}
-
-int
-semaphore_try_enter(struct semaphore *sem, struct tcb *self)
-{
-        int avail;
-        int int_enable;
-
-        int_enable = int_enabled();
-
-        if (int_enable) {
-                cli();
-        }
-
-        spinlock_lock(&sem->lock, (unsigned long)self);
-
-        avail = !!sem->slots;
-
-        if (avail) {
-                --sem->slots;
-        }
-
-        spinlock_unlock(&sem->lock);
-
-        if (int_enable) {
-                sti();
-        }
-
-        return avail ? 0 : -EBUSY;
 }
 
 void
-semaphore_leave(struct semaphore *sem, struct tcb *self)
+semaphore_leave(struct semaphore *sem)
 {
         struct list *waiters;
+        struct tcb *self;
+
+        self = sched_get_current_thread();
 
         int int_enable = int_enabled();
 

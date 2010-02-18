@@ -1,7 +1,7 @@
 
 SRCDIR = src
 
-.PHONY = all clean image
+.PHONY = all clean image doc html
 
 all: clean
 	$(MAKE) -C $(SRCDIR) all
@@ -15,4 +15,10 @@ image: all
 
 maintainer-clean: clean
 	rm -fr opsyshdd.img
+	rm -fr doc/
+
+doc: html
+
+html:
+	doxygen
 

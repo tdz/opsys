@@ -22,11 +22,15 @@
 
 #include "minmax.h"
 
+#include <spinlock.h>
+#include "semaphore.h"
+
 #include <pageframe.h>
 #include "physmem.h"
 
-static unsigned char *g_physmap = NULL;
-static unsigned long  g_physmap_nframes = 0;
+static struct semaphore g_physmap_sem;
+static unsigned char   *g_physmap = NULL;
+static unsigned long    g_physmap_nframes = 0;
 
 static int
 physmem_set_flags_self(void)
@@ -50,12 +54,27 @@ physmem_set_flags_self(void)
 int
 physmem_init(unsigned long physmap, unsigned long nframes)
 {
+        int err;
+
+        if ((err = semaphore_init(&g_physmap_sem, 1)) < 0) {
+                goto err_semaphore_init;
+        }
+
         g_physmap = (unsigned char*)physmap;
 
         memset(g_physmap, 0, nframes*sizeof(g_physmap[0]));
         g_physmap_nframes = nframes;
 
-        return physmem_set_flags_self();
+        if ((err = physmem_set_flags_self()) < 0) {
+                goto err_physmem_set_flags_self;
+        }
+
+        return 0;
+
+err_physmem_set_flags_self:
+        semaphore_uninit(&g_physmap_sem);
+err_semaphore_init:
+        return err;
 }
 
 int
@@ -66,7 +85,7 @@ physmem_set_flags(unsigned long pfindex,
         unsigned char *beg;
         const unsigned char *end;
 
-        /* FIXME: lock here */
+        semaphore_enter(&g_physmap_sem);
 
         beg = g_physmap+pfindex;
         end = beg+nframes;
@@ -76,7 +95,7 @@ physmem_set_flags(unsigned long pfindex,
                 ++beg;
         }
 
-        /* FIXME: unlock here */
+        semaphore_leave(&g_physmap_sem);
 
         return 0;
 }
@@ -88,7 +107,7 @@ physmem_alloc_frames(unsigned long nframes)
         unsigned char *beg;
         const unsigned char *end;
 
-        /* FIXME: lock here */
+        semaphore_enter(&g_physmap_sem);
 
         pfindex = 0;
         beg = g_physmap+1; /* first page not used */
@@ -130,7 +149,7 @@ physmem_alloc_frames(unsigned long nframes)
                 }
         }
 
-        /* FIXME: unlock here */
+        semaphore_leave(&g_physmap_sem);
 
         return pfindex;
 }
@@ -141,7 +160,7 @@ physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
         unsigned char *beg;
         const unsigned char *end;
 
-        /* FIXME: lock here */
+        semaphore_enter(&g_physmap_sem);
 
         beg = g_physmap+pfindex;
         end = g_physmap+nframes;
@@ -151,6 +170,7 @@ physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 
         /* stopped too early, pages already allocated */
         if (beg < end) {
+                semaphore_leave(&g_physmap_sem);
                 return 0;
         }
 
@@ -162,7 +182,7 @@ physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
                 *beg = (PHYSMEM_FLAG_RESERVED<<7) + 1;
         }
 
-        /* FIXME: unlock here */
+        semaphore_leave(&g_physmap_sem);
 
         return pfindex;
 }
@@ -173,13 +193,14 @@ physmem_ref_frames(unsigned long pfindex, unsigned long nframes)
         unsigned long i;
         unsigned char *physmap;
 
-        /* FIXME: lock here */
+        semaphore_enter(&g_physmap_sem);
 
         physmap = g_physmap+pfindex;
 
         /* check for allocation and max refcount */
         for (i = 0; i < nframes; ++i) {
                 if (((*physmap) == 0xff) || !(*physmap)) {
+                        semaphore_leave(&g_physmap_sem);
                         return -1;
                 }
         }
@@ -192,7 +213,8 @@ physmem_ref_frames(unsigned long pfindex, unsigned long nframes)
                 ++physmap;
         }
 
-        /* FIXME: unlock here */
+        semaphore_leave(&g_physmap_sem);
+
         return 0;
 }
 
@@ -201,7 +223,7 @@ physmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 {
         unsigned char *physmap;
 
-        /* FIXME: lock here */
+        semaphore_enter(&g_physmap_sem);
 
         physmap = g_physmap+pfindex;
 
@@ -215,7 +237,7 @@ physmem_unref_frames(unsigned long pfindex, unsigned long nframes)
                 ++physmap;
         }
 
-        /* FIXME: unlock here */
+        semaphore_leave(&g_physmap_sem);
 }
 
 size_t

@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include <errno.h>
 #include <stddef.h>
@@ -37,11 +38,26 @@
 #include <pde.h>
 #include <pagedir.h>
 #include "vmemarea.h"
+
 #include "addrspace.h"
-#include "virtmem.h"
+
+int
+address_space_init(struct address_space *as, enum paging_mode mode, void *tlps)
+{
+        as->mode = mode;
+        as->tlps.pd = tlps;
+
+        return 0;
+}
+
+void
+address_space_uninit(struct address_space *as)
+{
+        return;
+}
 
 static int
-virtmem_map_page_frame_at_nopg(struct page_directory *pd,
+address_space_map_page_frame_at_nopg(struct page_directory *pd,
                                os_index_t pfindex,
                                os_index_t pgindex,
                                unsigned int flags)
@@ -71,7 +87,7 @@ err_nopagetable:
 }
 
 static int
-virtmem_map_page_frames_at_nopg(struct page_directory *pd,
+address_space_map_page_frames_at_nopg(struct page_directory *pd,
                                 os_index_t pfindex,
                                 os_index_t pgindex,
                                 size_t count,
@@ -80,9 +96,9 @@ virtmem_map_page_frames_at_nopg(struct page_directory *pd,
         int err = 0;
 
         while (count && !(err < 0)) {
-                err = virtmem_map_page_frame_at_nopg(pd, pfindex,
-                                                         pgindex,
-                                                         flags);
+                err = address_space_map_page_frame_at_nopg(pd, pfindex,
+                                                               pgindex,
+                                                               flags);
                 ++pgindex;
                 ++pfindex;
                 --count;
@@ -92,7 +108,7 @@ virtmem_map_page_frames_at_nopg(struct page_directory *pd,
 }
 
 static int
-virtmem_alloc_page_table_nopg(struct page_directory *pd,
+address_space_alloc_page_table_nopg(struct page_directory *pd,
                               os_index_t ptindex,
                               unsigned int flags)
 {
@@ -123,7 +139,7 @@ err_physmem_alloc_frames:
 }
 
 static int
-virtmem_alloc_page_tables_nopg(struct page_directory *pd,
+address_space_alloc_page_tables_nopg(struct page_directory *pd,
                                os_index_t ptindex,
                                size_t ptcount,
                                unsigned int flags)
@@ -131,14 +147,14 @@ virtmem_alloc_page_tables_nopg(struct page_directory *pd,
         int err;
 
         for (err = 0; ptcount && !(err < 0); ++ptindex, --ptcount) {
-                err = virtmem_alloc_page_table_nopg(pd, ptindex, flags);
+                err = address_space_alloc_page_table_nopg(pd, ptindex, flags);
         }
 
         return err;
 }
 
 static struct page_table *
-virtmem_get_page_table_tmp(void)
+address_space_get_page_table_tmp(void)
 {
         const struct virtmem_area *low, *tmp;
         
@@ -149,7 +165,7 @@ virtmem_get_page_table_tmp(void)
 }
 
 static os_index_t
-virtmem_get_page_tmp(size_t i)
+address_space_get_page_tmp(size_t i)
 {
         const struct virtmem_area *tmp =
                 virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
@@ -158,7 +174,7 @@ virtmem_get_page_tmp(size_t i)
 }
 
 static int
-virtmem_page_is_tmp(os_index_t pgindex)
+address_space_page_is_tmp(os_index_t pgindex)
 {
         const struct virtmem_area *tmp =
                 virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
@@ -167,7 +183,7 @@ virtmem_page_is_tmp(os_index_t pgindex)
 }
 
 static os_index_t
-virtmem_get_index_tmp(os_index_t pgindex)
+address_space_get_index_tmp(os_index_t pgindex)
 {
         const struct virtmem_area *tmp =
                 virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
@@ -175,119 +191,15 @@ virtmem_get_index_tmp(os_index_t pgindex)
         return pgindex - tmp->pgindex;
 }
 
-int
-virtmem_init(struct page_directory *pd)
-{
-        int err;
-        enum virtmem_area_name name;
-
-        err = 0;
-
-        /* install page tables in all kernel areas */
-
-        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name) {
-
-                const struct virtmem_area *area;
-                unsigned long ptindex, ptcount;
-
-                area = virtmem_area_get_by_name(name);
-
-                if (!(area->flags&VIRTMEM_AREA_FLAG_PAGETABLES)) {
-                        continue;
-                }
-
-                ptindex = pagetable_index(page_address(area->pgindex));
-                ptcount = pagetable_count(page_address(area->pgindex),
-                                          page_memory(area->npages));
-
-                /* create page tables for low area */
-
-                err = virtmem_alloc_page_tables_nopg(pd,
-                                                     ptindex,
-                                                     ptcount,
-                                                     PDE_FLAG_PRESENT|
-                                                     PDE_FLAG_WRITEABLE);
-        }
-
-        /* create identity mapping for all identity areas */
-
-        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name) {
-
-                const struct virtmem_area *area;
-
-                area = virtmem_area_get_by_name(name);
-
-                if (!(area->flags&VIRTMEM_AREA_FLAG_POLUTE)) {
-                        continue;
-                }
-
-                if (area->flags&VIRTMEM_AREA_FLAG_IDENTITY) {
-                        err = virtmem_map_page_frames_at_nopg(pd,
-                                                              area->pgindex,
-                                                              area->pgindex,
-                                                              area->npages,
-                                                              PTE_FLAG_PRESENT|
-                                                              PTE_FLAG_WRITEABLE);
-                } else {
-                        os_index_t pfindex = physmem_alloc_frames(
-                                pageframe_count(page_memory(area->npages)));
-
-                        if (!pfindex) {
-                                err = -1;
-                                break;
-                        }
-
-                        err = virtmem_map_page_frames_at_nopg(pd,
-                                                              pfindex,
-                                                              area->pgindex,
-                                                              area->npages,
-                                                              PTE_FLAG_PRESENT|
-                                                              PTE_FLAG_WRITEABLE);
-                }
-        }
-
-        if (err < 0) {
-                return err;
-        }
-
-        /* Hand crafted: lowest page table in kernel memory resides in highest
-           page frame of identity-mapped low memory. Allows for temporary
-           mappings by writing to low-area page.
-         */
-        {
-                struct page_table *pt;
-                os_index_t ptpfindex, index;
-                const struct virtmem_area *tmp;
-
-                pt = virtmem_get_page_table_tmp();
-
-                if ((err = page_table_init(pt)) < 0) {
-                        return err;
-                }
-
-                ptpfindex = page_index(pt);
-
-                tmp = virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
-
-                index = pagetable_index(page_address(tmp->pgindex));
-
-                err = page_directory_install_page_table(pd,
-                                ptpfindex,
-                                index,
-                                PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
-        }
-
-        return err;
-}
 
 static os_index_t
-virtmem_install_page_frame_tmp(os_index_t pfindex)
+address_space_install_page_frame_tmp(os_index_t pfindex)
 {
         volatile pde_type *ptebeg, *pteend, *pte;
         struct page_table *pt;
         os_index_t pgindex;
 
-        pt = virtmem_get_page_table_tmp();
+        pt = address_space_get_page_table_tmp();
 
         /* find empty temporary page */
 
@@ -310,7 +222,7 @@ virtmem_install_page_frame_tmp(os_index_t pfindex)
 
         *pte = pte_create(pfindex, PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
 
-        pgindex = virtmem_get_page_tmp(pte-ptebeg);
+        pgindex = address_space_get_page_tmp(pte-ptebeg);
 
         mmu_flush_tlb_entry(page_address(pgindex));
 
@@ -318,20 +230,20 @@ virtmem_install_page_frame_tmp(os_index_t pfindex)
 }
 
 static os_index_t
-virtmem_uninstall_page_tmp(os_index_t pgindex)
+address_space_uninstall_page_tmp(os_index_t pgindex)
 {
         struct page_table *pt;
         os_index_t index;
         int err;
 
-        if (!virtmem_page_is_tmp(pgindex)) {
+        if (!address_space_page_is_tmp(pgindex)) {
                 /* not temporarily mapped */
                 return -EINVAL;
         }
 
-        pt = virtmem_get_page_table_tmp();
+        pt = address_space_get_page_table_tmp();
 
-        index = virtmem_get_index_tmp(pgindex);
+        index = address_space_get_index_tmp(pgindex);
 
         /* finish access before unmapping page */
         rwmembar();
@@ -350,10 +262,11 @@ err_page_table_unmap_page_frame:
         return err;
 }
 
-static size_t
-virtmem_check_empty_pages_at(const struct page_directory *pd,
-                             os_index_t pgindex,
-                             size_t pgcount)
+
+size_t
+address_space_check_empty_pages(const struct page_directory *pd,
+                                os_index_t pgindex,
+                                size_t pgcount)
 {
         os_index_t ptindex;
         size_t ptcount, nempty;
@@ -379,7 +292,7 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
 
                         /* install page table in virtual address space */
 
-                        ptpgindex = virtmem_install_page_frame_tmp(pfindex);
+                        ptpgindex = address_space_install_page_frame_tmp(pfindex);
 
                         if (ptpgindex < 0) {
                                 break;
@@ -400,18 +313,18 @@ virtmem_check_empty_pages_at(const struct page_directory *pd,
                         }
 
                         /* uninstall page table */
-                        virtmem_uninstall_page_tmp(ptpgindex);
+                        address_space_uninstall_page_tmp(ptpgindex);
                 }
         }
 
         return nempty;
 }
 
-static os_index_t
-virtmem_find_empty_pages(const struct page_directory *pd,
-                         size_t npages,
-                         os_index_t pgindex_beg,
-                         os_index_t pgindex_end)
+os_index_t
+address_space_find_empty_pages(const struct page_directory *pd,
+                               size_t npages,
+                               os_index_t pgindex_beg,
+                               os_index_t pgindex_end)
 {
         /* find continuous area in virtual memory */
 
@@ -420,8 +333,9 @@ virtmem_find_empty_pages(const struct page_directory *pd,
 
                 size_t nempty;
 
-                nempty = virtmem_check_empty_pages_at(pd, pgindex_beg, npages);
-
+                nempty = address_space_check_empty_pages(pd,
+                                                         pgindex_beg,
+                                                         npages);
                 if (nempty == npages) {
                         return pgindex_beg;
                 }
@@ -434,10 +348,11 @@ virtmem_find_empty_pages(const struct page_directory *pd,
 }
 
 int
-virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
-                                                     os_index_t pgindex,
-                                                     size_t pgcount,
-                                                     unsigned int pteflags)
+address_space_alloc_page_frames(struct page_directory *pd,
+                                os_index_t pfindex,
+                                os_index_t pgindex,
+                                size_t pgcount,
+                                unsigned int pteflags)
 {
         os_index_t ptindex;
         size_t ptcount, i;
@@ -469,7 +384,7 @@ virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
                                 break;
                         }
 
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
                         if (ptpgindex < 0) {
                                 err = ptpgindex;
@@ -499,7 +414,7 @@ virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
 
                         /* map page-table page frames */
 
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
                         if (ptpgindex < 0) {
                                 err = ptpgindex;
@@ -525,7 +440,7 @@ virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
                 }
 
                 /* unmap page table */
-                virtmem_uninstall_page_tmp(ptpgindex);
+                address_space_uninstall_page_tmp(ptpgindex);
         }
 
         mmu_flush_tlb();
@@ -534,9 +449,10 @@ virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
 }
 
 os_index_t
-virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
-                                                  size_t pgcount,
-                                                  unsigned int pteflags)
+address_space_alloc_pages(struct page_directory *pd,
+                          os_index_t pgindex,
+                          size_t pgcount,
+                          unsigned int pteflags)
 {
         os_index_t ptindex;
         size_t ptcount;
@@ -569,7 +485,7 @@ virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
                                 break;
                         }
 
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
                         if (ptpgindex < 0) {
                                 err = ptpgindex;
@@ -599,7 +515,7 @@ virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
 
                         /* map page-table page frames */
 
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
                         if (ptpgindex < 0) {
                                 err = ptpgindex;
@@ -632,7 +548,7 @@ virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
                 }
 
                 /* unmap page table */
-                virtmem_uninstall_page_tmp(ptpgindex);
+                address_space_uninstall_page_tmp(ptpgindex);
         }
 
         mmu_flush_tlb();
@@ -641,7 +557,8 @@ virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
 }
 
 os_index_t
-virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
+address_space_lookup_pageframe(const struct page_directory *pd,
+                               os_index_t pgindex)
 {
         os_index_t ptindex;
         os_index_t ptpgindex;
@@ -656,11 +573,11 @@ virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
 
         /* map page table of page address */
 
-        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
         if (ptpgindex < 0) {
                 err = ptpgindex;
-                goto err_virtmem_install_page_frame_tmp;
+                goto err_address_space_install_page_frame_tmp;
         }
 
         /* read page frame */
@@ -675,51 +592,18 @@ virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
         pfindex = pte_get_pageframe_index(pt->entry[pgindex&0x3ff]);
 
         /* unmap page table */
-        virtmem_uninstall_page_tmp(ptpgindex);
+        address_space_uninstall_page_tmp(ptpgindex);
 
         return pfindex;
 
 err_pte_is_present:
-        virtmem_uninstall_page_tmp(ptpgindex);
-err_virtmem_install_page_frame_tmp:
-        return err;
-}
-
-os_index_t
-virtmem_alloc_pages_in_area(struct page_directory *pd,
-                            size_t npages,
-                            enum virtmem_area_name areaname,
-                            unsigned int pteflags)
-{
-        int err;
-        os_index_t pgindex;
-        const struct virtmem_area *area;
-
-        area = virtmem_area_get_by_name(areaname);
-
-        pgindex = address_space_find_empty_pages(pd, npages, area->pgindex,
-                                                             area->pgindex+
-                                                             area->npages);
-        if (pgindex < 0) {
-                err = pgindex;
-                goto err_page_directory_find_empty_pages;
-        }
-
-        err = address_space_alloc_pages(pd, pgindex, npages, pteflags);
-
-        if (err < 0) {
-                goto err_page_directory_alloc_pages_at;
-        }
-
-        return pgindex;
-
-err_page_directory_alloc_pages_at:
-err_page_directory_find_empty_pages:
+        address_space_uninstall_page_tmp(ptpgindex);
+err_address_space_install_page_frame_tmp:
         return err;
 }
 
 static int
-virtmem_flat_copy_area(const struct virtmem_area *area,
+address_space_flat_copy_area(const struct virtmem_area *area,
                        const struct page_directory *pd,
                              struct page_directory *dst)
 {
@@ -741,7 +625,7 @@ virtmem_flat_copy_area(const struct virtmem_area *area,
 }
 
 int
-virtmem_flat_copy_areas(const struct page_directory *pd,
+address_space_flat_copy_areas(const struct page_directory *pd,
                               struct page_directory *dst,
                               unsigned long flags)
 {
@@ -753,7 +637,7 @@ virtmem_flat_copy_areas(const struct page_directory *pd,
                         virtmem_area_get_by_name(name);
 
                 if (area->flags&flags) {
-                        virtmem_flat_copy_area(area, pd, dst);
+                        address_space_flat_copy_area(area, pd, dst);
                 }
         }
 
@@ -761,12 +645,12 @@ virtmem_flat_copy_areas(const struct page_directory *pd,
 }
 
 int
-virtmem_map_pages_at(const struct page_directory *src_pd,
-                           os_index_t src_pgindex,
-                           size_t pgcount,
-                           struct page_directory *dst_pd,
-                           os_index_t dst_pgindex,
-                           unsigned long dst_pteflags)
+address_space_map_pages(const struct page_directory *src_pd,
+                        os_index_t src_pgindex,
+                        size_t pgcount,
+                        struct page_directory *dst_pd,
+                        os_index_t dst_pgindex,
+                        unsigned long dst_pteflags)
 {
         os_index_t dst_ptindex, dst_ptcount;
         int err;
@@ -800,7 +684,7 @@ virtmem_map_pages_at(const struct page_directory *src_pd,
                                 break;
                         }
 
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
                         if (ptpgindex < 0) {
                                 err = ptpgindex;
@@ -830,7 +714,7 @@ virtmem_map_pages_at(const struct page_directory *src_pd,
 
                         /* map page-table page frames */
 
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
+                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
                         if (ptpgindex < 0) {
                                 err = ptpgindex;
@@ -851,7 +735,7 @@ virtmem_map_pages_at(const struct page_directory *src_pd,
                         os_index_t src_pfindex;
 
                         src_pfindex =
-                                virtmem_lookup_pageframe(src_pd, src_pgindex);
+                                address_space_lookup_pageframe(src_pd, src_pgindex);
 
                         if (src_pfindex < 0) {
                                 err = src_pfindex;
@@ -867,78 +751,11 @@ virtmem_map_pages_at(const struct page_directory *src_pd,
                 }
 
                 /* unmap page table */
-                virtmem_uninstall_page_tmp(ptpgindex);
+                address_space_uninstall_page_tmp(ptpgindex);
         }
 
         mmu_flush_tlb();
 
         return err;
-}
-
-os_index_t
-virtmem_map_pages_in_area(const struct page_directory *src_pd,
-                            os_index_t src_pgindex,
-                            size_t pgcount,
-                            struct page_directory *dst_pd,
-                            enum virtmem_area_name dst_areaname,
-                            unsigned long dst_pteflags)
-{
-        int err;
-        os_index_t dst_pgindex;
-        const struct virtmem_area *dst_area;
-
-        dst_area = virtmem_area_get_by_name(dst_areaname);
-
-        dst_pgindex = virtmem_find_empty_pages(dst_pd,
-                                               pgcount,
-                                               dst_area->pgindex,
-                                               dst_area->pgindex+
-                                               dst_area->npages);
-        if (dst_pgindex < 0) {
-                err = dst_pgindex;
-                goto err_page_directory_find_empty_pages;
-        }
-
-        err = virtmem_map_pages_at(src_pd, src_pgindex, pgcount,
-                                   dst_pd, dst_pgindex, dst_pteflags);
-        if (err < 0) {
-                goto err_page_directory_alloc_pages_at;
-        }
-
-        return dst_pgindex;
-
-err_page_directory_alloc_pages_at:
-err_page_directory_find_empty_pages:
-        return err;
-}
-
-#include "console.h"
-
-void
-virtmem_segfault_handler(void *ip)
-{
-        console_printf("segmentation fault: ip=%x.\n", (unsigned long)ip);
-}
-
-void
-virtmem_pagefault_handler(void *ip, void *addr, unsigned long errcode)
-{
-        const struct virtmem_area *area;
-
-        console_printf("page fault: ip=%x, addr=%x, errcode=%x.\n",
-                        (unsigned long)ip,
-                        (unsigned long)addr,
-                        (unsigned long)errcode);
-
-        while (1) {
-                hlt();
-        }
-        area = virtmem_area_get_by_page(page_index(addr));
-
-        if (area->flags&VIRTMEM_AREA_FLAG_KERNEL) {
-                do {
-                        hlt();
-                } while (1);
-        }
 }
 

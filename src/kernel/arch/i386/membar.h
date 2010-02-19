@@ -16,19 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-void __inline__
+static __inline__ void
 rwmembar(void)
 {
         __asm__("mfence\n\t");
 }
 
-void __inline__
+static __inline__ void
 rdmembar(void)
 {
         rwmembar();
 }
 
-void __inline__
+static __inline__ void
 wrmembar(void)
 {
         rwmembar();

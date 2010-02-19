@@ -148,33 +148,6 @@ virtmem_get_page_table_tmp(void)
         return page_address(low->pgindex + low->npages - (tmp->npages>>10));
 }
 
-static os_index_t
-virtmem_get_page_tmp(size_t i)
-{
-        const struct virtmem_area *tmp =
-                virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
-
-        return tmp->pgindex + i;
-}
-
-static int
-virtmem_page_is_tmp(os_index_t pgindex)
-{
-        const struct virtmem_area *tmp =
-                virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
-
-        return virtmem_area_contains_page(tmp, pgindex);
-}
-
-static os_index_t
-virtmem_get_index_tmp(os_index_t pgindex)
-{
-        const struct virtmem_area *tmp =
-                virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
-
-        return pgindex - tmp->pgindex;
-}
-
 int
 virtmem_init(struct page_directory *pd)
 {
@@ -280,257 +253,17 @@ virtmem_init(struct page_directory *pd)
         return err;
 }
 
-static os_index_t
-virtmem_install_page_frame_tmp(os_index_t pfindex)
-{
-        volatile pde_type *ptebeg, *pteend, *pte;
-        struct page_table *pt;
-        os_index_t pgindex;
-
-        pt = virtmem_get_page_table_tmp();
-
-        /* find empty temporary page */
-
-        ptebeg = pt->entry;
-        pteend = pt->entry + sizeof(pt->entry)/sizeof(pt->entry[0]);
-        pte = ptebeg;
-
-        while ((pte < pteend) && (pte_get_pageframe_index(*pte))) {
-                ++pte;
-        }
-
-        if (!(pteend-pte)) {
-                /* none found */
-                return -EBUSY;
-        }
-
-        /* establish mapping to page frame */
-
-        physmem_ref_frames(pfindex, 1);
-
-        *pte = pte_create(pfindex, PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
-
-        pgindex = virtmem_get_page_tmp(pte-ptebeg);
-
-        mmu_flush_tlb_entry(page_address(pgindex));
-
-        return pgindex;
-}
-
-static os_index_t
-virtmem_uninstall_page_tmp(os_index_t pgindex)
-{
-        struct page_table *pt;
-        os_index_t index;
-        int err;
-
-        if (!virtmem_page_is_tmp(pgindex)) {
-                /* not temporarily mapped */
-                return -EINVAL;
-        }
-
-        pt = virtmem_get_page_table_tmp();
-
-        index = virtmem_get_index_tmp(pgindex);
-
-        /* finish access before unmapping page */
-        rwmembar();
-
-        /* remove mapping */
-        if ((err = page_table_unmap_page_frame(pt, index)) < 0) {
-                goto err_page_table_unmap_page_frame;
-        }
-
-        mmu_flush_tlb_entry(page_address(pgindex));
-        mmu_flush_tlb();
-
-        return 0;
-
-err_page_table_unmap_page_frame:
-        return err;
-}
-
-static size_t
-virtmem_check_empty_pages_at(const struct page_directory *pd,
-                             os_index_t pgindex,
-                             size_t pgcount)
-{
-        os_index_t ptindex;
-        size_t ptcount, nempty;
-
-        ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
-
-        for (nempty = 0; ptcount; --ptcount, ++ptindex) {
-
-                os_index_t pfindex;
-
-                pfindex = pde_get_pageframe_index(pd->entry[ptindex]);
-
-                if (!pfindex) {
-                        nempty +=
-                                minul(pgcount,
-                                      1024-pagetable_page_index(pgindex));
-                } else {
-
-                        os_index_t ptpgindex;
-                        const struct page_table *pt;
-                        size_t i;
-
-                        /* install page table in virtual address space */
-
-                        ptpgindex = virtmem_install_page_frame_tmp(pfindex);
-
-                        if (ptpgindex < 0) {
-                                break;
-                        }
-
-                        pt = page_address(ptpgindex);
-
-                        /* count empty pages */
-
-                        for (i = pagetable_page_index(pgindex);
-                             pgcount
-                             && (i < sizeof(pt->entry)/sizeof(pt->entry[0]))
-                             && (!pte_get_pageframe_index(pt->entry[i]));
-                           ++i) {
-                                --pgcount;
-                                ++pgindex;
-                                ++nempty;
-                        }
-
-                        /* uninstall page table */
-                        virtmem_uninstall_page_tmp(ptpgindex);
-                }
-        }
-
-        return nempty;
-}
-
-static os_index_t
-virtmem_find_empty_pages(const struct page_directory *pd,
-                         size_t npages,
-                         os_index_t pgindex_beg,
-                         os_index_t pgindex_end)
-{
-        /* find continuous area in virtual memory */
-
-        while ((pgindex_beg < pgindex_end)
-                && (npages < (pgindex_end-pgindex_beg))) {
-
-                size_t nempty;
-
-                nempty = virtmem_check_empty_pages_at(pd, pgindex_beg, npages);
-
-                if (nempty == npages) {
-                        return pgindex_beg;
-                }
-
-                /* goto page after non-empty one */
-                pgindex_beg += nempty+1;
-        }
-
-        return -ENOMEM;
-}
-
 int
 virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
                                                      os_index_t pgindex,
                                                      size_t pgcount,
                                                      unsigned int pteflags)
 {
-        os_index_t ptindex;
-        size_t ptcount, i;
-        int err;
-
-        ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
-
-        err = 0;
-
-        for (i = 0; (i < ptcount) && !(err < 0); ++i) {
-
-                os_index_t ptpfindex;
-                os_index_t ptpgindex;
-                struct page_table *pt;
-                size_t j;
-
-                ptpfindex = pde_get_pageframe_index(pd->entry[ptindex+i]);
-
-                if (!ptpfindex) {
-
-                        /* allocate and map page-table page frames */
-
-                        ptpfindex = physmem_alloc_frames(
-                                pageframe_count(sizeof(struct page_table)));
-
-                        if (!ptpfindex) {
-                                err = -ENOMEM;
-                                break;
-                        }
-
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-                        if (ptpgindex < 0) {
-                                err = ptpgindex;
-                                break;
-                        }
-
-                        /* init and install page table */
-
-                        pt = page_address(ptpgindex);
-
-                        if ((err = page_table_init(pt)) < 0) {
-                                break;
-                        }
-
-                        err = page_directory_install_page_table(pd,
-                                                        ptpfindex,
-                                                        ptindex+i,
-                                                        PDE_FLAG_PRESENT|
-                                                        PDE_FLAG_WRITEABLE);
-                        if (err < 0) {
-                                break;
-                        }
-
-                        mmu_flush_tlb();
-
-                } else {
-
-                        /* map page-table page frames */
-
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-                        if (ptpgindex < 0) {
-                                err = ptpgindex;
-                                break;
-                        }
-
-                        pt = page_address(ptpgindex);
-                }
-
-                /* allocate pages within page table */
-
-                for (j = pagetable_page_index(pgindex);
-                     pgcount
-                     && (j < sizeof(pt->entry)/sizeof(pt->entry[0]))
-                     && !(err < 0);
-                   --pgcount, ++j, ++pgindex, ++pfindex) {
-                        err = page_table_map_page_frame(pt,
-                                                        pfindex, j,
-                                                        pteflags);
-                        if (err < 0) {
-                                break;
-                        }
-                }
-
-                /* unmap page table */
-                virtmem_uninstall_page_tmp(ptpgindex);
-        }
-
-        mmu_flush_tlb();
-
-        return err;
+        return address_space_alloc_page_frames(pd,
+                                               pfindex,
+                                               pgindex,
+                                               pgcount,
+                                               pteflags);
 }
 
 os_index_t
@@ -538,151 +271,13 @@ virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
                                                   size_t pgcount,
                                                   unsigned int pteflags)
 {
-        os_index_t ptindex;
-        size_t ptcount;
-        size_t i;
-        int err;
-
-        ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
-
-        err = 0;
-
-        for (i = 0; (i < ptcount) && !(err < 0); ++i) {
-
-                os_index_t ptpfindex;
-                os_index_t ptpgindex;
-                struct page_table *pt;
-                size_t j;
-
-                ptpfindex = pde_get_pageframe_index(pd->entry[ptindex+i]);
-
-                if (!ptpfindex) {
-
-                        /* allocate and map page-table page frames */
-
-                        ptpfindex = physmem_alloc_frames(
-                                pageframe_count(sizeof(struct page_table)));
-
-                        if (!ptpfindex) {
-                                err = -ENOMEM;
-                                break;
-                        }
-
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-                        if (ptpgindex < 0) {
-                                err = ptpgindex;
-                                break;
-                        }
-
-                        /* init and install page table */
-
-                        pt = page_address(ptpgindex);
-
-                        if ((err = page_table_init(pt)) < 0) {
-                                break;
-                        }
-
-                        err = page_directory_install_page_table(pd,
-                                                        ptpfindex,
-                                                        ptindex+i,
-                                                        PDE_FLAG_PRESENT|
-                                                        PDE_FLAG_WRITEABLE);
-                        if (err < 0) {
-                                break;
-                        }
-
-                        mmu_flush_tlb();
-
-                } else {
-
-                        /* map page-table page frames */
-
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-                        if (ptpgindex < 0) {
-                                err = ptpgindex;
-                                break;
-                        }
-
-                        pt = page_address(ptpgindex);
-                }
-
-                /* allocate pages within page table */
-
-                for (j = pagetable_page_index(pgindex);
-                     pgcount
-                     && (j < sizeof(pt->entry)/sizeof(pt->entry[0]))
-                     && !(err < 0);
-                   --pgcount, ++j, ++pgindex) {
-                        os_index_t pfindex = physmem_alloc_frames(1);
-
-                        if (!pfindex) {
-                                err = -ENOMEM;
-                                break;
-                        }
-
-                        err = page_table_map_page_frame(pt,
-                                                        pfindex, j,
-                                                        pteflags);
-                        if (err < 0) {
-                                break;
-                        }
-                }
-
-                /* unmap page table */
-                virtmem_uninstall_page_tmp(ptpgindex);
-        }
-
-        mmu_flush_tlb();
-
-        return err;
+        return address_space_alloc_pages(pd, pgindex, pgcount, pteflags);
 }
 
 os_index_t
 virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex)
 {
-        os_index_t ptindex;
-        os_index_t ptpgindex;
-        os_index_t ptpfindex;
-        struct page_table *pt;
-        os_index_t pfindex;
-        int err;
-
-        ptindex = pagetable_index(page_address(pgindex));
-
-        ptpfindex = pde_get_pageframe_index(pd->entry[ptindex]);
-
-        /* map page table of page address */
-
-        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-        if (ptpgindex < 0) {
-                err = ptpgindex;
-                goto err_virtmem_install_page_frame_tmp;
-        }
-
-        /* read page frame */
-
-        pt = page_address(ptpgindex);
-
-        if (!pte_is_present(pt->entry[pgindex&0x3ff])) {
-                err = -EFAULT;
-                goto err_pte_is_present;
-        }
-
-        pfindex = pte_get_pageframe_index(pt->entry[pgindex&0x3ff]);
-
-        /* unmap page table */
-        virtmem_uninstall_page_tmp(ptpgindex);
-
-        return pfindex;
-
-err_pte_is_present:
-        virtmem_uninstall_page_tmp(ptpgindex);
-err_virtmem_install_page_frame_tmp:
-        return err;
+        return address_space_lookup_pageframe(pd, pgindex);
 }
 
 os_index_t
@@ -718,46 +313,12 @@ err_page_directory_find_empty_pages:
         return err;
 }
 
-static int
-virtmem_flat_copy_area(const struct virtmem_area *area,
-                       const struct page_directory *pd,
-                             struct page_directory *dst)
-{
-        os_index_t ptindex;
-        size_t ptcount;
-
-        ptindex = pagetable_index(page_address(area->pgindex));
-
-        ptcount = pagetable_count(page_address(area->pgindex),
-                                  page_memory(area->npages));
-
-        while (ptcount) {
-                dst->entry[ptindex] = pd->entry[ptindex];
-                ++ptindex;
-                --ptcount;
-        }
-
-        return 0;
-}
-
 int
 virtmem_flat_copy_areas(const struct page_directory *pd,
                               struct page_directory *dst,
                               unsigned long flags)
 {
-        enum virtmem_area_name name;
-
-        for (name = 0; name < LAST_VIRTMEM_AREA; ++name) {
-
-                const struct virtmem_area *area =
-                        virtmem_area_get_by_name(name);
-
-                if (area->flags&flags) {
-                        virtmem_flat_copy_area(area, pd, dst);
-                }
-        }
-
-        return 0;
+        return address_space_flat_copy_areas(pd, dst, flags);
 }
 
 int
@@ -768,111 +329,11 @@ virtmem_map_pages_at(const struct page_directory *src_pd,
                            os_index_t dst_pgindex,
                            unsigned long dst_pteflags)
 {
-        os_index_t dst_ptindex, dst_ptcount;
-        int err;
-        os_index_t i;
-
-        dst_ptindex = pagetable_index(page_address(dst_pgindex));
-        dst_ptcount = pagetable_count(page_address(dst_pgindex),
-                                      page_memory(pgcount));
-
-        err = 0;
-
-        for (i = 0; (i < dst_ptcount) && !(err < 0); ++i) {
-
-                os_index_t ptpfindex;
-                os_index_t ptpgindex;
-                struct page_table *dst_pt;
-                size_t j;
-
-                ptpfindex =
-                        pde_get_pageframe_index(dst_pd->entry[dst_ptindex+i]);
-
-                if (!ptpfindex) {
-
-                        /* allocate and map page-table page frames */
-
-                        ptpfindex = physmem_alloc_frames(
-                                pageframe_count(sizeof(struct page_table)));
-
-                        if (!ptpfindex) {
-                                err = -ENOMEM;
-                                break;
-                        }
-
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-                        if (ptpgindex < 0) {
-                                err = ptpgindex;
-                                break;
-                        }
-
-                        /* init and install page table */
-
-                        dst_pt = page_address(ptpgindex);
-
-                        if ((err = page_table_init(dst_pt)) < 0) {
-                                break;
-                        }
-
-                        err = page_directory_install_page_table(dst_pd,
-                                                        ptpfindex,
-                                                        dst_ptindex+i,
-                                                        PDE_FLAG_PRESENT|
-                                                        PDE_FLAG_WRITEABLE);
-                        if (err < 0) {
-                                break;
-                        }
-
-                        mmu_flush_tlb();
-
-                } else {
-
-                        /* map page-table page frames */
-
-                        ptpgindex = virtmem_install_page_frame_tmp(ptpfindex);
-
-                        if (ptpgindex < 0) {
-                                err = ptpgindex;
-                                break;
-                        }
-
-                        dst_pt = page_address(ptpgindex);
-                }
-
-                /* map pages within page table */
-
-                for (j = pagetable_page_index(dst_pgindex);
-                     pgcount
-                     && (j < sizeof(dst_pt->entry)/sizeof(dst_pt->entry[0]))
-                     && !(err < 0);
-                   --pgcount, ++j, ++dst_pgindex) {
-
-                        os_index_t src_pfindex;
-
-                        src_pfindex =
-                                virtmem_lookup_pageframe(src_pd, src_pgindex);
-
-                        if (src_pfindex < 0) {
-                                err = src_pfindex;
-                                /* handle error */
-                        }
-
-                        err = page_table_map_page_frame(dst_pt,
-                                                        src_pfindex, j,
-                                                        dst_pteflags);
-                        if (err < 0) {
-                                break;
-                        }
-                }
-
-                /* unmap page table */
-                virtmem_uninstall_page_tmp(ptpgindex);
-        }
-
-        mmu_flush_tlb();
-
-        return err;
+        return address_space_map_pages(src_pd,
+                                       src_pgindex, pgcount,
+                                       dst_pd,
+                                       dst_pgindex,
+                                       dst_pteflags);
 }
 
 os_index_t
@@ -889,26 +350,29 @@ virtmem_map_pages_in_area(const struct page_directory *src_pd,
 
         dst_area = virtmem_area_get_by_name(dst_areaname);
 
-        dst_pgindex = virtmem_find_empty_pages(dst_pd,
-                                               pgcount,
-                                               dst_area->pgindex,
-                                               dst_area->pgindex+
-                                               dst_area->npages);
+        dst_pgindex = address_space_find_empty_pages(dst_pd,
+                                                     pgcount,
+                                                     dst_area->pgindex,
+                                                     dst_area->pgindex+
+                                                     dst_area->npages);
         if (dst_pgindex < 0) {
                 err = dst_pgindex;
-                goto err_page_directory_find_empty_pages;
+                goto err_address_space_find_empty_pages;
         }
 
-        err = virtmem_map_pages_at(src_pd, src_pgindex, pgcount,
-                                   dst_pd, dst_pgindex, dst_pteflags);
+        err = address_space_map_pages(src_pd,
+                                      src_pgindex, pgcount,
+                                      dst_pd,
+                                      dst_pgindex,
+                                      dst_pteflags);
         if (err < 0) {
-                goto err_page_directory_alloc_pages_at;
+                goto err_address_space_map_pages;
         }
 
         return dst_pgindex;
 
-err_page_directory_alloc_pages_at:
-err_page_directory_find_empty_pages:
+err_address_space_map_pages:
+err_address_space_find_empty_pages:
         return err;
 }
 

@@ -23,6 +23,7 @@ struct page_directory;
  */
 enum paging_mode
 {
+        PAGING_NONE, /**< Address space does not use paging (used during boot) */
         PAGING_32BIT, /**< Address space uses 32-bit paging */
         PAGING_PAE /**< Address space uses PAE (currently not supported) */
 };

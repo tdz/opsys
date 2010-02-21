@@ -140,7 +140,7 @@ physmem_alloc_frames(unsigned long nframes)
                                 continue;
                         }
 
-                        /* empty block found*/
+                        /* reference page frames */
                         for (beg2 = beg; beg2 < end2; ++beg2) {
                                 *beg2 = (PHYSMEM_FLAG_RESERVED<<7) + 1;
                         }
@@ -170,11 +170,10 @@ physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 
         /* stopped too early, pages already allocated */
         if (beg < end) {
-                semaphore_leave(&g_physmap_sem);
-                return 0;
+                goto err_beg_lt_end;
         }
 
-        /* range is empty */
+        /* reference page frames */
 
         beg = g_physmap+pfindex;
 
@@ -185,6 +184,10 @@ physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
         semaphore_leave(&g_physmap_sem);
 
         return pfindex;
+
+err_beg_lt_end:
+        semaphore_leave(&g_physmap_sem);
+        return 0;
 }
 
 int

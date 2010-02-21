@@ -35,7 +35,8 @@ unsigned long
 physmem_alloc_frames(unsigned long nframes);
 
 unsigned long
-physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes);
+physmem_alloc_frames_at(unsigned long pfindex,
+                        unsigned long nframes);
 
 int
 physmem_ref_frames(unsigned long pfindex, unsigned long nframes);

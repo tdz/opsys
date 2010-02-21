@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct page_directory;
+struct address_space;
 
 int
 elf_loader_exec(const struct address_space *as,

@@ -17,12 +17,9 @@
  */
 
 #include <errno.h>
-#include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <sys/types.h>
 
-#include <mmu.h>
 #include <interupt.h>
 #include <gdt.h>
 #include <idt.h>
@@ -37,16 +34,14 @@
 #include "physmem.h"
 
 /* virtual memory */
-#include <pde.h>
-#include <pagedir.h>
 #include <addrspace.h>
 #include "virtmem.h"
 #include "alloc.h"
 
 #include "kbd.h"
 
+#include "task.h"
 #include "taskhlp.h"
-
 
 #include "list.h"
 #include "ipcmsg.h"
@@ -61,7 +56,7 @@
 #include "syssrv.h"
 #include "multiboot.h"
 
-static void*
+static void *
 mmap_base_addr(const struct multiboot_mmap *mmap)
 {
         /* only lowest 4 byte are available in 32-bit protected mode */
@@ -365,14 +360,13 @@ main_invalop_handler(void *ip)
 {
         console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
 }
-#include "task.h"
+
 void
 multiboot_main(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info,
                void *stack)
 {
-        static struct page_directory g_kernel_pd;
-        static struct address_space  g_kernel_as;
+        static struct address_space g_kernel_as;
 
         int err;
         struct task *tsk;
@@ -438,9 +432,7 @@ multiboot_main(const struct multiboot_header *mb_header,
         idt_install_segfault_handler(virtmem_segfault_handler);
         idt_install_pagefault_handler(virtmem_pagefault_handler);
 
-        if ((err = task_helper_allocate_kernel_task(&g_kernel_pd,
-                                                    &g_kernel_as,
-                                                    &tsk)) < 0) {
+        if ((err = task_helper_init_kernel_task(&g_kernel_as, &tsk)) < 0) {
                 console_perror("task_helper_init_kernel_task", -err);
                 return;
         }

@@ -40,11 +40,6 @@ virtmem_alloc_pages_in_area(struct address_space *as,
                             unsigned int flags);
 
 int
-virtmem_flat_copy_areas(const struct address_space *src_as,
-                              struct address_space *dst_as,
-                              unsigned long flags);
-
-int
 virtmem_map_pages_at(const struct address_space *src_as,
                            os_index_t src_pgindex,
                            size_t pgcount,

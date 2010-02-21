@@ -71,43 +71,20 @@ virtmem_alloc_pages_in_area(struct address_space *as,
                                                              area->npages);
         if (pgindex < 0) {
                 err = pgindex;
-                goto err_page_directory_find_empty_pages;
+                goto err_address_space_find_empty_pages;
         }
 
         err = address_space_alloc_pages(as, pgindex, npages, pteflags);
 
         if (err < 0) {
-                goto err_page_directory_alloc_pages_at;
+                goto err_address_space_alloc_pages;
         }
 
         return pgindex;
 
-err_page_directory_alloc_pages_at:
-err_page_directory_find_empty_pages:
+err_address_space_alloc_pages:
+err_address_space_find_empty_pages:
         return err;
-}
-
-int
-virtmem_flat_copy_areas(const struct address_space *src_as,
-                              struct address_space *dst_as,
-                              unsigned long pteflags)
-{
-        enum virtmem_area_name name;
-
-        for (name = 0; name < LAST_VIRTMEM_AREA; ++name) {
-
-                const struct virtmem_area *area =
-                        virtmem_area_get_by_name(name);
-
-                if (area->flags&pteflags) {
-                        address_space_share_2nd_lvl_ps(dst_as,
-                                                       src_as,
-                                                       area->pgindex,
-                                                       area->npages);
-                }
-        }
-
-        return 0;
 }
 
 int

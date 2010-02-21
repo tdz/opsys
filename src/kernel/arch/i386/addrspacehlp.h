@@ -17,9 +17,15 @@
  */
 
 struct address_space;
-struct page_directory;
 
 int
-address_space_helper_init_kernel_address_space(struct page_directory *kernel_pd,
-                                               struct address_space *as);
+address_space_helper_init_kernel_address_space(struct address_space *as);
+
+int
+address_space_helper_init_address_space_from_parent(struct address_space *parent,
+                                                    struct address_space *as);
+
+int
+address_space_helper_allocate_address_space_from_parent(struct address_space *parent,
+                                                        struct address_space **as);
 

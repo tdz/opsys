@@ -16,13 +16,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct page_directory;
+struct address_space;
 struct task;
 
 int
-task_helper_allocate_kernel_task(struct page_directory *kernel_pd,
-                                 struct address_space *kernel_as,
-                                 struct task **tsk);
+task_helper_init_kernel_task(struct address_space *kernel_as,
+                             struct task **tsk);
 
 int
 task_helper_allocate_task_from_parent(const struct task *parent,

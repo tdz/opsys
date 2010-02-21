@@ -213,8 +213,8 @@ address_space_helper_init_address_space_from_parent(struct address_space *parent
         /* create page directory (has to be at page boundary) */
 
         pgindex = virtmem_alloc_pages_in_area(parent,
-                                              page_count(0, sizeof(*pd)),
                                               VIRTMEM_AREA_KERNEL,
+                                              page_count(0, sizeof(*pd)),
                                               PTE_FLAG_PRESENT|
                                               PTE_FLAG_WRITEABLE);
         if (pgindex < 0) {

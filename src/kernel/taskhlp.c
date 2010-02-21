@@ -57,8 +57,8 @@ task_helper_init_kernel_task(struct address_space *kernel_as,
         /* create kernel task */
 
         pgindex = virtmem_alloc_pages_in_area(kernel_as,
-                                              page_count(0, sizeof(**tsk)),
                                               VIRTMEM_AREA_KERNEL,
+                                              page_count(0, sizeof(**tsk)),
                                               PTE_FLAG_PRESENT|
                                               PTE_FLAG_WRITEABLE);
         if (pgindex < 0) {

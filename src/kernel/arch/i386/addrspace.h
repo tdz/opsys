@@ -99,12 +99,12 @@ address_space_alloc_pages(struct address_space *as,
                           unsigned int flags);
 
 int
-address_space_map_pages(const struct address_space *src_as,
-                              os_index_t src_pgindex,
-                              size_t pgcount,
-                              struct address_space *dst_as,
-                              os_index_t dst_pgindex,
-                              unsigned long flags);
+address_space_map_pages(struct address_space *dst_as,
+                        os_index_t dst_pgindex,
+                  const struct address_space *src_as,
+                        os_index_t src_pgindex,
+                        size_t pgcount,
+                        unsigned long flags);
 
 os_index_t
 address_space_lookup_pageframe(const struct address_space *as,

@@ -28,10 +28,10 @@
 #include "virtmem.h"
 
 int
-virtmem_alloc_page_frames(struct address_space *as, os_index_t pfindex,
-                                                    os_index_t pgindex,
-                                                    size_t pgcount,
-                                                    unsigned int pteflags)
+virtmem_alloc_pageframes(struct address_space *as, os_index_t pfindex,
+                                                   os_index_t pgindex,
+                                                   size_t pgcount,
+                                                   unsigned int pteflags)
 {
         return address_space_alloc_pageframes(as,
                                               pfindex,
@@ -41,23 +41,23 @@ virtmem_alloc_page_frames(struct address_space *as, os_index_t pfindex,
 }
 
 os_index_t
-virtmem_alloc_pages_at(struct address_space *as, os_index_t pgindex,
-                                                 size_t pgcount,
-                                                 unsigned int pteflags)
-{
-        return address_space_alloc_pages(as, pgindex, pgcount, pteflags);
-}
-
-os_index_t
 virtmem_lookup_pageframe(const struct address_space *as, os_index_t pgindex)
 {
         return address_space_lookup_pageframe(as, pgindex);
 }
 
 os_index_t
+virtmem_alloc_pages(struct address_space *as, os_index_t pgindex,
+                                              size_t pgcount,
+                                              unsigned int pteflags)
+{
+        return address_space_alloc_pages(as, pgindex, pgcount, pteflags);
+}
+
+os_index_t
 virtmem_alloc_pages_in_area(struct address_space *as,
-                            size_t npages,
                             enum virtmem_area_name areaname,
+                            size_t npages,
                             unsigned int pteflags)
 {
         int err;
@@ -88,27 +88,28 @@ err_address_space_find_empty_pages:
 }
 
 int
-virtmem_map_pages_at(const struct address_space *src_as,
-                           os_index_t src_pgindex,
-                           size_t pgcount,
-                           struct address_space *dst_as,
-                           os_index_t dst_pgindex,
-                           unsigned long dst_pteflags)
+virtmem_map_pages(struct address_space *dst_as,
+                  os_index_t dst_pgindex,
+            const struct address_space *src_as,
+                  os_index_t src_pgindex,
+                  size_t pgcount,
+                  unsigned long pteflags)
 {
-        return address_space_map_pages(src_as,
-                                       src_pgindex, pgcount,
-                                       dst_as,
+        return address_space_map_pages(dst_as,
                                        dst_pgindex,
-                                       dst_pteflags);
+                                       src_as,
+                                       src_pgindex,
+                                       pgcount,
+                                       pteflags);
 }
 
 os_index_t
-virtmem_map_pages_in_area(const struct address_space *src_as,
-                                os_index_t src_pgindex,
-                                size_t pgcount,
-                                struct address_space *dst_as,
-                                enum virtmem_area_name dst_areaname,
-                                unsigned long dst_pteflags)
+virtmem_map_pages_in_area(struct address_space *dst_as,
+                          enum virtmem_area_name dst_areaname,
+                    const struct address_space *src_as,
+                          os_index_t src_pgindex,
+                          size_t pgcount,
+                          unsigned long dst_pteflags)
 {
         int err;
         os_index_t dst_pgindex;
@@ -126,10 +127,11 @@ virtmem_map_pages_in_area(const struct address_space *src_as,
                 goto err_address_space_find_empty_pages;
         }
 
-        err = address_space_map_pages(src_as,
-                                      src_pgindex, pgcount,
-                                      dst_as,
+        err = address_space_map_pages(dst_as,
                                       dst_pgindex,
+                                      src_as,
+                                      src_pgindex,
+                                      pgcount,
                                       dst_pteflags);
         if (err < 0) {
                 goto err_address_space_map_pages;

@@ -770,12 +770,12 @@ address_space_alloc_pages(struct address_space *as,
 }
 
 static int
-address_space_map_pages_32bit(const struct address_space *src_as,
+address_space_map_pages_32bit(void *dst_tlps,
+                              os_index_t dst_pgindex,
+                        const struct address_space *src_as,
                               os_index_t src_pgindex,
                               size_t pgcount,
-                              void *dst_tlps,
-                              os_index_t dst_pgindex,
-                              unsigned long dst_pteflags)
+                              unsigned long pteflags)
 {
         os_index_t dst_ptindex, dst_ptcount;
         int err;
@@ -870,7 +870,7 @@ address_space_map_pages_32bit(const struct address_space *src_as,
 
                         err = page_table_map_page_frame(dst_pt,
                                                         src_pfindex, j,
-                                                        dst_pteflags);
+                                                        pteflags);
                         if (err < 0) {
                                 break;
                         }
@@ -886,38 +886,39 @@ address_space_map_pages_32bit(const struct address_space *src_as,
 }
 
 static int
-address_space_map_pages_pae(const struct address_space *src_as,
-                                  os_index_t src_pgindex,
-                                  size_t pgcount,
-                                  void *dst_tlps,
-                                  os_index_t dst_pgindex,
-                                  unsigned long dst_pteflags)
+address_space_map_pages_pae(void *dst_tlps,
+                            os_index_t dst_pgindex,
+                      const struct address_space *src_as,
+                            os_index_t src_pgindex,
+                            size_t pgcount,
+                            unsigned long dst_pteflags)
 {
         return -ENOSYS;
 }
 
 int
-address_space_map_pages(const struct address_space *src_as,
-                              os_index_t src_pgindex,
-                              size_t pgcount,
-                              struct address_space *dst_as,
-                              os_index_t dst_pgindex,
-                              unsigned long dst_pteflags)
+address_space_map_pages(struct address_space *dst_as,
+                        os_index_t dst_pgindex,
+                  const struct address_space *src_as,
+                        os_index_t src_pgindex,
+                        size_t pgcount,
+                        unsigned long pteflags)
 {
-        static int (* const map_pages[])(const struct address_space*,
+        static int (* const map_pages[])(void*,
+                                         os_index_t,
+                                   const struct address_space*,
                                          os_index_t,
                                          size_t,
-                                         void*,
-                                         os_index_t,
                                          unsigned long) = {
                 address_space_map_pages_32bit,
                 address_space_map_pages_pae};
 
-        return map_pages[dst_as->pgmode](src_as,
-                                         src_pgindex, pgcount,
-                                         dst_as->tlps,
+        return map_pages[dst_as->pgmode](dst_as->tlps,
                                          dst_pgindex,
-                                         dst_pteflags);
+                                         src_as,
+                                         src_pgindex,
+                                         pgcount,
+                                         pteflags);
 }
 
 static os_index_t

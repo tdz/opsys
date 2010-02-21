@@ -25,20 +25,20 @@
 #include "cpu.h"
 #include "spinlock.h"
 
-#include "bitset.h"
+#include <bitset.h>
 
 /* virtual memory */
 #include "page.h"
-#include <addrspace.h>
-#include "virtmem.h"
+#include "addrspace.h"
+#include <virtmem.h>
 
-#include "task.h"
+#include <task.h>
 #include <ipcmsg.h>
 #include <list.h>
 
 #include "tcb.h"
 
-#include "console.h"
+#include <console.h>
 
 static int
 tcb_set_address_space(struct tcb *tcb, const struct address_space *as)
@@ -46,7 +46,7 @@ tcb_set_address_space(struct tcb *tcb, const struct address_space *as)
         int err;
         os_index_t pfindex;
 
-        if ((pfindex = virtmem_lookup_pageframe(as, page_index(as->tlps.pd))) < 0) {
+        if ((pfindex = virtmem_lookup_pageframe(as, page_index(as->tlps))) < 0) {
                 err = pfindex;
                 goto err_virtmem_lookup_pageframe;
         }
@@ -96,12 +96,12 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->ebp = tcb->esp;
 
         if ((err = tcb_set_address_space(tcb, tcb->task->as)) < 0) {
-                goto err_tcb_set_page_directory;
+                goto err_tcb_set_address_space;
         }
 
         return 0;
 
-err_tcb_set_page_directory:
+err_tcb_set_address_space:
         bitset_unset(task->threadid, id);
 err_bitset_isset:
         task_unref(task);

@@ -20,9 +20,6 @@ enum virtmem_area_name;
 struct address_space;
 
 int
-virtmem_init(struct address_space *as);
-
-int
 virtmem_alloc_page_frames(struct address_space *as, os_index_t pfindex,
                                                     os_index_t pgindex,
                                                     size_t pgcount,

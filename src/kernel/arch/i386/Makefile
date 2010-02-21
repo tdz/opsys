@@ -14,6 +14,7 @@ ASMSOURCES = idt.S \
              tcb.S
 
 CSOURCES = addrspace.c \
+           addrspacehlp.c \
            debug.c \
            gdt.c \
            idt.c \

@@ -24,16 +24,17 @@
 #include "spinlock.h"
 
 /* physical memory */
-#include <pageframe.h>
-#include "physmem.h"
+/*#include <pageframe.h>
+#include "physmem.h"*/
 
 /* virtual memory */
 #include <page.h>
 #include <pte.h>
-#include <pde.h>
-#include <pagedir.h>
+/*#include <pde.h>
+#include <pagedir.h>*/
 #include "vmemarea.h"
 #include <addrspace.h>
+#include <addrspacehlp.h>
 #include "virtmem.h"
 
 #include "alloc.h"
@@ -51,24 +52,18 @@ task_helper_allocate_kernel_task(struct page_directory *kernel_pd,
 
         /* init page directory and address space for kernel task */
 
-        if ((err = page_directory_init(kernel_pd)) < 0) {
-                goto err_page_directory_init;
-        }
-
-        if ((err = address_space_init(kernel_as, PAGING_32BIT, kernel_pd)) < 0) {
-                goto err_address_space_init;
-        }
-
-        /* build kernel area */
-
-        if ((err = virtmem_init(kernel_as)) < 0) {
-                goto err_virtmem_install;
+        err = address_space_helper_init_kernel_address_space(kernel_pd,
+                                                             kernel_as);
+        if (err < 0) {
+                goto err_address_space_helper_init_kernel_address_space;
         }
 
         /* enable paging */
+        address_space_enable(kernel_as);
 
-        mmu_load(((unsigned long)kernel_pd->entry)&(~0xfff));
-        mmu_enable_paging();
+
+        /*mmu_load(((unsigned long)kernel_pd->entry)&(~0xfff));
+        mmu_enable_paging();*/
 
         /* create kernel task */
 
@@ -91,14 +86,11 @@ task_helper_allocate_kernel_task(struct page_directory *kernel_pd,
         return 0;
 
 err_task_init:
-        physmem_unref_frames(pageframe_index(*tsk),
-                             pageframe_count(sizeof(**tsk)));
+/*        physmem_unref_frames(pageframe_index(*tsk),
+                             pageframe_count(sizeof(**tsk)));*/
 err_virtmem_alloc_pages_in_area_tsk:
-err_virtmem_install:
-        address_space_uninit(kernel_as);
-err_address_space_init:
-        page_directory_uninit(kernel_pd);
-err_page_directory_init:
+        /* TODO: uninit kernel address space */
+err_address_space_helper_init_kernel_address_space:
         return err;
 }
 
@@ -128,6 +120,9 @@ err_task_helper_init_task_from_parent:
 err_kmalloc_tsk:
         return err;
 }
+
+#include <pde.h>
+#include <pagedir.h>
 
 #include "console.h"
 

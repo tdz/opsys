@@ -23,8 +23,8 @@
 /* virtual memory */
 #include <vmemarea.h>
 
-#include <memzone.h>
-#include <alloc.h>
+#include "memzone.h"
+#include "alloc.h"
 
 static struct memzone g_memzone_kernel;
 

@@ -21,14 +21,7 @@
 #include <sys/types.h>
 
 #include "bitset.h"
-
 #include "spinlock.h"
-
-/* virtual memory */
-#include <pde.h>
-#include <pagedir.h>
-#include <addrspace.h>
-
 #include "task.h"
 
 enum {

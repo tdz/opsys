@@ -29,6 +29,7 @@
 
 /* virtual memory */
 #include "page.h"
+#include <addrspace.h>
 #include "virtmem.h"
 
 #include "task.h"
@@ -40,12 +41,12 @@
 #include "console.h"
 
 static int
-tcb_set_page_directory(struct tcb *tcb, const struct page_directory *pd)
+tcb_set_address_space(struct tcb *tcb, const struct address_space *as)
 {
         int err;
         os_index_t pfindex;
 
-        if ((pfindex = virtmem_lookup_pageframe(pd, page_index(pd))) < 0) {
+        if ((pfindex = virtmem_lookup_pageframe(as, page_index(as->tlps.pd))) < 0) {
                 err = pfindex;
                 goto err_virtmem_lookup_pageframe;
         }
@@ -94,7 +95,7 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->esp = (unsigned long)tcb->stack;
         tcb->ebp = tcb->esp;
 
-        if ((err = tcb_set_page_directory(tcb, tcb->task->pd)) < 0) {
+        if ((err = tcb_set_address_space(tcb, tcb->task->as)) < 0) {
                 goto err_tcb_set_page_directory;
         }
 

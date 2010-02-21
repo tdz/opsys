@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
@@ -26,6 +25,8 @@
 #include <membar.h>
 #include <mmu.h>
 #include <cpu.h>
+
+#include <spinlock.h>
 
 /* physical memory */
 #include <pageframe.h>
@@ -42,18 +43,37 @@
 #include "addrspace.h"
 
 int
-address_space_init(struct address_space *as, enum paging_mode mode, void *tlps)
+address_space_init(struct address_space *as,
+                   enum paging_mode pgmode,
+                   void *tlps)
 {
-        as->mode = mode;
-        as->tlps.pd = tlps;
+        int err;
+
+        if ((err = spinlock_init(&as->lock)) < 0) {
+                goto err_spinlock_init;
+        }
+
+        switch (pgmode) {
+                case PAGING_32BIT:
+                        as->tlps.pd = tlps;
+                        break;
+                case PAGING_PAE:
+                default:
+                        break;
+        }
+
+        as->pgmode = pgmode;
 
         return 0;
+
+err_spinlock_init:
+        return err;
 }
 
 void
 address_space_uninit(struct address_space *as)
 {
-        return;
+        spinlock_uninit(&as->lock);
 }
 
 static int
@@ -261,7 +281,6 @@ address_space_uninstall_page_tmp(os_index_t pgindex)
 err_page_table_unmap_page_frame:
         return err;
 }
-
 
 size_t
 address_space_check_empty_pages(const struct page_directory *pd,

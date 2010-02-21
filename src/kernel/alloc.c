@@ -29,9 +29,9 @@
 static struct memzone g_memzone_kernel;
 
 int
-allocator_init(struct page_directory *pd)
+allocator_init(struct address_space *as)
 {
-        return memzone_init(&g_memzone_kernel, pd, VIRTMEM_AREA_KERNEL);
+        return memzone_init(&g_memzone_kernel, as, VIRTMEM_AREA_KERNEL);
 }
 
 void *

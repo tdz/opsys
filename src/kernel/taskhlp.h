@@ -21,6 +21,7 @@ struct task;
 
 int
 task_helper_allocate_kernel_task(struct page_directory *kernel_pd,
+                                 struct address_space *kernel_as,
                                  struct task **tsk);
 
 int

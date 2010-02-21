@@ -16,10 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct page_directory;
+struct address_space;
 
 int
-allocator_init(struct page_directory *pd);
+allocator_init(struct address_space *as);
 
 void *
 kmalloc(size_t nbytes);

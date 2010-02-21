@@ -140,7 +140,7 @@ memzone_find_unused(struct memzone *mz, size_t nchunks)
 
                 pgcount = page_count(0, nchunks*mz->chunksize);
 
-                pgindex = virtmem_alloc_pages_in_area(mz->pd, pgcount,
+                pgindex = virtmem_alloc_pages_in_area(mz->as, pgcount,
                                                       mz->areaname,
                                                       PTE_FLAG_PRESENT|
                                                       PTE_FLAG_WRITEABLE);
@@ -170,7 +170,7 @@ err_memzone_search_unused:
 
 int
 memzone_init(struct memzone *mz,
-             struct page_directory *pd, enum virtmem_area_name areaname)
+             struct address_space *as, enum virtmem_area_name areaname)
 {
         const struct virtmem_area *area;
         int err;
@@ -181,7 +181,7 @@ memzone_init(struct memzone *mz,
 
         memsz = page_memory(area->npages);
 
-        pgindex = virtmem_alloc_pages_in_area(pd,
+        pgindex = virtmem_alloc_pages_in_area(as,
                                               1024, /* one largepage */
                                               areaname,
                                               PTE_FLAG_PRESENT|
@@ -196,7 +196,7 @@ memzone_init(struct memzone *mz,
         mz->nchunks = BITS_PER_LARGEPAGE / BITS_PER_PAGE;
         mz->chunksize = 1<<(logbase2(memsz / mz->nchunks)+1);
         mz->nchunks = memsz/mz->chunksize;
-        mz->pd = pd;
+        mz->as = as;
         mz->areaname = areaname;
 
         memset(mz->flags, 0, mz->flagslen);

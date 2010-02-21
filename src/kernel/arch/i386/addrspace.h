@@ -19,21 +19,20 @@
 struct page_directory;
 
 /**
- * \brief Paging mode of the address space
+ * \brief Paging mode of address space
  */
-enum paging_mode
-{
-        PAGING_NONE, /**< Address space does not use paging (used during boot) */
+enum paging_mode {
         PAGING_32BIT, /**< Address space uses 32-bit paging */
         PAGING_PAE /**< Address space uses PAE (currently not supported) */
 };
 
 struct address_space
 {
-        enum paging_mode       mode;
+        enum paging_mode       pgmode; /**< Address space's paging mode */
         union {
-                struct page_directory *pd;
+                struct page_directory *pd; /**< Address of 32-bit page directory */
         } tlps;
+        spinlock_type lock; /**< Lock of address-space data structure */
 };
 
 /**
@@ -45,12 +44,11 @@ struct address_space
  */
 int
 address_space_init(struct address_space *as,
-                   enum paging_mode mode,
+                   enum paging_mode pgmode,
                    void *tlps);
 
 void
 address_space_uninit(struct address_space *as);
-
 
 os_index_t
 address_space_find_empty_pages(const struct page_directory *pd,

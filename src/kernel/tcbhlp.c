@@ -18,13 +18,15 @@
 
 #include <sys/types.h>
 
+#include "spinlock.h"
+
 /* virtual memory */
 #include <page.h>
 #include <pte.h>
 #include "vmemarea.h"
+#include <addrspace.h>
 #include "virtmem.h"
 
-#include "spinlock.h"
 #include "list.h"
 #include "ipcmsg.h"
 
@@ -38,7 +40,7 @@ tcb_helper_allocate_tcb(struct task *tsk, void *stack, struct tcb **tcb)
         int err;
         long pgindex;
 
-        pgindex = virtmem_alloc_pages_in_area(tsk->pd,
+        pgindex = virtmem_alloc_pages_in_area(tsk->as,
                                               page_count(0, sizeof(*tcb)),
                                               VIRTMEM_AREA_KERNEL,
                                               PTE_FLAG_PRESENT|
@@ -70,7 +72,7 @@ tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
         int err;
         void *stack;
 
-        pgindex = virtmem_alloc_pages_in_area(tsk->pd,
+        pgindex = virtmem_alloc_pages_in_area(tsk->as,
                                               stackpages,
                                               VIRTMEM_AREA_USER,
                                               PTE_FLAG_PRESENT|
@@ -115,10 +117,10 @@ tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip)
         int err;
         os_index_t stackpage;
 
-        stackpage = virtmem_map_pages_in_area(usr_tcb->task->pd,
+        stackpage = virtmem_map_pages_in_area(usr_tcb->task->as,
                                               page_index(usr_tcb->stack-PAGE_SIZE),
                                               1,
-                                              cur_tcb->task->pd,
+                                              cur_tcb->task->as,
                                               VIRTMEM_AREA_KERNEL,
                                               PTE_FLAG_PRESENT|
                                               PTE_FLAG_WRITEABLE);

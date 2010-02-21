@@ -41,7 +41,7 @@ loader_exec(const struct tcb *tcb,
         /* load image into address space */
 
         if (elf_loader_is_elf(img)) {
-                err = elf_loader_exec(tcb->task->pd, img, ip, dst_tcb->task->pd);
+                err = elf_loader_exec(tcb->task->as, img, ip, dst_tcb->task->as);
         } else {
                 err = -EINVAL;
         }

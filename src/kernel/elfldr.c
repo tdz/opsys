@@ -20,12 +20,15 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "spinlock.h"
+
 /* physical memory */
 #include <pageframe.h>
 
 /* virtual memory */
 #include <page.h>
 #include <pte.h>
+#include <addrspace.h>
 #include "virtmem.h"
 
 #include "elf.h"
@@ -35,23 +38,23 @@
  */
 
 static int
-elf_loader_construct_phdr_null(const struct page_directory *pd,
+elf_loader_construct_phdr_null(const struct address_space *as,
                                const Elf32_Phdr *elf_phdr,
                                const unsigned char *img,
-                                     struct page_directory *dst_pd)
+                                     struct address_space *dst_as)
 {
         return 0;
 }
 
 static int
-elf_loader_construct_phdr_load(const struct page_directory *pd,
+elf_loader_construct_phdr_load(const struct address_space *as,
                                const Elf32_Phdr *elf_phdr,
                                const unsigned char *img,
-                                     struct page_directory *dst_pd)
+                                     struct address_space *dst_as)
 {
         int err;
 
-        err = virtmem_alloc_page_frames(dst_pd,
+        err = virtmem_alloc_page_frames(dst_as,
                                         pageframe_index(elf_phdr->p_offset+img),
                                         page_index((void*)elf_phdr->p_vaddr),
                                         page_count((void*)elf_phdr->p_vaddr,
@@ -78,15 +81,15 @@ err_virtmem_alloc_page_frames:
 }
 
 static int
-elf_loader_construct_phdr(const struct page_directory *pd,
+elf_loader_construct_phdr(const struct address_space *as,
                           const Elf32_Phdr *elf_phdr,
                           const unsigned char *img,
-                                struct page_directory *dst_pd)
+                                struct address_space *dst_as)
 {
-        static int (* const construct_phdr[])(const struct page_directory*,
+        static int (* const construct_phdr[])(const struct address_space*,
                                               const Elf32_Phdr*,
                                               const unsigned char*,
-                                                    struct page_directory*) = {
+                                                    struct address_space *) = {
                 elf_loader_construct_phdr_null,
                 elf_loader_construct_phdr_load};
 
@@ -97,14 +100,14 @@ elf_loader_construct_phdr(const struct page_directory *pd,
                 return 0;
         }
 
-        return construct_phdr[elf_phdr->p_type](pd, elf_phdr, img, dst_pd);
+        return construct_phdr[elf_phdr->p_type](as, elf_phdr, img, dst_as);
 }
 
 int
-elf_loader_exec(const struct page_directory *pd,
+elf_loader_exec(const struct address_space *as,
                 const unsigned char *img,
                       void **ip,
-                      struct page_directory *dst_pd)
+                      struct address_space *dst_as)
 {
         const Elf32_Ehdr *elf_ehdr;
         size_t i;
@@ -137,7 +140,7 @@ elf_loader_exec(const struct page_directory *pd,
                         elf_ehdr->e_phoff +
                         elf_ehdr->e_phentsize*i);
 
-                err = elf_loader_construct_phdr(pd, elf_phdr, img, dst_pd);
+                err = elf_loader_construct_phdr(as, elf_phdr, img, dst_as);
 
                 if (err < 0) {
                         goto err_elf_loader_construct_phdr;

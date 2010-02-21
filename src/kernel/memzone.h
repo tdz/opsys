@@ -17,7 +17,7 @@
  */
 
 enum virtmem_area_name;
-struct page_directory;
+struct address_space;
 
 struct memzone
 {
@@ -25,13 +25,13 @@ struct memzone
         unsigned char         *flags;
         size_t                 chunksize;
         size_t                 nchunks;
-        struct page_directory *pd;
+        struct address_space  *as;
         enum virtmem_area_name areaname;
 };
 
 int
 memzone_init(struct memzone *mz,
-             struct page_directory *pd, enum virtmem_area_name areaname);
+             struct address_space *as, enum virtmem_area_name areaname);
 
 size_t
 memzone_get_nchunks(struct memzone *mz, size_t nbytes);

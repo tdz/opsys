@@ -22,9 +22,12 @@
 
 #include "bitset.h"
 
+#include "spinlock.h"
+
 /* virtual memory */
 #include <pde.h>
 #include <pagedir.h>
+#include <addrspace.h>
 
 #include "task.h"
 
@@ -35,7 +38,7 @@ enum {
 static unsigned char g_taskid[MAXTASK>>3];
 
 int
-task_init(struct task *task, struct page_directory *pd)
+task_init(struct task *task, struct address_space *as)
 {
         int err;
         ssize_t taskid;
@@ -47,7 +50,7 @@ task_init(struct task *task, struct page_directory *pd)
 
         bitset_set(g_taskid, taskid);
 
-        task->pd = pd;
+        task->as = as;
         task->nthreads = 0;
         task->id = taskid;
         memset(task->threadid, 0, sizeof(task->threadid));

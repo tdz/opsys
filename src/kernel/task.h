@@ -16,18 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct page_directory;
+struct address_space;
 
 struct task
 {
-        struct page_directory *pd;
+        struct address_space *as;
         unsigned int  id;
         unsigned char nthreads;
         unsigned char threadid[8];
 };
 
 int
-task_init(struct task *task, struct page_directory *pd);
+task_init(struct task *task, struct address_space *as);
 
 void
 task_uninit(struct task *task);

@@ -17,51 +17,51 @@
  */
 
 enum virtmem_area_name;
-struct page_directory;
+struct address_space;
 
 int
-virtmem_init(struct page_directory *pd);
+virtmem_init(struct address_space *as);
 
 int
-virtmem_alloc_page_frames(struct page_directory *pd, os_index_t pfindex,
-                                                     os_index_t pgindex,
-                                                     size_t pgcount,
-                                                     unsigned int flags);
+virtmem_alloc_page_frames(struct address_space *as, os_index_t pfindex,
+                                                    os_index_t pgindex,
+                                                    size_t pgcount,
+                                                    unsigned int flags);
 
 os_index_t
-virtmem_alloc_pages_at(struct page_directory *pd, os_index_t pgindex,
+virtmem_alloc_pages_at(struct address_space *as, os_index_t pgindex,
                                                   size_t pgcount,
                                                   unsigned int flags);
 
 os_index_t
-virtmem_lookup_pageframe(const struct page_directory *pd, os_index_t pgindex);
+virtmem_lookup_pageframe(const struct address_space *as, os_index_t pgindex);
 
 os_index_t
-virtmem_alloc_pages_in_area(struct page_directory *pd,
+virtmem_alloc_pages_in_area(struct address_space *as,
                             size_t pgcount,
                             enum virtmem_area_name areaname,
                             unsigned int flags);
 
 int
-virtmem_flat_copy_areas(const struct page_directory *pd,
-                              struct page_directory *dst,
+virtmem_flat_copy_areas(const struct address_space *src_as,
+                              struct address_space *dst_as,
                               unsigned long flags);
 
 int
-virtmem_map_pages_at(const struct page_directory *src,
-                            os_index_t src_pgindex,
-                            size_t pgcount,
-                            struct page_directory *dst,
-                            os_index_t dst_pgindex,
-                            unsigned long flags);
+virtmem_map_pages_at(const struct address_space *src_as,
+                           os_index_t src_pgindex,
+                           size_t pgcount,
+                           struct address_space *dst_as,
+                           os_index_t dst_pgindex,
+                           unsigned long flags);
 
 os_index_t
-virtmem_map_pages_in_area(const struct page_directory *src,
-                            os_index_t src_pgindex,
-                            size_t pgcount,
-                            struct page_directory *dst,
-                            enum virtmem_area_name areaname,
-                            unsigned long flags);
+virtmem_map_pages_in_area(const struct address_space *src_as,
+                          os_index_t src_pgindex,
+                          size_t pgcount,
+                          struct address_space *dst_as,
+                          enum virtmem_area_name areaname,
+                          unsigned long flags);
 
 void
 virtmem_segfault_handler(void *ip);

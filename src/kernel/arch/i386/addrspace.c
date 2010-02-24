@@ -27,6 +27,7 @@
 #include "cpu.h"
 
 #include <spinlock.h>
+#include <semaphore.h>
 
 /* physical memory */
 #include "pageframe.h"
@@ -158,8 +159,8 @@ address_space_init(struct address_space *as,
 {
         int err;
 
-        if ((err = spinlock_init(&as->lock)) < 0) {
-                goto err_spinlock_init;
+        if ((err = semaphore_init(&as->sem, 1)) < 0) {
+                goto err_semaphore_init;
         }
 
         as->pgmode = pgmode;
@@ -167,14 +168,14 @@ address_space_init(struct address_space *as,
 
         return 0;
 
-err_spinlock_init:
+err_semaphore_init:
         return err;
 }
 
 void
 address_space_uninit(struct address_space *as)
 {
-        spinlock_uninit(&as->lock);
+        semaphore_uninit(&as->sem);
 }
 
 int
@@ -633,7 +634,7 @@ address_space_alloc_pageframes(struct address_space *as,
                                                       pteflags);
 }
 
-static os_index_t
+static int
 address_space_alloc_pages_32bit(void *tlps,
                                 os_index_t pgindex,
                                 size_t pgcount,
@@ -744,7 +745,7 @@ address_space_alloc_pages_32bit(void *tlps,
         return err;
 }
 
-static os_index_t
+static int
 address_space_alloc_pages_pae(void *tlps,
                               os_index_t pgindex,
                               size_t pgcount,
@@ -753,16 +754,16 @@ address_space_alloc_pages_pae(void *tlps,
         return -ENOSYS;
 }
 
-os_index_t
+int
 address_space_alloc_pages(struct address_space *as,
                           os_index_t pgindex,
                           size_t pgcount,
                           unsigned int pteflags)
 {
-        static os_index_t (* const alloc_pages[])(void*,
-                                                  os_index_t,
-                                                  size_t,
-                                                  unsigned int) = {
+        static int (* const alloc_pages[])(void*,
+                                           os_index_t,
+                                           size_t,
+                                           unsigned int) = {
                 address_space_alloc_pages_32bit,
                 address_space_alloc_pages_pae};
 

@@ -21,6 +21,7 @@
 #include <sys/types.h>
 
 #include "spinlock.h"
+#include "semaphore.h"
 
 /* physical memory */
 #include <pageframe.h>

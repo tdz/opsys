@@ -28,6 +28,7 @@
 #include "pit.h"
 
 #include "spinlock.h"
+#include "semaphore.h"
 
 /* physical memory */
 #include <pageframe.h>
@@ -426,6 +427,14 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         sti();
 
+        /* setup scheduler
+         */
+
+        if ((err = sched_init()) < 0) {
+                console_perror("sched_init", -err);
+                return;
+        }
+
         /* build initial task and address space
          */
 
@@ -455,14 +464,6 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         tcb_set_state(tcb, THREAD_STATE_READY);
 
-        /* setup scheduler with kernel thread 0
-         */
-
-        if ((err = sched_init()) < 0) {
-                console_perror("sched_init", -err);
-                return;
-        }
-
         /* connect scheduler to timer interupt */
         idt_install_irq_handler(0, sched_irq_handler);
 
@@ -477,9 +478,6 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("tcb_helper_allocate_tcb_and_stack", -err);
                 return;
         }
-
-        console_printf("%s:%x %x:%x.\n", __FILE__, __LINE__, tcb->task->id,
-                        tcb->id);
 
         if ((err = tcb_helper_run_kernel_thread(tcb,
                                                 system_srv_start)) < 0) {

@@ -26,7 +26,7 @@ virtmem_alloc_pageframes(struct address_space *as, os_index_t pfindex,
                                                    unsigned int flags);
 
 os_index_t
-virtmem_lookup_pageframe(const struct address_space *as, os_index_t pgindex);
+virtmem_lookup_pageframe(struct address_space *as, os_index_t pgindex);
 
 os_index_t
 virtmem_alloc_pages(struct address_space *as, os_index_t pgindex,
@@ -42,7 +42,7 @@ virtmem_alloc_pages_in_area(struct address_space *as,
 int
 virtmem_map_pages(struct address_space *dst_as,
                   os_index_t dst_pgindex,
-            const struct address_space *src_as,
+                  struct address_space *src_as,
                   os_index_t src_pgindex,
                   size_t pgcount,
                   unsigned long pteflags);
@@ -50,7 +50,7 @@ virtmem_map_pages(struct address_space *dst_as,
 os_index_t
 virtmem_map_pages_in_area(struct address_space *dst_as,
                           enum virtmem_area_name dst_areaname,
-                    const struct address_space *src_as,
+                          struct address_space *src_as,
                           os_index_t src_pgindex,
                           size_t pgcount,
                           unsigned long dst_pteflags);

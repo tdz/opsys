@@ -22,6 +22,7 @@
 #include <mmu.h>
 
 #include "spinlock.h"
+#include "semaphore.h"
 
 /* virtual memory */
 #include <page.h>
@@ -119,8 +120,6 @@ task_helper_init_task_from_parent(const struct task *parent,
         int err;
         struct address_space *as;
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
-
         /* create address space from parent */
 
         err = address_space_helper_allocate_address_space_from_parent(parent->as,
@@ -131,13 +130,9 @@ task_helper_init_task_from_parent(const struct task *parent,
 
         /* init task */
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
-
         if ((err = task_init(tsk, as)) < 0) {
                 goto err_task_init;
         }
-
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         return 0;
 

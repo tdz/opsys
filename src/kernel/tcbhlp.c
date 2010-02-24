@@ -19,6 +19,7 @@
 #include <sys/types.h>
 
 #include "spinlock.h"
+#include "semaphore.h"
 
 /* virtual memory */
 #include <page.h>

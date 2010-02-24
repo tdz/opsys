@@ -20,6 +20,7 @@
 #include <sys/types.h>
 
 #include <spinlock.h>
+#include <semaphore.h>
 
 /* physical memory */
 #include "pageframe.h"
@@ -208,8 +209,6 @@ address_space_helper_init_address_space_from_parent(struct address_space *parent
         os_index_t pgindex;
         struct page_directory *pd;
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
-
         /* create page directory (has to be at page boundary) */
 
         pgindex = virtmem_alloc_pages_in_area(parent,
@@ -228,19 +227,13 @@ address_space_helper_init_address_space_from_parent(struct address_space *parent
                 goto err_page_directory_init;
         }
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
-
         /* init address space */
 
         if ((err = address_space_init(as, PAGING_32BIT, pd)) < 0) {
                 goto err_address_space_init;
         }
 
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
-
         /* flat-copy page directory from parent */
-
-        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         err = address_space_helper_flat_copy_areas(parent,
                                                    as,

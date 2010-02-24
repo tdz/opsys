@@ -23,7 +23,9 @@
 #include <sys/types.h>
 
 #include "cpu.h"
-#include "spinlock.h"
+
+#include <spinlock.h>
+#include <semaphore.h>
 
 #include <bitset.h>
 
@@ -41,7 +43,7 @@
 #include <console.h>
 
 static int
-tcb_set_address_space(struct tcb *tcb, const struct address_space *as)
+tcb_set_address_space(struct tcb *tcb, struct address_space *as)
 {
         int err;
         os_index_t pfindex;
@@ -226,8 +228,6 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         va_list ap;
 
-        console_printf("%s:%x tcb=%x pd=%x stack=%x.\n", __FILE__, __LINE__, tcb, tcb->cr3, tcb->stack);
-
         /* generate thread execution stack */
 
         va_start(ap, nargs);
@@ -272,8 +272,6 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         tcb_set_ip(tcb, tcb_switch_to_ready_entry_point);
         tcb_set_state(tcb, THREAD_STATE_READY);
-
-        console_printf("%s:%x tcb=%x esp=%x ebp=%x.\n", __FILE__, __LINE__, tcb, tcb->esp, tcb->ebp);
 
         return 0;
 }

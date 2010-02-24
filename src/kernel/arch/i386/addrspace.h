@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct semaphore;
+
 /**
  * \brief Paging mode of address space
  */
@@ -26,7 +28,7 @@ enum paging_mode {
 
 struct address_space
 {
-        spinlock_type    lock; /**< Lock of address-space data structure */
+        struct semaphore sem; /**< Lock of address-space data structure */
         enum paging_mode pgmode; /**< Address space's paging mode */
         void            *tlps; /**< Address of top-level paging structure */
 };
@@ -92,7 +94,7 @@ address_space_alloc_pageframes(struct address_space *as,
                                size_t pgcount,
                                unsigned int flags);
 
-os_index_t
+int
 address_space_alloc_pages(struct address_space *as,
                           os_index_t pgindex,
                           size_t pgcount,

@@ -66,7 +66,7 @@ system_srv_start(struct tcb *self)
                 int err;
                 struct ipc_msg *msg;
 
-                console_printf("%s:%x self=%x.\n", __FILE__, __LINE__, self);
+                console_printf("%s:%x syssrv=%x.\n", __FILE__, __LINE__, self);
 
                 if ((err = ipc_recv(&msg, self)) < 0) {
                         goto err_ipc_recv;
@@ -76,7 +76,7 @@ system_srv_start(struct tcb *self)
                         goto err_system_srv_handle_msg;
                 }
 
-                console_printf("%s:%x.\n", __FILE__, __LINE__);
+/*                console_printf("%s:%x.\n", __FILE__, __LINE__);*/
 
                 continue;
 

@@ -87,7 +87,8 @@ struct tcb
         struct list ipcout;
         struct ipc_msg msg;
         struct list wait;
-        
+        struct list sched;
+
         spinlock_type lock;
 } __attribute__ (( aligned(256) ));
 

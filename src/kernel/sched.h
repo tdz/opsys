@@ -16,22 +16,26 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+struct list;
 struct tcb;
 
 int
 sched_init(void);
 
-ssize_t
+int
 sched_add_thread(struct tcb *tcb);
 
 struct tcb *
 sched_get_current_thread(void);
 
 struct tcb *
-sched_get_thread(unsigned int i);
+sched_get_thread(struct list *listhead);
 
 struct tcb *
 sched_search_thread(unsigned int taskid, unsigned char tcbid);
+
+int
+sched_switch_to(struct tcb *next, int dohalt);
 
 int
 sched_switch(int dohalt);

@@ -87,6 +87,36 @@ list_free(struct list *list)
 }
 
 struct list *
+list_enque_in_front(struct list *list, struct list *newlist)
+{
+        newlist->prev = list->prev;
+        newlist->next = list;
+
+        if (list->prev) {
+                list->prev->next = newlist;
+        }
+
+        list->prev = newlist;
+
+        return newlist;
+}
+
+struct list *
+list_enque_behind(struct list *list, struct list *newlist)
+{
+        newlist->prev = list;
+        newlist->next = list->next;
+
+        if (list->next) {
+                list->next->prev = newlist;
+        }
+
+        list->next = newlist;
+
+        return newlist;
+}
+
+struct list *
 list_deque(struct list *list)
 {
         if (list->next) {

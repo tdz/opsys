@@ -38,6 +38,12 @@ void
 list_free(struct list *list);
 
 struct list *
+list_enque_in_front(struct list *list, struct list *newlist);
+
+struct list *
+list_enque_behind(struct list *list, struct list *newlist);
+
+struct list *
 list_deque(struct list *list);
 
 struct list *

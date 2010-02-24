@@ -425,8 +425,6 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         idt_install_syscall_handler(syscall_entry_handler);
 
-        sti();
-
         /* setup scheduler
          */
 
@@ -472,6 +470,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
+        sti();
+
         /* create and schedule system service */
 
         if ((err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb)) < 0) {
@@ -491,7 +491,7 @@ multiboot_main(const struct multiboot_header *mb_header,
         }
 
         while (tcb_get_state(tcb) != THREAD_STATE_RECV) {
-                sched_switch(0);
+                sched_switch_to(tcb, 0);
         }
 
         /* load modules as ELF binaries

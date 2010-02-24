@@ -72,7 +72,7 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
                 tcb_set_state(rcv, THREAD_STATE_READY);
         }
 
-        sched_switch(1);
+        sched_switch_to(rcv, 1);
 
         return 0;
 

@@ -89,8 +89,8 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->ipcin = NULL;
 
         list_init(&tcb->ipcout, NULL, NULL, NULL);
-
         list_init(&tcb->wait, NULL, NULL, tcb);
+        list_init(&tcb->sched, NULL, NULL, tcb);
 
         spinlock_init(&tcb->lock);
 

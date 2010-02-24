@@ -32,50 +32,40 @@
 #include <tcb.h>
 #include "sched.h"
 
-enum {
-        MAXTHREAD = 1024
-};
-
-static struct tcb*  g_thread[MAXTHREAD];
-static unsigned int g_current_thread = 0;
+static struct list *g_current_thread = NULL; /**< Current list head in thread list */
 
 int
 sched_init()
 {
         return 0;
 }
+
 #include "console.h"
-ssize_t
+
+int
 sched_add_thread(struct tcb *tcb)
 {
         int ints;
-        ssize_t i;
 
         console_printf("%s:%x adding tcb=%x.\n", __FILE__, __LINE__, tcb);
 
-        ints = int_enabled();
+        list_init(&tcb->sched, &tcb->sched, &tcb->sched, tcb);
 
-        if (ints) {
+        if ( (ints = int_enabled()) ) {
                 cli();
         }
 
-        i = 0;
-
-        while ((i < sizeof(g_thread)/sizeof(g_thread[0])) && g_thread[i]) {
-                ++i;
-        }
-
-        if (i < sizeof(g_thread)/sizeof(g_thread[0])) {
-                g_thread[i] = tcb;
+        if (!g_current_thread) {
+                g_current_thread = &tcb->sched;
         } else {
-                i = -EAGAIN;
+                list_enque_in_front(g_current_thread, &tcb->sched);
         }
 
         if (ints) {
                 sti();
         }
 
-        return i;
+        return 0;
 }
 
 struct tcb *
@@ -85,56 +75,121 @@ sched_get_current_thread()
 }
 
 struct tcb *
-sched_get_thread(unsigned int i)
+sched_get_thread(struct list *listhead)
 {
-        return g_thread[i];
+        int ints;
+        struct tcb *tcb;
+
+        if (!listhead) {
+                return NULL;
+        }
+
+        if ( (ints = int_enabled()) ) {
+                cli();
+        }
+
+        tcb = list_data(listhead);
+
+        if (ints) {
+                sti();
+        }
+
+        return tcb;
 }
 
 struct tcb *
 sched_search_thread(unsigned int taskid, unsigned char tcbid)
 {
-        struct tcb **beg, **end;
+        int ints;
+        struct tcb *tcb;
+        struct list *current;
 
-        beg = g_thread;
-        end = g_thread+sizeof(g_thread)/sizeof(g_thread[0]);
+        tcb = NULL;
 
-        for (; beg < end; ++beg) {
-
-                struct tcb *tcb = *beg;
-
-                if (!tcb || (tcb->id != tcbid) || (tcb->task->id != taskid)) {
-                        continue;
-                }
-                return *beg;
+        if ( (ints = int_enabled()) ) {
+                cli();
         }
 
-        return NULL;
+        if (g_current_thread) {
+                current = g_current_thread;
+
+                do {
+                        struct tcb *currenttcb = list_data(current);
+
+                        if ((currenttcb->id == tcbid) &&
+                            (currenttcb->task->id == taskid)) {
+                                tcb = currenttcb;
+                        }
+                        current = current->next;
+                } while (!tcb && (current != g_current_thread));
+        }
+
+        if (ints) {
+                sti();
+        }
+
+        return tcb;
 }
-#include "console.h"
-static int
-sched_switch_to(unsigned int i, int dohalt)
+
+int
+sched_switch_to(struct tcb *next, int dohalt)
 {
         int err;
-        unsigned int current;
+        struct tcb *tcb;
 
-        current = g_current_thread;
+        tcb = list_data(g_current_thread);
 
-        g_current_thread = i;
+        /* TODO: race condition; next line and tcb_switch
+                 might not be preempted in between; g_current_thread
+                 should be updated after switch, but fails there */
 
-/*        console_printf("%s:%x c=%x.\n", __FILE__, __LINE__, g_thread[current]->task->pd);
-        console_printf("%s:%x i=%x.\n", __FILE__, __LINE__, g_thread[i]->task->pd);*/
+        g_current_thread = &next->sched;
 
-        if ((err = tcb_switch(g_thread[current], g_thread[i], 0)) < 0) {
-                goto err_tcb_load;
+        if ((err = tcb_switch(tcb, next, 0)) < 0) {
+                goto err_tcb_switch;
         }
 
-/*        console_printf("%s:%x i=%x.\n", __FILE__, __LINE__, g_thread[i]);*/
-        
         return 0;
 
-err_tcb_load:
-        g_current_thread = current;
+err_tcb_switch:
         return err;
+}
+
+static struct tcb *
+sched_select_thread(void)
+{
+        int ints;
+        struct tcb *tcb;
+        struct list *listhead;
+
+        if (!g_current_thread) {
+                return NULL;
+        }
+
+        if ( (ints = int_enabled()) ) {
+                cli();
+        }
+
+        listhead = g_current_thread;
+
+        if (ints) {
+                sti();
+        }
+
+        do {
+                if ( (ints = int_enabled()) ) {
+                        cli();
+                }
+
+                listhead = listhead->next;
+                tcb = list_data(listhead);
+
+                if (ints) {
+                        sti();
+                }
+        } while (!tcb_is_runnable(tcb));
+
+        return tcb;
 }
 
 int
@@ -143,34 +198,11 @@ sched_switch(int dohalt)
         int err;
 
         do {
-                unsigned int next, i;
+                struct tcb *tcb = sched_select_thread();
 
-                next = g_current_thread+1;
+                if (tcb && tcb_is_runnable(tcb)) {
 
-                /* search up until end of list */
-
-                for (i = next; i < sizeof(g_thread)/sizeof(g_thread[0]); ++i) {
-
-                        if (!g_thread[i] || !tcb_is_runnable(g_thread[i])) {
-                                continue;
-                        }
-
-                        if ((err = sched_switch_to(i, dohalt)) < 0) {
-                                goto err_sched_switch_to;
-                        }
-
-                        return 0;
-                }
-
-                /* search from beginning of list */
-
-                for (i = 0; i < next; ++i) {
-
-                        if (!g_thread[i] || !tcb_is_runnable(g_thread[i])) {
-                                continue;
-                        }
-
-                        if ((err = sched_switch_to(i, dohalt)) < 0) {
+                        if ((err = sched_switch_to(tcb, dohalt)) < 0) {
                                 goto err_sched_switch_to;
                         }
 

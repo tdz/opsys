@@ -22,13 +22,11 @@
 .global tcb_switch_to_ready_entry_point
 .global tcb_switch_to_ready_return_firsttime
 
-/* int tcb_switch_to_ready(struct tcb *src, struct tcb *dst, int dohalt);
+/* int tcb_switch_to_ready(struct tcb *src, struct tcb *dst);
  */
 tcb_switch_to_ready:
         pushl %ebp
         movl %esp, %ebp
-
-        cli
 
         /* save source regs
          */
@@ -92,8 +90,6 @@ tcb_switch_to_ready:
         movl 24(%eax), %ebp
         movl 28(%eax), %esp
 
-        sti
-
         /* jump to dst %eip */
         jmp * 60(%eax)
 
@@ -101,8 +97,6 @@ tcb_switch_to_ready_entry_point:
 
         /* any previously saved destination will jump here, so %cr3, %esp,
            and %ebp are already loaded */
-
-        cli
 
         /* control registers (need intermediate register) */
         movl 44(%eax), %edx
@@ -120,14 +114,12 @@ tcb_switch_to_ready_entry_point:
         /* index registers */
         movl 16(%eax), %esi
         movl 20(%eax), %edi
-        /* %esp and %ebp hasve been restored by src tcb */
+        /* %esp and %ebp have been restored by src tcb */
 
         /* general-purpose registers */
         movl 4(%eax), %ebx
         movl 8(%eax), %ecx
         movl 12(%eax), %edx
-
-        sti
 
         movl $0, %eax
         popl %ebp
@@ -135,6 +127,7 @@ tcb_switch_to_ready_entry_point:
 
 tcb_switch_to_ready_return_firsttime:
         /* remove tcb_switch_to_ready parameters */
+        sti /* normally enabled by sched_switch_to */
         addl $12, %esp;
         jmp isr_handle_irq_return
 

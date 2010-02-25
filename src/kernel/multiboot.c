@@ -490,10 +490,6 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        while (tcb_get_state(tcb) != THREAD_STATE_RECV) {
-                sched_switch_to(tcb, 0);
-        }
-
         /* load modules as ELF binaries
          */
 

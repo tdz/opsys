@@ -32,15 +32,16 @@
 #include <tcb.h>
 #include "sched.h"
 
-static struct list *g_current_thread = NULL; /**< Current list head in thread list */
+#include "console.h"
+
+/** Current list head in thread list */
+static struct list *g_current_thread = NULL;
 
 int
 sched_init()
 {
         return 0;
 }
-
-#include "console.h"
 
 int
 sched_add_thread(struct tcb *tcb)
@@ -132,26 +133,34 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
 }
 
 int
-sched_switch_to(struct tcb *next, int dohalt)
+sched_switch_to(struct tcb *next)
 {
+        volatile int ints; /* value might change during context switch */
         int err;
         struct tcb *tcb;
 
-        tcb = list_data(g_current_thread);
+        if ( (ints = int_enabled()) ) {
+                cli();
+        }
 
-        /* TODO: race condition; next line and tcb_switch
-                 might not be preempted in between; g_current_thread
-                 should be updated after switch, but fails there */
+        tcb = list_data(g_current_thread);
 
         g_current_thread = &next->sched;
 
-        if ((err = tcb_switch(tcb, next, 0)) < 0) {
+        if ((err = tcb_switch(tcb, next)) < 0) {
                 goto err_tcb_switch;
+        }
+
+        if (ints) {
+                sti();
         }
 
         return 0;
 
 err_tcb_switch:
+        if (ints) {
+                sti();
+        }
         return err;
 }
 
@@ -161,6 +170,7 @@ sched_select_thread(void)
         int ints;
         struct tcb *tcb;
         struct list *listhead;
+        int is_runable;
 
         if (!g_current_thread) {
                 return NULL;
@@ -183,17 +193,18 @@ sched_select_thread(void)
 
                 listhead = listhead->next;
                 tcb = list_data(listhead);
+                is_runable = tcb_is_runnable(tcb);
 
                 if (ints) {
                         sti();
                 }
-        } while (!tcb_is_runnable(tcb));
+        } while (!is_runable);
 
         return tcb;
 }
 
 int
-sched_switch(int dohalt)
+sched_switch()
 {
         int err;
 
@@ -202,7 +213,7 @@ sched_switch(int dohalt)
 
                 if (tcb && tcb_is_runnable(tcb)) {
 
-                        if ((err = sched_switch_to(tcb, dohalt)) < 0) {
+                        if ((err = sched_switch_to(tcb)) < 0) {
                                 goto err_sched_switch_to;
                         }
 
@@ -220,6 +231,6 @@ err_sched_switch_to:
 void
 sched_irq_handler(unsigned char irqno)
 {
-        sched_switch(0);
+        sched_switch();
 }
 

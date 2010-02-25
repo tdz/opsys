@@ -176,44 +176,44 @@ tcb_stack_push4(struct tcb *tcb, unsigned long **stack, unsigned long value)
 }
 
 static int
-tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst, int dohalt)
+tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst)
 {
         return 0;
 }
 
 /* implemented in tcb.S */
 int
-tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst, int dohalt);
+tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst);
 
 static int
-tcb_switch_to_send(struct tcb *tcb, const struct tcb *dst, int dohalt)
+tcb_switch_to_send(struct tcb *tcb, const struct tcb *dst)
 {
         return 0;
 }
 
 static int
-tcb_switch_to_recv(struct tcb *tcb, const struct tcb *dst, int dohalt)
+tcb_switch_to_recv(struct tcb *tcb, const struct tcb *dst)
 {
         return 0;
 }
 
 static int
-tcb_switch_to_waiting(struct tcb *tcb, const struct tcb *dst, int dohalt)
+tcb_switch_to_waiting(struct tcb *tcb, const struct tcb *dst)
 {
         return 0;
 }
 
 int
-tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt)
+tcb_switch(struct tcb *tcb, const struct tcb *dst)
 {
-        static int (* const switch_to[])(struct tcb*, const struct tcb*, int) = {
+        static int (* const switch_to[])(struct tcb*, const struct tcb*) = {
                 tcb_switch_to_zombie,
                 tcb_switch_to_ready,
                 tcb_switch_to_send,
                 tcb_switch_to_recv,
                 tcb_switch_to_waiting};
 
-        return switch_to[dst->state](tcb, dst, dohalt | (dst == (void*)0xc0805000));
+        return switch_to[dst->state](tcb, dst);
 }
 
 int

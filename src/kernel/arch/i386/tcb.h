@@ -83,7 +83,7 @@ struct tcb
         unsigned long dr7;
 
         /* list of incoming IPC */
-        struct list *ipcin;
+        struct list * volatile ipcin;
         struct list ipcout;
         struct ipc_msg msg;
         struct list wait;
@@ -121,7 +121,7 @@ void
 tcb_set_ip(struct tcb *tcb, void *ip);
 
 int
-tcb_switch(struct tcb *tcb, const struct tcb *dst, int dohalt);
+tcb_switch(struct tcb *tcb, const struct tcb *dst);
 
 unsigned char *
 tcb_get_esp(struct tcb *tcb);

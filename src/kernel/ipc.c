@@ -46,6 +46,10 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
         }
 
         /* enque message */
+        /* TODO: enque at end, not at beginning; to prevent walk over list,
+                 first elemant could have prev pointer set to end of list */
+
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
 
         if (rcv->ipcin) {
                 rcv->ipcin = list_init(&msg->snd->ipcout, rcv->ipcin->prev,
@@ -58,21 +62,29 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
                                        &msg->snd->msg);
         }
 
+        spinlock_unlock(&rcv->lock);
+
         /* sender state */
 
+        spinlock_lock(&msg->snd->lock, (unsigned long)sched_get_current_thread());
         tcb_set_state(msg->snd, THREAD_STATE_RECV);
+        spinlock_unlock(&msg->snd->lock);
 
         if (ipc_msg_flags_has_timeout_value(msg)) {
                 /* TODO: implement timeout */
         }
 
-        /* wake up receiver if necessary, and schedule */
+        /* wake up receiver if necessary */
+
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
 
         if (tcb_get_state(rcv) == THREAD_STATE_RECV) {
                 tcb_set_state(rcv, THREAD_STATE_READY);
         }
 
-        sched_switch_to(rcv, 1);
+        spinlock_unlock(&rcv->lock);
+
+        sched_switch();
 
         return 0;
 
@@ -85,6 +97,8 @@ ipc_reply(struct ipc_msg *msg, struct tcb *rcv)
 {
         int err;
 
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
+
         if (tcb_get_state(rcv) != THREAD_STATE_RECV) {
                 err = -EBUSY;
                 goto err_tcb_get_state;
@@ -92,21 +106,31 @@ ipc_reply(struct ipc_msg *msg, struct tcb *rcv)
 
         tcb_set_state(rcv, THREAD_STATE_READY);
 
+        spinlock_unlock(&rcv->lock);
+
         return 0;
 
 err_tcb_get_state:
+        spinlock_unlock(&rcv->lock);
         return err;
 }
 
 int
 ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
 {
+        int ints;
         int err;
 
-        tcb_set_state(rcv, THREAD_STATE_RECV);
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
 
-        /* schedule possible senders */
-        sched_switch(0);
+        if (!rcv->ipcin) {
+                /* no pending messages; schedule possible senders */
+                tcb_set_state(rcv, THREAD_STATE_RECV);
+                spinlock_unlock(&rcv->lock);
+                sched_switch();
+                spinlock_lock(&rcv->lock,
+                              (unsigned long)sched_get_current_thread());
+        }
 
         if (!rcv->ipcin) {
                 err = -EAGAIN;
@@ -115,20 +139,29 @@ ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
 
         /* deque first IPC message */                
 
-        cli();
+        if ( (ints = int_enabled()) ) {
+                cli();
+        }
+
         *msg = list_data(rcv->ipcin);
-        list_deque(rcv->ipcin);
-        sti();
+        rcv->ipcin = list_next(rcv->ipcin);
+
+        if (ints) {
+                sti();
+        }
 
         if (!*msg) {
                 err = -EAGAIN;
                 goto err_msg;
         }
 
+        spinlock_unlock(&rcv->lock);
+
         return 0;
 
 err_msg:
 err_rcv_ipcin:
+        spinlock_unlock(&rcv->lock);
         return err;
 }
 

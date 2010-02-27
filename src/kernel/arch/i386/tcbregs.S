@@ -20,7 +20,7 @@
 
 .global tcb_regs_switch
 .global tcb_regs_switch_entry_point
-.global tcb_regs_switch_return_firsttime
+.global tcb_regs_switch_first_return
 
 /* int tcb_regs_switch(struct tcb_regs *src, const struct tcb_regs *dst);
  */
@@ -123,9 +123,9 @@ tcb_regs_switch_entry_point:
         popl %ebp
         ret
 
-tcb_regs_switch_return_firsttime:
+tcb_regs_switch_first_return:
         /* remove tcb_regs_switch parameters */
         sti /* normally enabled by sched_switch_to */
-        addl $12, %esp;
+        addl $8, %esp;
         jmp isr_handle_irq_return
 

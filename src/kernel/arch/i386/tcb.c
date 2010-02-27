@@ -177,7 +177,7 @@ tcb_set_initial_ready_state(struct tcb *tcb,
                             int nargs, ...)
 {
         extern void tcb_regs_switch_entry_point(void);
-        extern void tcb_regs_switch_return_firsttime(void);
+        extern void tcb_regs_switch_first_return(void);
 
         va_list ap;
 
@@ -195,9 +195,9 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         va_end(ap);
 
-        tcb_stack_push4(tcb, &stack, 0x1); /* no return ip */
+        tcb_stack_push4(tcb, &stack, 0); /* no return ip */
 
-        /* prepare stack as if tcb was scheduled from irq */
+        /* prepare stack as if thread was scheduled from irq */
 
         /* stack after irq */
         tcb_stack_push4(tcb, &stack, eflags());
@@ -205,16 +205,15 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         tcb_stack_push4(tcb, &stack, (unsigned long)ip);
         tcb_stack_push4(tcb, &stack, irqno);
 
-        tcb_stack_push4(tcb, &stack, 0xdeadbeef); /* %eax */
-        tcb_stack_push4(tcb, &stack, 0xdeadbeef); /* %ecx */
-        tcb_stack_push4(tcb, &stack, 0xdeadbeef); /* %edx */
+        tcb_stack_push4(tcb, &stack, 0); /* %eax */
+        tcb_stack_push4(tcb, &stack, 0); /* %ecx */
+        tcb_stack_push4(tcb, &stack, 0); /* %edx */
         tcb_stack_push4(tcb, &stack, irqno); /* pushed by irq handler */
 
-        /* tcb_switch */
-        tcb_stack_push4(tcb, &stack, 1);
+        /* tcb_regs_switch */
         tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
         tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
-        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_regs_switch_return_firsttime);
+        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_regs_switch_first_return);
         tcb_stack_push4(tcb, &stack, (unsigned long)tcb_regs_get_fp(&tcb->regs));
         tcb_regs_set_fp(&tcb->regs, tcb_regs_get_sp(&tcb->regs));
 

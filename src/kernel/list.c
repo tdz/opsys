@@ -17,17 +17,7 @@
  */
 
 #include <stddef.h>
-#include <sys/types.h>
-
-#include <alloc.h>
-
 #include "list.h"
-
-static struct list *
-list_alloc(void)
-{
-        return kmalloc(sizeof(struct list));
-}
 
 struct list *
 list_init(struct list *list, struct list *prev, struct list *next, void *data)
@@ -44,46 +34,6 @@ list_init(struct list *list, struct list *prev, struct list *next, void *data)
         }
 
         return list;
-}
-
-struct list *
-list_append(struct list *prev, void *data)
-{
-        struct list *list = list_alloc();
-
-        if (!list) {
-                goto err_list_alloc;
-        }
-
-        list_init(list, prev, NULL, data);
-
-        return list;
-
-err_list_alloc:
-        return NULL;
-}
-
-struct list *
-list_prepend(struct list *next, void *data)
-{
-        struct list *list = list_alloc();
-
-        if (!list) {
-                goto err_list_alloc;
-        }
-
-        list_init(list, NULL, next, data);
-
-        return list;
-
-err_list_alloc:
-        return NULL;
-}
-
-void
-list_free(struct list *list)
-{
-        return kfree(list);
 }
 
 struct list *

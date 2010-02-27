@@ -29,15 +29,6 @@ list_init(struct list *list,
           struct list *next, void *data);
 
 struct list *
-list_append(struct list *prev, void *data);
-
-struct list *
-list_prepend(struct list *next, void *data);
-
-void
-list_free(struct list *list);
-
-struct list *
 list_enque_in_front(struct list *list, struct list *newlist);
 
 struct list *

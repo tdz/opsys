@@ -32,6 +32,7 @@
 #include "ipcmsg.h"
 
 #include "task.h"
+#include <tcbregs.h>
 #include <tcb.h>
 #include "tcbhlp.h"
 

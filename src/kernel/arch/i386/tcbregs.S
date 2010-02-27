@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,13 +18,13 @@
 
 .text
 
-.global tcb_switch_to_ready
-.global tcb_switch_to_ready_entry_point
-.global tcb_switch_to_ready_return_firsttime
+.global tcb_regs_switch
+.global tcb_regs_switch_entry_point
+.global tcb_regs_switch_return_firsttime
 
-/* int tcb_switch_to_ready(struct tcb *src, struct tcb *dst);
+/* int tcb_regs_switch(struct tcb_regs *src, const struct tcb_regs *dst);
  */
-tcb_switch_to_ready:
+tcb_regs_switch:
         pushl %ebp
         movl %esp, %ebp
 
@@ -35,7 +35,6 @@ tcb_switch_to_ready:
         pushl %edx
         movl 8(%ebp), %edx
 
-        addl $16, %edx /* adjust %edx to point to first register in source */
         movl %eax, (%edx)
         movl %edx, %eax
         popl %edx
@@ -74,26 +73,25 @@ tcb_switch_to_ready:
         movl %edx, 56(%eax)
 
         /* save %eip as return address */
-        movl $tcb_switch_to_ready_entry_point, 60(%eax)
+        movl $tcb_regs_switch_entry_point, 60(%eax)
 
         /* restore destination regs
          */
 
         movl 12(%ebp), %eax
-        addl $16, %eax
 
         /* restore page directory */
         movl 52(%eax), %edx
         movl %edx, %cr3
 
-        /* restore base and stack pointer*/
+        /* restore base and stack pointer */
         movl 24(%eax), %ebp
         movl 28(%eax), %esp
 
         /* jump to dst %eip */
         jmp * 60(%eax)
 
-tcb_switch_to_ready_entry_point:
+tcb_regs_switch_entry_point:
 
         /* any previously saved destination will jump here, so %cr3, %esp,
            and %ebp are already loaded */
@@ -125,8 +123,8 @@ tcb_switch_to_ready_entry_point:
         popl %ebp
         ret
 
-tcb_switch_to_ready_return_firsttime:
-        /* remove tcb_switch_to_ready parameters */
+tcb_regs_switch_return_firsttime:
+        /* remove tcb_regs_switch parameters */
         sti /* normally enabled by sched_switch_to */
         addl $12, %esp;
         jmp isr_handle_irq_return

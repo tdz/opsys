@@ -24,6 +24,7 @@
 #include "list.h"
 #include "ipcmsg.h"
 
+#include <tcbregs.h>
 #include "tcb.h"
 
 #include "task.h"

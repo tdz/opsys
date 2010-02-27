@@ -29,6 +29,9 @@
 
 #include <bitset.h>
 
+/* physical memory */
+#include "pageframe.h"
+
 /* virtual memory */
 #include "page.h"
 #include "addrspace.h"
@@ -38,34 +41,17 @@
 #include <ipcmsg.h>
 #include <list.h>
 
+#include "tcbregs.h"
 #include "tcb.h"
 
 #include <console.h>
-
-static int
-tcb_set_address_space(struct tcb *tcb, struct address_space *as)
-{
-        int err;
-        os_index_t pfindex;
-
-        if ((pfindex = virtmem_lookup_pageframe(as, page_index(as->tlps))) < 0) {
-                err = pfindex;
-                goto err_virtmem_lookup_pageframe;
-        }
-
-        tcb->cr3 = (pfindex<<12) | (tcb->cr3&0xfff);
-
-        return 0;
-
-err_virtmem_lookup_pageframe:
-        return err;
-}
 
 int
 tcb_init_with_id(struct tcb *tcb,
                  struct task *task, unsigned char id, void *stack)
 {
         int err;
+        os_index_t pfindex;
 
         console_printf("tcb id=%x.\n", id);
 
@@ -94,16 +80,25 @@ tcb_init_with_id(struct tcb *tcb,
 
         spinlock_init(&tcb->lock);
 
-        tcb->esp = (unsigned long)tcb->stack;
-        tcb->ebp = tcb->esp;
+        pfindex = virtmem_lookup_pageframe(task->as,
+                                           page_index(task->as->tlps));
+        if (pfindex < 0) {
+                err = pfindex;
+                goto err_virtmem_lookup_pageframe;
+        }
 
-        if ((err = tcb_set_address_space(tcb, tcb->task->as)) < 0) {
-                goto err_tcb_set_address_space;
+        err = tcb_regs_init(&tcb->regs,
+                            stack,
+                            pageframe_address(pfindex));
+        if (err < 0) {
+                goto err_tcb_regs_init;
         }
 
         return 0;
 
-err_tcb_set_address_space:
+err_tcb_regs_init:
+err_virtmem_lookup_pageframe:
+        spinlock_uninit(&tcb->lock);
         bitset_unset(task->threadid, id);
 err_bitset_isset:
         task_unref(task);
@@ -124,8 +119,13 @@ tcb_init(struct tcb *tcb, struct task *task, void *stack)
                 goto err_bitset_find_unset;
         }
 
-        return tcb_init_with_id(tcb, task, id, stack);
+        if ((err = tcb_init_with_id(tcb, task, id, stack)) < 0) {
+                goto err_tcb_init_with_id;
+        }
 
+        return 0;
+
+err_tcb_init_with_id:
 err_bitset_find_unset:
         return err;
 }
@@ -148,72 +148,25 @@ tcb_get_state(const struct tcb *tcb)
         return tcb->state;
 }
 
-void
-tcb_set_ip(struct tcb *tcb, void *ip)
-{
-        tcb->eip = (unsigned long)ip;
-}
-
 int
 tcb_is_runnable(const struct tcb *tcb)
 {
         return (tcb->state == THREAD_STATE_READY);
 }
 
-unsigned char *
-tcb_get_esp(struct tcb *tcb)
+int
+tcb_switch(struct tcb *tcb, const struct tcb *dst)
 {
-        return (void*)tcb->esp;
+        return tcb_regs_switch(&tcb->regs, &dst->regs);
 }
 
-void
+static void
 tcb_stack_push4(struct tcb *tcb, unsigned long **stack, unsigned long value)
 {
         --(*stack);
         (*stack)[0] = value;
 
-        tcb->esp -= 4;
-}
-
-static int
-tcb_switch_to_zombie(struct tcb *tcb, const struct tcb *dst)
-{
-        return 0;
-}
-
-/* implemented in tcb.S */
-int
-tcb_switch_to_ready(struct tcb *tcb, const struct tcb *dst);
-
-static int
-tcb_switch_to_send(struct tcb *tcb, const struct tcb *dst)
-{
-        return 0;
-}
-
-static int
-tcb_switch_to_recv(struct tcb *tcb, const struct tcb *dst)
-{
-        return 0;
-}
-
-static int
-tcb_switch_to_waiting(struct tcb *tcb, const struct tcb *dst)
-{
-        return 0;
-}
-
-int
-tcb_switch(struct tcb *tcb, const struct tcb *dst)
-{
-        static int (* const switch_to[])(struct tcb*, const struct tcb*) = {
-                tcb_switch_to_zombie,
-                tcb_switch_to_ready,
-                tcb_switch_to_send,
-                tcb_switch_to_recv,
-                tcb_switch_to_waiting};
-
-        return switch_to[dst->state](tcb, dst);
+        tcb_regs_stack_push(&tcb->regs, sizeof(**stack));
 }
 
 int
@@ -223,8 +176,8 @@ tcb_set_initial_ready_state(struct tcb *tcb,
                             unsigned long *stack,
                             int nargs, ...)
 {
-        extern void tcb_switch_to_ready_entry_point(void);
-        extern void tcb_switch_to_ready_return_firsttime(void);
+        extern void tcb_regs_switch_entry_point(void);
+        extern void tcb_regs_switch_return_firsttime(void);
 
         va_list ap;
 
@@ -259,18 +212,16 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         /* tcb_switch */
         tcb_stack_push4(tcb, &stack, 1);
-        tcb_stack_push4(tcb, &stack, (unsigned long)tcb);
-        tcb_stack_push4(tcb, &stack, (unsigned long)tcb);
-        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_switch_to_ready_return_firsttime);
-        tcb_stack_push4(tcb, &stack, tcb->ebp); /* %ebp */
-        tcb->ebp = (unsigned long)tcb_get_esp(tcb);
+        tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
+        tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
+        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_regs_switch_return_firsttime);
+        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_regs_get_fp(&tcb->regs));
+        tcb_regs_set_fp(&tcb->regs, tcb_regs_get_sp(&tcb->regs));
 
-        tcb->cr0 = cr0();
-        tcb->cr2 = cr2();
-        tcb->cr4 = cr4();
-        tcb->eflags = eflags();
+        tcb_regs_init_state(&tcb->regs);
 
-        tcb_set_ip(tcb, tcb_switch_to_ready_entry_point);
+        tcb_regs_set_ip(&tcb->regs, tcb_regs_switch_entry_point);
+
         tcb_set_state(tcb, THREAD_STATE_READY);
 
         return 0;

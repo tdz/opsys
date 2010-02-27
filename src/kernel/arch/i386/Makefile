@@ -11,7 +11,7 @@ reloc_addr = 0x100000
 
 ASMSOURCES = idt.S \
              multiboot.S \
-             tcb.S
+             tcbregs.S
 
 CSOURCES = addrspace.c \
            addrspacehlp.c \
@@ -26,7 +26,8 @@ CSOURCES = addrspace.c \
            pde.c \
            pic.c \
            pte.c \
-           tcb.c
+           tcb.c \
+           tcbregs.c
 
 CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel
 

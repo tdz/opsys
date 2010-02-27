@@ -19,6 +19,7 @@
 struct ipc_msg;
 struct list;
 struct task;
+struct tcb_regs;
 
 enum thread_state {
         THREAD_STATE_ZOMBIE = 0, /* waiting for removal */
@@ -31,59 +32,13 @@ enum thread_state {
 struct tcb
 {
         enum thread_state state;
-        struct task *task; /* task of the thread */
-        void *stack; /* stack base address */
-        unsigned char id; /* task-local id */
+        struct task *task; /**< Address of task structure of the thread */
+        void *stack; /**< Stack base address */
+        unsigned char id; /**< Task-local id */
 
-        /* general-purpose register */
-        unsigned long eax;
-        unsigned long ebx;
-        unsigned long ecx;
-        unsigned long edx;
+        struct tcb_regs regs; /**< CPU registers */
 
-        /* index registers */
-        unsigned long esi;
-        unsigned long edi;
-        unsigned long ebp;
-        unsigned long esp;
-
-        /* segment registers */
-        unsigned short cs;
-        unsigned short ds;
-        unsigned short ss;
-        unsigned short es;
-        unsigned short fs;
-        unsigned short gs;
-
-        /* state registers */
-        unsigned long cr0;
-        unsigned long cr2;
-        unsigned long cr3;
-        unsigned long cr4;
-        unsigned long eip;
-        unsigned long eflags;
-        unsigned long tr; /* task register */
-
-        /* FPU registers */
-        unsigned long st[8];
-
-        /* MMX registers */
-        unsigned long mm[8];
-
-        /* SSE registers */
-        unsigned long xmm[8];
-        unsigned long mxcsr;
-
-        /* debug registers */        
-        unsigned long dr0;
-        unsigned long dr1;
-        unsigned long dr2;
-        unsigned long dr3;
-        unsigned long dr6;
-        unsigned long dr7;
-
-        /* list of incoming IPC */
-        struct list * volatile ipcin;
+        struct list * volatile ipcin; /**< List of incoming IPC messages */
         struct list ipcout;
         struct ipc_msg msg;
         struct list wait;
@@ -117,15 +72,6 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 int
 tcb_is_runnable(const struct tcb *tcb);
 
-void
-tcb_set_ip(struct tcb *tcb, void *ip);
-
 int
 tcb_switch(struct tcb *tcb, const struct tcb *dst);
-
-unsigned char *
-tcb_get_esp(struct tcb *tcb);
-
-void
-tcb_stack_push4(struct tcb *tcb, unsigned long **stack, unsigned long value);
 

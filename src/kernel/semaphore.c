@@ -27,6 +27,7 @@
 
 #include "spinlock.h"
 
+#include <tcbregs.h>
 #include "tcb.h"
 #include "sched.h"
 

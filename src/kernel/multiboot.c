@@ -47,6 +47,7 @@
 #include "list.h"
 #include "ipcmsg.h"
 
+#include <tcbregs.h>
 #include <tcb.h>
 #include "tcbhlp.h"
 #include "sched.h"
@@ -399,13 +400,19 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         /* setup GDT for protected mode */
         gdt_init();
         gdt_install();
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         /* setup IDT for protected mode */
         idt_init();
         idt_install();
+
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         idt_install_invalid_opcode_handler(main_invalop_handler);
 
@@ -425,6 +432,8 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         idt_install_syscall_handler(syscall_entry_handler);
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         /* setup scheduler
          */
 
@@ -433,16 +442,22 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         /* build initial task and address space
          */
 
         idt_install_segfault_handler(virtmem_segfault_handler);
         idt_install_pagefault_handler(virtmem_pagefault_handler);
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         if ((err = task_helper_init_kernel_task(&g_kernel_as, &tsk)) < 0) {
                 console_perror("task_helper_init_kernel_task", -err);
                 return;
         }
+
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         /* setup memory allocator
          */
@@ -452,6 +467,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         /* setup current execution as thread 0 of kernel task
          */
 
@@ -459,6 +476,8 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("tcb_helper_allocate_tcb", -err);
                 return;
         }
+
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         tcb_set_state(tcb, THREAD_STATE_READY);
 
@@ -469,6 +488,7 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("sched_add_thread", -err);
                 return;
         }
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         sti();
 
@@ -479,16 +499,22 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         if ((err = tcb_helper_run_kernel_thread(tcb,
                                                 system_srv_start)) < 0) {
                 console_perror("tcb_set_initial_ready_state", -err);
                 return;
         }
 
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
+
         if ((err = sched_add_thread(tcb)) < 0) {
                 console_perror("sched_add_thread", -err);
                 return;
         }
+
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 
         /* load modules as ELF binaries
          */
@@ -497,5 +523,7 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
+
+        console_printf("%s:%x.\n", __FILE__, __LINE__);
 }
 

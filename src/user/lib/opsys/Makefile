@@ -8,7 +8,8 @@ include ../../flags.mk
 
 ASMSOURCES = start.S
 
-CSOURCES = syscall.c
+CSOURCES = syscall.c \
+           syscall0.c
 
 CPPFLAGS += -I$(includedir)/opsys
 

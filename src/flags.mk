@@ -3,7 +3,7 @@
 
 SHELL = /bin/sh
 
-CPPFLAGS = -nostdinc -I.
+CPPFLAGS = -nostdinc -I. -I$(srcdir)/shared/include
 
 CFLAGS = -g -m32 -Wall -ansi -march=$(target_cpu)
 

@@ -16,9 +16,16 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-void
-syscall_entry_handler(unsigned long *r0,
-                      unsigned long *r1,
-                      unsigned long *r2,
-                      unsigned long *r3);
+#include <sys/types.h>
+#include <opsys/syscall.h>
+#include <crt.h>
+
+int
+crt_write(const char *buf, size_t buflen, unsigned char attr)
+{
+        return syscall0((unsigned long)IPC_CRT_WRITE,
+                        (unsigned long)buf,
+                        (unsigned long)buflen,
+                        (unsigned long)attr);
+}
 

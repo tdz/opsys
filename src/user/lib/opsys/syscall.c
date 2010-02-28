@@ -16,34 +16,29 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/types.h>
 #include <syscall.h>
 
 int
 syscall(unsigned long r0,
         unsigned long r1,
         unsigned long r2,
-        unsigned long r3)
+        unsigned long r3,
+        unsigned long *res0,
+        unsigned long *res1,
+        unsigned long *res2,
+        unsigned long *res3)
 {
-        int res;
-
         __asm__("int $0x80\n\t"
-                        : "=a"(res) /* save result from %eax */
+                        : "=a"(*res0),
+                          "=b"(*res1),
+                          "=c"(*res2),
+                          "=d"(*res3)
                         : "a"(r0),
                           "b"(r1),
                           "c"(r2),
                           "d"(r3)
                         : );
 
-        return res;
-}
-
-int
-syscall_crt_write(const char *buf, size_t buflen, unsigned char attr)
-{
-        return syscall((unsigned long)SYSCALL_CRT_WRITE,
-                       (unsigned long)buf,
-                       (unsigned long)buflen,
-                       (unsigned long)attr);
+        return *res1&0x1 ? (int)*res2 : 0; /* return possible error code */
 }
 

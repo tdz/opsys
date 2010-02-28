@@ -30,10 +30,10 @@
 void (*invalop_handler)(void *ip);
 void (*segfault_handler)(void *ip);
 void (*pagefault_handler)(void *ip, void *addr, unsigned long);
-int  (*syscall_handler)(unsigned long r0,
-                        unsigned long r1,
-                        unsigned long r2,
-                        unsigned long r3);
+void (*syscall_handler)(unsigned long *r0,
+                        unsigned long *r1,
+                        unsigned long *r2,
+                        unsigned long *r3);
 
 /* hardware interupts
  */
@@ -207,10 +207,10 @@ idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char))
 }
 
 int
-idt_install_syscall_handler(int (*hdlr)(unsigned long,
-                                        unsigned long,
-                                        unsigned long,
-                                        unsigned long))
+idt_install_syscall_handler(void (*hdlr)(unsigned long*,
+                                         unsigned long*,
+                                         unsigned long*,
+                                         unsigned long*))
 {
         const int ints = int_enabled();
 

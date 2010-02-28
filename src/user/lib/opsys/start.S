@@ -38,8 +38,3 @@ exit:
         xor %edx, %edx /* clear %edx */
         int $0x80      /* this never returns */
 
-/* Temporary workaround, as opsys does not yet quit tasks */
-do_hlt: 
-        hlt
-        jmp do_hlt
-

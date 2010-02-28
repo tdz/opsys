@@ -41,11 +41,11 @@
 
 #define R0_THREADID(x_)         ((threadid_type)((x_)&0xffffffff))
 
-int
-syscall_entry_handler(unsigned long r0,
-                      unsigned long r1,
-                      unsigned long r2,
-                      unsigned long r3)
+void
+syscall_entry_handler(unsigned long *r0,
+                      unsigned long *r1,
+                      unsigned long *r2,
+                      unsigned long *r3)
 {
         int enable_int;
         int err;
@@ -58,7 +58,7 @@ syscall_entry_handler(unsigned long r0,
         }
 
         console_printf("%s:%x: r0=%x r1=%x r2=%x r3=%x.\n", __FILE__, __LINE__,
-                        r0, r1, r2, r3);
+                        *r0, *r1, *r2, *r3);
 
         /* get current thread */
 
@@ -69,8 +69,8 @@ syscall_entry_handler(unsigned long r0,
 
         /* get receiver thread */
 
-        rcv = sched_search_thread(threadid_get_taskid(R0_THREADID(r0)),
-                                  threadid_get_tcbid(R0_THREADID(r0)));
+        rcv = sched_search_thread(threadid_get_taskid(R0_THREADID(*r0)),
+                                  threadid_get_tcbid(R0_THREADID(*r0)));
         if (!rcv) {
                 err = -EAGAIN;
                 goto err_sched_search_thread;
@@ -78,7 +78,7 @@ syscall_entry_handler(unsigned long r0,
 
         /* send message to receiver */
 
-        if ((err = ipc_msg_init(&snd->msg, snd, r1, r2, r3)) < 0) {
+        if ((err = ipc_msg_init(&snd->msg, snd, *r1, *r2, *r3)) < 0) {
                 goto err_ipc_msg_init;
         }
 
@@ -99,7 +99,12 @@ syscall_entry_handler(unsigned long r0,
                 sti();
         }
 
-        return 0;
+        *r0 = threadid_create(snd->msg.snd->task->id, snd->msg.snd->id);
+        *r1 = snd->msg.flags;
+        *r2 = snd->msg.msg0;
+        *r3 = snd->msg.msg1;
+
+        return;
 
 err_ipc_msg_flags_is_errno:
 err_ipc_send_and_wait:
@@ -109,6 +114,8 @@ err_sched_get_current_thread:
         if (enable_int) {
                 sti();
         }
-        return err;
+
+        *r1 = IPC_MSG_FLAG_IS_ERRNO;
+        *r2 = err;
 }
 

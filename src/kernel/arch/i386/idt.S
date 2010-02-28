@@ -198,19 +198,29 @@ isr_handle_irq15:
 isr_handle_syscall:
         cmp $0, syscall_handler
         je isr_handle_syscall_ret_enosys
-        pushl %edx
-        pushl %ecx
-        pushl %ebx
         pushl %eax
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
+        movl %esp, %eax /* pointer r3 */
+        pushl %eax 
+        addl $4, %eax /* pointer r2 */
+        pushl %eax 
+        addl $4, %eax /* pointer r1 */
+        pushl %eax 
+        addl $4, %eax /* pointer r0 */
+        pushl %eax 
         movl syscall_handler, %eax
         call *%eax
-        addl $4, %esp /* preserve return value in %eax */
-        popl %ebx
-        popl %ecx
+        addl $16, %esp /* remove pointers from stack */
         popl %edx
+        popl %ecx
+        popl %ebx
+        popl %eax
         iret
 isr_handle_syscall_ret_enosys:
         /* invalid sysno, return -ENOSYS */
-        movl $-81, %eax
+        movl $0x1, %ebx /* error flag */
+        movl $-81, %ecx /* error code */
         iret
 

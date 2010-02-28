@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,9 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-void
-syscall_entry_handler(unsigned long *r0,
-                      unsigned long *r1,
-                      unsigned long *r2,
-                      unsigned long *r3);
+enum {
+        IPC_CRT_WRITE = 1,
+        IPC_CRT_GETSIZE,
+        IPC_CRT_GETPOS,
+        IPC_CRT_SETPOS
+};
+
+int
+crt_write(const char *buf, size_t buflen, unsigned char attr);
 

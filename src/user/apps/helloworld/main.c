@@ -19,12 +19,12 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include <syscall.h>
+#include <crt/crt.h>
 
 int
 main(int argc, char **argv)
 {
-        syscall_crt_write("Hello world", 11, 0);
+        crt_write("Hello world", 11, 0);
 
         exit(EXIT_SUCCESS);
 }

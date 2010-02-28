@@ -12,7 +12,6 @@ CSOURCES = alloc.c \
            console.c \
            crt.c \
            elfldr.c \
-           errno.c \
            ipc.c \
            ipcmsg.c \
            kbd.c \
@@ -25,7 +24,6 @@ CSOURCES = alloc.c \
            sched.c \
            semaphore.c \
            spinlock.c \
-           string.c \
            syscall.c \
            syssrv.c \
            task.c \

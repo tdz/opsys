@@ -6,25 +6,23 @@ include ../../../flags.mk
 include ../../variables.mk
 include ../../flags.mk
 
-include ../variables.mk
-include ../flags.mk
+ASMSOURCES =
 
-CSOURCES = main.c
+CSOURCES = errno.c \
+           string.c
 
-CPPFLAGS +=
-
-LDFLAGS += -L$(libdir)/crt
+CPPFLAGS += -I$(includedir)
 
 .PHONY : all clean
 
-all : helloworld
+all : libcshared.a
 
 clean :
-	rm -fr helloworld
+	rm -fr libcshared.a
 	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 
-helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -o $@ $? -lcrt $(LDADD)
+libcshared.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+	ar rcs $@ $?
 
 include ../../../rules.mk
 

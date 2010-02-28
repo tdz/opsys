@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tid.h"
+#include <tid.h>
 
 threadid_type
 threadid_create(unsigned int taskid, unsigned char tcbid)

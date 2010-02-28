@@ -16,10 +16,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* These are the error codes of the POSIX standard. Most of them are
-   unnecessary in our case, but they don't hurt either. If you ever
-   need an error code then look at the list below, it's likely contained
-   already.
+/**  \brief POSIX error codes
+ *
+ * These are the error codes of the POSIX standard. Most of them are
+ * unnecessary in our case, but they don't hurt either. If you ever
+ * need an error code then look at the list below, it's likely contained
+ * already.
  */
 enum {
         E2BIG = 1,

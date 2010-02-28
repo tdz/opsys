@@ -30,6 +30,12 @@ memcpy(void *dest, const void *src, size_t n);
 void *
 memset(void *mem, int c, size_t n);
 
+char *
+strerror(int errnum);
+
+char *
+strerror_l(int errnum, char *strerrbuf, size_t buflen);
+
 size_t
 strlen(const char *str);
 

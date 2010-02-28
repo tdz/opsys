@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <string.h>
 #include <sys/types.h>
 
@@ -70,6 +71,36 @@ memset(void *mem, int c, size_t n)
         }
 
         return mem;
+}
+
+char *
+strerror(int errnum)
+{
+        static char strerr[32];
+
+        return strerror_l(errnum, strerr, sizeof(strerr)/sizeof(strerr[0]));
+}
+
+char *
+strerror_l(int errnum, char *strerrbuf, size_t buflen)
+{
+        if ((errnum < 1)
+            || (errnum >= sizeof(sys_errlist)/sizeof(sys_errlist[0]))) {
+                errnum = 0;
+        }
+
+        if (buflen) {
+                size_t errstrlen = strlen(sys_errlist[errnum])+1;
+
+                if (errstrlen < buflen) {
+                        buflen = errstrlen;
+                } else {
+                        buflen -= 1;
+                        strerrbuf[buflen] = '\0';
+                }
+        }
+
+        return memcpy(strerrbuf, sys_errlist[errnum], buflen);
 }
 
 size_t

@@ -29,13 +29,12 @@ CSOURCES = alloc.c \
            task.c \
            taskhlp.c \
            tcbhlp.c \
-           tid.c \
            virtmem.c \
            vmemarea.c
 
 LDFLAGS += -Ttext=$(reloc_addr) -L$(archdir)/$(target_cpu)
 
-CPPFLAGS += -I$(archdir)/$(target_cpu) -I./include 
+CPPFLAGS += -I$(archdir)/$(target_cpu) -I./include -I$(srcdir)/shared/include/opsys
 
 .PHONY : all clean
 

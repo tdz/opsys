@@ -17,7 +17,7 @@
  */
 
 static __inline__ unsigned long
-atomic_xchg(void *addr, unsigned long new_value)
+atomic_xchg(volatile void *addr, unsigned long new_value)
 {
         unsigned long old_value;
 

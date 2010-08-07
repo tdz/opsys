@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-typedef unsigned long   spinlock_type;
+typedef volatile unsigned long   spinlock_type;
 
 int
 spinlock_init(spinlock_type *spinlock);

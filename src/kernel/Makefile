@@ -7,8 +7,6 @@ archdir = ./arch
 
 SUBDIRS = $(archdir)
 
-ASMSOURCES =
-
 CSOURCES = alloc.c \
            bitset.c \
            console.c \
@@ -40,18 +38,8 @@ CPPFLAGS += -I$(archdir)/$(target_cpu) -I./include -I$(srcdir)/shared/include/op
 
 LIBRARIES = libkernel.a
 
-.PHONY : all clean
-
-all : $(LIBRARIES)
-	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir all); done
-
-clean :
-	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir clean); done
-	$(RM) -fr $(LIBRARIES)
-	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
-
 include ../rules.mk
 
 # include dependency rules
--include $(CSOURCES:.c=.d)
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

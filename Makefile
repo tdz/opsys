@@ -1,6 +1,8 @@
 
 SRCDIR = src
 
+EXTRA_CLEAN = doxygen.log 
+
 .PHONY = all clean image doc html
 
 all:
@@ -8,10 +10,9 @@ all:
 
 clean:
 	$(MAKE) -C $(SRCDIR) clean
+	rm -fr doxygen.log
 
-image: all
-	cp res/genimage/opsyshdd.img.base opsyshdd.img
-	sudo tools/genimage/genimage.sh -a i386 -b res/genimage/ -s $(SRCDIR) -i opsyshdd.img
+image: opsyshdd.img
 
 maintainer-clean: clean
 	rm -fr opsyshdd.img
@@ -21,4 +22,8 @@ doc: html
 
 html:
 	doxygen
+
+%.img : all
+	cp res/genimage/$@.base $@
+	sudo tools/genimage/genimage.sh -a i386 -b res/genimage/ -s $(SRCDIR) -i $@
 

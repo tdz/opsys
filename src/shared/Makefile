@@ -1,11 +1,12 @@
 
-LIBDIR = lib
+topdir = ../..
+-include ../variables.mk
+-include ../flags.mk
 
-.PHONY = all clean
+SUBDIRS = lib
 
-all:
-	$(MAKE) -C $(LIBDIR) all
+include ../rules.mk
 
-clean:
-	$(MAKE) -C $(LIBDIR) clean
+# include dependency rules
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

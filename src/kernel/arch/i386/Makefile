@@ -1,10 +1,11 @@
 
 topdir = ../../../..
-include ../../../variables.mk
-include ../../../flags.mk
-
-#include ../../variables.mk
-#include ../../flags.mk
+-include ../../../variables.mk
+-include ../../../flags.mk
+-include ../../variables.mk
+-include ../../flags.mk
+-include ../variables.mk
+-include ../flags.mk
 
 # kernel resides at 1 MiB
 reloc_addr = 0x100000
@@ -37,19 +38,11 @@ LDADD += -lkernel -lopsysshared -lcshared
 
 PROGRAMS = oskernel
 
-.PHONY : all clean
-
-all : $(PROGRAMS)
-
-clean :
-	$(RM) -fr $(PROGRAMS)
-	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
-
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)
 
 include ../../../rules.mk
 
 # include dependency rules
--include $(CSOURCES:.c=.d)
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

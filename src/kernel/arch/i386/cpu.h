@@ -17,7 +17,9 @@
  */
 
 /**
- * \file This file contains functions for reading registers of the i386.
+ * \file cpu.h This file contains functions for reading registers of the i386.
+ * \author Thomas Zimmermann
+ * \date 2010
  */
 
 /**

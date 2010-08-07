@@ -38,27 +38,22 @@ spinlock_uninit(spinlock_type *spinlock)
 }
 
 int
-spinlock_try_lock(spinlock_type *spinlock, unsigned long unique_id)
+spinlock_try_lock(spinlock_type *spinlock, unsigned long uid)
 {
-        unsigned long was_locked;
-
-        if (*spinlock) {
-                /* don't try if already locked, prevents bus lock */
-                was_locked = 1;
-        } else {
-                was_locked = atomic_xchg(spinlock, unique_id);
-        }
-
-        return was_locked ? -EBUSY : 0;
+        return atomic_xchg(spinlock, uid) ? -EBUSY : 0;
 }
 
 void
-spinlock_lock(spinlock_type *spinlock, unsigned long unique_id)
+spinlock_lock(spinlock_type *spinlock, unsigned long uid)
 {
         int err;
 
         do {
-                err = spinlock_try_lock(spinlock, unique_id);
+                if (*spinlock) {
+                        err = -EBUSY;
+                } else {
+                        err = spinlock_try_lock(spinlock, uid);
+                }
         } while (err == -EBUSY);
 }
 

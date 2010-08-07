@@ -21,19 +21,19 @@
 #include "bitset.h"
 
 void
-bitset_set(unsigned char *bitset, size_t bit)
+bitset_set(unsigned char *bitset, unsigned long bit)
 {
         bitset[bit>>3] |= 1<<(bit&0x07);
 }
 
 void
-bitset_unset(unsigned char *bitset, size_t bit)
+bitset_unset(unsigned char *bitset, unsigned long bit)
 {
         bitset[bit>>3] &= ~(1<<(bit&0x07));
 }
 
 void
-bitset_setto(unsigned char *bitset, size_t bit, int set)
+bitset_setto(unsigned char *bitset, unsigned long bit, int set)
 {
         static void (* const setto[])(unsigned char*, size_t) = {bitset_set,
                                                                  bitset_unset};
@@ -41,7 +41,7 @@ bitset_setto(unsigned char *bitset, size_t bit, int set)
 }
 
 int
-bitset_isset(const unsigned char *bitset, size_t bit)
+bitset_isset(const unsigned char *bitset, unsigned long bit)
 {
         return !!(bitset[bit>>3] & (1<<(bit&0x07)));
 }
@@ -49,7 +49,8 @@ bitset_isset(const unsigned char *bitset, size_t bit)
 ssize_t
 bitset_find_unset(const unsigned char *bitset, size_t len)
 {
-        ssize_t i, bit;
+        size_t i;
+        unsigned long bit;
 
         bit = 0;
 

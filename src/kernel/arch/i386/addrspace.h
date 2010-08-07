@@ -36,8 +36,8 @@ struct address_space
 /**
  * \brief Init address_space structure
  * \param[in] as Address of address_space structure
- * \param[in] mode Paging mode
- * \param[in] tps Address of top-level paging structure
+ * \param[in] pgmode Paging mode
+ * \param[in] tlps Address of top-level paging structure
  * \return 0 if successful; a negative error code otherwise
  */
 int

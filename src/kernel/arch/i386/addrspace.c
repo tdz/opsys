@@ -47,7 +47,7 @@ static struct page_table *
 address_space_get_page_table_tmp(void)
 {
         const struct virtmem_area *low, *tmp;
-        
+
         low = virtmem_area_get_by_name(VIRTMEM_AREA_LOW);
         tmp = virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 

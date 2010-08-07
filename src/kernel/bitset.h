@@ -16,18 +16,46 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * \brief set a bit in a bitset
+ * \param[in,out] bitset the bitset
+ * \param bit the bit to set
+ */
 void
-bitset_set(unsigned char *bitset, size_t bit);
+bitset_set(unsigned char *bitset, unsigned long bit);
 
+/**
+ * \brief clear a bit in a bitset
+ * \param[in,out] bitset the bitset
+ * \param bit the bit to set
+ */
 void
-bitset_unset(unsigned char *bitset, size_t bit);
+bitset_unset(unsigned char *bitset, unsigned long bit);
 
+/**
+ * \brief set a bit in a bitset to specified value
+ * \param[in,out] bitset the bitset
+ * \param bit the bit to set
+ * \param set zero to clear the bit, or any other value to set the bit
+ */
 void
-bitset_setto(unsigned char *bitset, size_t bit, int set);
+bitset_setto(unsigned char *bitset, unsigned long bit, int set);
 
+/**
+ * \brief check if a bit in a bitset is set
+ * \param[in,out] bitset the bitset
+ * \param bit the bit to set
+ * \return true if the bit is set, or false otherwise
+ */
 int
-bitset_isset(const unsigned char *bitset, size_t bit);
+bitset_isset(const unsigned char *bitset, unsigned long bit);
 
+/**
+ * \brief find first unset bit in a bitset
+ * \param[in,out] bitset the bitset
+ * \param len the bitset's length
+ * \return the unset bit's position, or a negative error code otherwise
+ */
 ssize_t
 bitset_find_unset(const unsigned char *bitset, size_t len);
 

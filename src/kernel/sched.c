@@ -47,24 +47,14 @@ sched_init()
 int
 sched_add_thread(struct tcb *tcb)
 {
-        int ints;
-
         console_printf("%s:%x adding tcb=%x.\n", __FILE__, __LINE__, tcb);
 
         list_init(&tcb->sched, &tcb->sched, &tcb->sched, tcb);
-
-        if ( (ints = int_enabled()) ) {
-                cli();
-        }
 
         if (!g_current_thread) {
                 g_current_thread = &tcb->sched;
         } else {
                 list_enque_in_front(g_current_thread, &tcb->sched);
-        }
-
-        if (ints) {
-                sti();
         }
 
         return 0;
@@ -79,22 +69,13 @@ sched_get_current_thread()
 struct tcb *
 sched_get_thread(struct list *listhead)
 {
-        int ints;
         struct tcb *tcb;
 
         if (!listhead) {
                 return NULL;
         }
 
-        if ( (ints = int_enabled()) ) {
-                cli();
-        }
-
         tcb = list_data(listhead);
-
-        if (ints) {
-                sti();
-        }
 
         return tcb;
 }
@@ -102,15 +83,10 @@ sched_get_thread(struct list *listhead)
 struct tcb *
 sched_search_thread(unsigned int taskid, unsigned char tcbid)
 {
-        int ints;
         struct tcb *tcb;
         struct list *current;
 
         tcb = NULL;
-
-        if ( (ints = int_enabled()) ) {
-                cli();
-        }
 
         if (g_current_thread) {
                 current = g_current_thread;
@@ -126,23 +102,14 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
                 } while (!tcb && (current != g_current_thread));
         }
 
-        if (ints) {
-                sti();
-        }
-
         return tcb;
 }
 
 int
 sched_switch_to(struct tcb *next)
 {
-        volatile int ints; /* value might change during context switch */
         int err;
         struct tcb *tcb;
-
-        if ( (ints = int_enabled()) ) {
-                cli();
-        }
 
         tcb = list_data(g_current_thread);
 
@@ -152,23 +119,15 @@ sched_switch_to(struct tcb *next)
                 goto err_tcb_switch;
         }
 
-        if (ints) {
-                sti();
-        }
-
         return 0;
 
 err_tcb_switch:
-        if (ints) {
-                sti();
-        }
         return err;
 }
 
 static struct tcb *
 sched_select_thread(void)
 {
-        int ints;
         struct tcb *tcb;
         struct list *listhead;
         int is_runable;
@@ -177,28 +136,12 @@ sched_select_thread(void)
                 return NULL;
         }
 
-        if ( (ints = int_enabled()) ) {
-                cli();
-        }
-
         listhead = g_current_thread;
 
-        if (ints) {
-                sti();
-        }
-
         do {
-                if ( (ints = int_enabled()) ) {
-                        cli();
-                }
-
                 listhead = listhead->next;
                 tcb = list_data(listhead);
                 is_runable = tcb_is_runnable(tcb);
-
-                if (ints) {
-                        sti();
-                }
         } while (!is_runable);
 
         return tcb;

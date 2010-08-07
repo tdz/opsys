@@ -3,5 +3,5 @@
 
 srcdir = $(topdir)/src
 
-target_cpu = i386
+target_cpu ?= i386
 

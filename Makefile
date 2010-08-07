@@ -1,22 +1,22 @@
 
-SRCDIR = src
+topdir = .
+include ./variables.mk
+include ./flags.mk
+
+SUBDIRS = $(srcdir)
 
 EXTRA_CLEAN = doxygen.log 
 
-.PHONY = all clean image doc html
+include ./rules.mk
 
-all:
-	$(MAKE) -C $(SRCDIR) all
+IMAGES = opsyshdd.img
 
-clean:
-	$(MAKE) -C $(SRCDIR) clean
-	rm -fr doxygen.log
+.PHONY += image doc html
 
-image: opsyshdd.img
+image: $(IMAGES)
 
 maintainer-clean: clean
-	rm -fr opsyshdd.img
-	rm -fr doc/
+	$(RM) -fr doc/ $(IMAGES)
 
 doc: html
 
@@ -24,6 +24,9 @@ html:
 	doxygen
 
 %.img : all
-	cp res/genimage/$@.base $@
-	sudo tools/genimage/genimage.sh -a i386 -b res/genimage/ -s $(SRCDIR) -i $@
+	$(CP) res/genimage/$@.base $@
+	sudo tools/genimage/genimage.sh -a $(target_cpu) -b res/genimage/ -s $(srcdir) -i $@
+
+# include dependency rules
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

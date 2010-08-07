@@ -34,6 +34,9 @@ LDFLAGS = -nostdlib -static -melf_$(target_cpu)
 # others
 
 AR = ar
+CP = cp
+MKDIR = mkdir
 RANLIB = ranlib
 RM = rm
+SED = sed
 

@@ -23,9 +23,9 @@ clean :
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
  $(DEPSDIR)/%.d: %.c
-	@set -e; mkdir -p  $(DEPSDIR); \
+	@set -e; $(MKDIR) -p  $(DEPSDIR); \
 		$(RM) -f $@; \
 		$(CC) -M $(CPPFLAGS) $< > $@.$$$$; \
-		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+		$(SED) 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 		$(RM) -f $@.$$$$
 

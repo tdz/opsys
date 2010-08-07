@@ -1,7 +1,9 @@
 
 topdir = ../..
-include ../variables.mk
-include ../flags.mk
+include ../../variables.mk
+include ../../flags.mk
+-include ../variables.mk
+-include ../flags.mk
 
 archdir = ./arch
 
@@ -38,7 +40,7 @@ CPPFLAGS += -I$(archdir)/$(target_cpu) -I./include -I$(srcdir)/shared/include/op
 
 LIBRARIES = libkernel.a
 
-include ../rules.mk
+include ../../rules.mk
 
 # include dependency rules
 -include $(CSOURCES:%.c= $(DEPSDIR)/%.d)

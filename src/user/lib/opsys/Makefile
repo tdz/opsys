@@ -1,5 +1,7 @@
 
 topdir = ../../../..
+include ../../../../variables.mk
+include ../../../../flags.mk
 -include ../../../variables.mk
 -include ../../../flags.mk
 -include ../../variables.mk
@@ -16,7 +18,7 @@ CPPFLAGS += -I$(includedir)/opsys
 
 LIBRARIES = libopsys.a
 
-include ../../../rules.mk
+include ../../../../rules.mk
 
 # include dependency rules
 -include $(CSOURCES:%.c= $(DEPSDIR)/%.d)

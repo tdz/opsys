@@ -1,5 +1,7 @@
 
 topdir = ../../../..
+include ../../../../variables.mk
+include ../../../../flags.mk
 -include ../../../variables.mk
 -include ../../../flags.mk
 -include ../../variables.mk
@@ -34,14 +36,14 @@ CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel
 
 LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel -L$(srcdir)/shared/lib/opsysshared -L$(srcdir)/shared/lib/cshared -e_start
 
-LDADD += -lkernel -lopsysshared -lcshared
+LDADD := -lkernel -lopsysshared -lcshared $(LDADD)
 
 PROGRAMS = oskernel
 
+include ../../../../rules.mk
+
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)
-
-include ../../../rules.mk
 
 # include dependency rules
 -include $(CSOURCES:%.c= $(DEPSDIR)/%.d)

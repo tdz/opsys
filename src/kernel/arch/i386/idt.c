@@ -50,7 +50,7 @@ idt_init()
                        (unsigned long)funcname,                         \
                        0x08,                                            \
                        0,                                               \
-                       IDT_ENTRY_FLAG_SEGINMEM|IDT_ENTRY_FLAG_32BITINT)
+                       IDT_ENTRY_FLAG_SEGINMEM|IDT_ENTRY_FLAG_32BITINT|IDT_ENTRY_FLAG_INTGATE)
 
         extern void isr_drop_interupt(void);
         extern void isr_handle_debug(void);

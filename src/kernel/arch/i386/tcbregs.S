@@ -80,6 +80,9 @@ tcb_regs_switch:
 
         movl 12(%ebp), %eax
 
+        /* no interrupts between update of address space and stack */
+        cli 
+
         /* restore page directory */
         movl 52(%eax), %edx
         movl %edx, %cr3
@@ -87,6 +90,8 @@ tcb_regs_switch:
         /* restore base and stack pointer */
         movl 24(%eax), %ebp
         movl 28(%eax), %esp
+
+        sti
 
         /* jump to dst %eip */
         jmp * 60(%eax)

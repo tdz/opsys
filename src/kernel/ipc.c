@@ -119,7 +119,6 @@ err_tcb_get_state:
 int
 ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
 {
-        int ints;
         int err;
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
@@ -140,16 +139,8 @@ ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
 
         /* deque first IPC message */                
 
-        if ( (ints = int_enabled()) ) {
-                cli();
-        }
-
         *msg = list_data(rcv->ipcin);
         rcv->ipcin = list_next(rcv->ipcin);
-
-        if (ints) {
-                sti();
-        }
 
         if (!*msg) {
                 err = -EAGAIN;

@@ -232,6 +232,8 @@ err_sched_switch_to:
 void
 sched_irq_handler(unsigned char irqno)
 {
+        sti();
         sched_switch();
+        cli();
 }
 

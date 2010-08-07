@@ -18,8 +18,11 @@
 
 enum {
         IDT_ENTRY_FLAG_SEGINMEM = 0x80,
-        IDT_ENTRY_FLAG_32BITINT = 0x0e,
-        IDT_ENTRY_FLAG_16BITINT = 0x06
+        IDT_ENTRY_FLAG_32BITINT = 0x08,
+        IDT_ENTRY_FLAG_16BITINT = 0x00,
+        IDT_ENTRY_FLAG_TASKGATE = 0x05,
+        IDT_ENTRY_FLAG_INTGATE  = 0x06,
+        IDT_ENTRY_FLAG_TRAPGATE = 0x07
 };
 
 struct idt_entry

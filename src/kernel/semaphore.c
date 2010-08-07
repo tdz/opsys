@@ -59,16 +59,9 @@ int
 semaphore_try_enter(struct semaphore *sem)
 {
         int avail;
-        int int_enable;
         struct tcb *self;
 
         self = sched_get_current_thread();
-
-        int_enable = int_enabled();
-
-        if (int_enable) {
-                cli();
-        }
 
         spinlock_lock(&sem->lock, (unsigned long)self);
 
@@ -76,12 +69,6 @@ semaphore_try_enter(struct semaphore *sem)
 
         if (avail) {
                 --sem->slots;
-        }
-
-        spinlock_unlock(&sem->lock);
-
-        if (int_enable) {
-                sti();
         }
 
         return avail ? 0 : -EBUSY;
@@ -96,14 +83,6 @@ semaphore_enter(struct semaphore *sem)
         self = sched_get_current_thread();
 
         do {
-                int int_enable;
-
-                int_enable = int_enabled();
-
-                if (int_enable) {
-                        cli();
-                }
-
                 spinlock_lock(&sem->lock, (unsigned long)self);
 
                 avail = !!sem->slots;
@@ -135,19 +114,11 @@ semaphore_enter(struct semaphore *sem)
 
                 spinlock_unlock(&sem->lock);
 
-                if (int_enable) {
-                        sti();
-                }
-
                 if (!avail) {
                         /* no slots available, schedule self */
                         sched_switch(0);
 
                         /* when returning, self is not waiting anymore */
-
-                        if (int_enable) {
-                                cli();
-                        }
 
                         spinlock_lock(&sem->lock, (unsigned long)self);
 
@@ -157,10 +128,6 @@ semaphore_enter(struct semaphore *sem)
                         list_deque(&self->wait);
 
                         spinlock_unlock(&sem->lock);
-
-                        if (int_enable) {
-                                sti();
-                        }
                 }
         } while (!avail);
 }
@@ -172,12 +139,6 @@ semaphore_leave(struct semaphore *sem)
         struct tcb *self;
 
         self = sched_get_current_thread();
-
-        int int_enable = int_enabled();
-
-        if (int_enable) {
-                cli();
-        }
 
         spinlock_lock(&sem->lock, (unsigned long)self);
 
@@ -200,9 +161,5 @@ semaphore_leave(struct semaphore *sem)
         }
 
         spinlock_unlock(&sem->lock);
-
-        if (int_enable) {
-                sti();
-        }
 }
 

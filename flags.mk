@@ -19,7 +19,7 @@ SHELL = /bin/bash
 
 CC = gcc
 CPPFLAGS = -nostdinc -I. -I$(srcdir)/shared/include
-CFLAGS = -g -m32 -Wall -ansi -march=$(target_cpu) -fno-stack-protector
+CFLAGS = -g -m32 -Wall -Werror -ansi -march=$(target_cpu) -fno-stack-protector
 
 # assembler
 

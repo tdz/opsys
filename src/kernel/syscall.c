@@ -47,15 +47,8 @@ syscall_entry_handler(unsigned long *r0,
                       unsigned long *r2,
                       unsigned long *r3)
 {
-        int enable_int;
         int err;
         struct tcb *snd, *rcv;
-
-        enable_int = int_enabled();
-
-        if (enable_int) {
-                cli();
-        }
 
         console_printf("%s:%x: r0=%x r1=%x r2=%x r3=%x.\n", __FILE__, __LINE__,
                         *r0, *r1, *r2, *r3);
@@ -95,10 +88,6 @@ syscall_entry_handler(unsigned long *r0,
 
         /* before returning, sender should have received a reply */
 
-        if (enable_int) {
-                sti();
-        }
-
         *r0 = threadid_create(snd->msg.snd->task->id, snd->msg.snd->id);
         *r1 = snd->msg.flags;
         *r2 = snd->msg.msg0;
@@ -111,10 +100,6 @@ err_ipc_send_and_wait:
 err_ipc_msg_init:
 err_sched_search_thread:
 err_sched_get_current_thread:
-        if (enable_int) {
-                sti();
-        }
-
         *r1 = IPC_MSG_FLAG_IS_ERRNO;
         *r2 = err;
 }

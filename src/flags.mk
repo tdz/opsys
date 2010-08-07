@@ -5,7 +5,7 @@ SHELL = /bin/sh
 
 CPPFLAGS = -nostdinc -I. -I$(srcdir)/shared/include
 
-CFLAGS = -g -m32 -Wall -ansi -march=$(target_cpu)
+CFLAGS = -g -m32 -Wall -ansi -march=$(target_cpu) -fno-stack-protector
 
 ASFLAGS = --32 -march=$(target_cpu)
 

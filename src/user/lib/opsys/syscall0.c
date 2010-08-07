@@ -33,7 +33,7 @@ syscall0(unsigned long r0,
                           "b"(r1),
                           "c"(r2),
                           "d"(r3)
-                        : );
+                         );
 
         return flags&0x1 ? (int)errno : 0; /* return possible error code */
 }

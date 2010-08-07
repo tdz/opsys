@@ -37,7 +37,7 @@ syscall(unsigned long r0,
                           "b"(r1),
                           "c"(r2),
                           "d"(r3)
-                        : );
+                        );
 
         return *res1&0x1 ? (int)*res2 : 0; /* return possible error code */
 }

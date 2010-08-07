@@ -6,11 +6,13 @@ include ../../flags.mk
 # include ../variables.mk
 # include ../flags.mk
 
+SUBDIRS = $(target_cpu)
+
 .PHONY = all clean
 
 all:
-	$(MAKE) -C $(target_cpu) all
+	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir all); done
 
 clean:
-	$(MAKE) -C $(target_cpu) clean
+	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir clean); done
 

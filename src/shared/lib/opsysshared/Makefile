@@ -12,16 +12,15 @@ CSOURCES = tid.c
 
 CPPFLAGS += -I$(includedir) -I$(srcdir)/shared/include/opsys
 
+LIBRARIES = libopsysshared.a
+
 .PHONY : all clean
 
-all : libopsysshared.a
+all : $(LIBRARIES)
 
 clean :
-	rm -fr libopsysshared.a
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
-
-libopsysshared.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ar rcs $@ $^
+	$(RM) -fr $(LIBRARIES)
+	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 include ../../../rules.mk
 

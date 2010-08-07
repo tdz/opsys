@@ -12,16 +12,15 @@ CSOURCES = write.c
 
 CPPFLAGS += -I$(includedir)/crt
 
+LIBRARIES = libcrt.a
+
 .PHONY : all clean
 
-all : libcrt.a
+all : $(LIBRARIES)
 
 clean :
-	rm -fr libcrt.a
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
-
-libcrt.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ar rcs $@ $^
+	$(RM) -fr $(LIBRARIES)
+	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 include ../../../rules.mk
 

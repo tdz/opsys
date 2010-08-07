@@ -13,16 +13,15 @@ CSOURCES = errno.c \
 
 CPPFLAGS += -I$(includedir)
 
+LIBRARIES = libcshared.a
+
 .PHONY : all clean
 
-all : libcshared.a
+all : $(LIBRARIES)
 
 clean :
-	rm -fr libcshared.a
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
-
-libcshared.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ar rcs $@ $^
+	$(RM) -fr $(LIBRARIES)
+	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 include ../../../rules.mk
 

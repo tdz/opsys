@@ -5,6 +5,8 @@ include ../flags.mk
 
 archdir = ./arch
 
+SUBDIRS = $(archdir)
+
 ASMSOURCES =
 
 CSOURCES = alloc.c \
@@ -36,19 +38,17 @@ LDFLAGS += -Ttext=$(reloc_addr) -L$(archdir)/$(target_cpu)
 
 CPPFLAGS += -I$(archdir)/$(target_cpu) -I./include -I$(srcdir)/shared/include/opsys
 
+LIBRARIES = libkernel.a
+
 .PHONY : all clean
 
-all : libkernel.a
-	$(MAKE) -C $(archdir) all
+all : $(LIBRARIES)
+	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir all); done
 
 clean :
-	make -C $(archdir) clean
-	rm -fr libkernel.a
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
-
-libkernel.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ar rcs $@ $^
-	ranlib $@
+	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir clean); done
+	$(RM) -fr $(LIBRARIES)
+	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 include ../rules.mk
 

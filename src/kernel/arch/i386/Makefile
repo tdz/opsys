@@ -35,16 +35,18 @@ LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel -L$(srcdir)/shared/lib/opsyss
 
 LDADD += -lkernel -lopsysshared -lcshared
 
+PROGRAMS = oskernel
+
 .PHONY : all clean
 
-all : oskernel
+all : $(PROGRAMS)
 
 clean :
-	rm -fr oskernel
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
+	$(RM) -fr $(PROGRAMS)
+	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -o $@ $^ $(LDADD)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)
 
 include ../../../rules.mk
 

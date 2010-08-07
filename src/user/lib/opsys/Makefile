@@ -13,16 +13,15 @@ CSOURCES = syscall.c \
 
 CPPFLAGS += -I$(includedir)/opsys
 
+LIBRARIES = libopsys.a
+
 .PHONY : all clean
 
-all : libopsys.a
+all : $(LIBRARIES)
 
 clean :
-	rm -fr libopsys.a
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
-
-libopsys.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ar rcs $@ $^
+	$(RM) -fr $(LIBRARIES)
+	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 include ../../../rules.mk
 

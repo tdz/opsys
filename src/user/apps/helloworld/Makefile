@@ -15,16 +15,18 @@ CPPFLAGS +=
 
 LDFLAGS += -L$(libdir)/crt
 
+PROGRAMS = helloworld
+
 .PHONY : all clean
 
-all : helloworld
+all : $(PROGRAMS)
 
 clean :
-	rm -fr helloworld
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
+	$(RM) -fr $(PROGRAMS)
+	$(RM) -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -o $@ $^ -lcrt $(LDADD)
+	$(LD) $(LDFLAGS) -o $@ $^ -lcrt $(LDADD)
 
 include ../../../rules.mk
 

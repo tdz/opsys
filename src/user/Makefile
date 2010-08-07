@@ -1,14 +1,17 @@
 
-LIBDIR = lib
-APPSDIR = apps
+topdir = ../..
+include ../variables.mk
+include ../flags.mk
+
+SUBDIRS = lib apps
 
 .PHONY = all clean
 
 all:
-	$(MAKE) -C $(LIBDIR) all
-	$(MAKE) -C $(APPSDIR) all
+	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir all); done
 
 clean:
-	$(MAKE) -C $(LIBDIR) clean
-	$(MAKE) -C $(APPSDIR) clean
+	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir clean); done
+
+include ../rules.mk
 

@@ -175,8 +175,11 @@ err_sched_switch_to:
 void
 sched_irq_handler(unsigned char irqno)
 {
+        /* scheduler might sleep, so turn on interrupts */
         sti();
+
         sched_switch();
+
         cli();
 }
 

@@ -480,8 +480,7 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        if ((err = tcb_helper_run_kernel_thread(tcb,
-                                                system_srv_start)) < 0) {
+        if ((err = tcb_helper_run_kernel_thread(tcb, system_srv_start)) < 0) {
                 console_perror("tcb_set_initial_ready_state", -err);
                 return;
         }

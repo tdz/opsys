@@ -3,7 +3,7 @@ SRCDIR = src
 
 .PHONY = all clean image doc html
 
-all: clean
+all:
 	$(MAKE) -C $(SRCDIR) all
 
 clean:

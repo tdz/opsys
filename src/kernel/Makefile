@@ -39,16 +39,19 @@ CPPFLAGS += -I$(archdir)/$(target_cpu) -I./include -I$(srcdir)/shared/include/op
 .PHONY : all clean
 
 all : libkernel.a
-	make -C $(archdir) all
+	$(MAKE) -C $(archdir) all
 
 clean :
 	make -C $(archdir) clean
 	rm -fr libkernel.a
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 libkernel.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ar rcs $@ $?
+	ar rcs $@ $^
 	ranlib $@
 
 include ../rules.mk
+
+# include dependency rules
+-include $(CSOURCES:.c=.d)
 

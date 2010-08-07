@@ -1,7 +1,9 @@
 
 # some default flags needed in all makefiles
 
-SHELL = /bin/sh
+SHELL = /bin/bash
+
+CC = gcc
 
 CPPFLAGS = -nostdinc -I. -I$(srcdir)/shared/include
 

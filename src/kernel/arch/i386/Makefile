@@ -41,10 +41,13 @@ all : oskernel
 
 clean :
 	rm -fr oskernel
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ld $(LDFLAGS) -o $@ $? $(LDADD)
+	ld $(LDFLAGS) -o $@ $^ $(LDADD)
 
 include ../../../rules.mk
+
+# include dependency rules
+-include $(CSOURCES:.c=.d)
 

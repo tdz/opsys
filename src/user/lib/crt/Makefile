@@ -18,10 +18,13 @@ all : libcrt.a
 
 clean :
 	rm -fr libcrt.a
-	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
+	rm -fr $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(CSOURCES:.c=.d)
 
 libcrt.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
-	ar rcs $@ $?
+	ar rcs $@ $^
 
 include ../../../rules.mk
+
+# include dependency rules
+-include $(CSOURCES:.c=.d)
 

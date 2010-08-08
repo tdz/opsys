@@ -21,7 +21,6 @@ CSOURCES = alloc.c \
            list.c \
            loader.c \
            memzone.c \
-           multiboot.c \
            physmem.c \
            pit.c \
            sched.c \

@@ -21,12 +21,11 @@
 pde_type
 pde_create(unsigned long pfindex, unsigned long flags)
 {
-        return (pfindex<<12) | (flags&PDE_ALL_FLAGS);
+        return (pfindex << 12) | (flags & PDE_ALL_FLAGS);
 }
 
 unsigned long
 pde_get_pageframe_index(pde_type pde)
 {
-        return pde>>12;
+        return pde >> 12;
 }
-

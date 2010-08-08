@@ -45,9 +45,10 @@
 int
 address_space_helper_init_kernel_address_space(struct address_space *as)
 {
-        /* TODO: dynamic allocation of page directory needs rework of the
-         *       page-frame allocator. It should be possible to specify
-         *       position of page frame, (e.g., < 4Mib).
+        /*
+         * TODO: dynamic allocation of page directory needs rework of the
+         * *       page-frame allocator. It should be possible to specify
+         * *       position of page frame, (e.g., < 4Mib).
          */
         static struct page_directory kernel_pd;
 
@@ -55,47 +56,60 @@ address_space_helper_init_kernel_address_space(struct address_space *as)
         int err;
         enum virtmem_area_name name;
 
-        /* allocate and init page directory for kernel task */
+        /*
+         * allocate and init page directory for kernel task 
+         */
 
-        /*os_index_t pfindex;
+        /*
+         * os_index_t pfindex;
+         * 
+         * if (!(pfindex = physmem_alloc_frames(pageframe_count(sizeof(*pd))))) {
+         * err = -ENOMEM;
+         * goto err_physmem_alloc_frames;
+         * }
+         * 
+         * pd = pageframe_address(pfindex);
+         */
 
-        if (!(pfindex = physmem_alloc_frames(pageframe_count(sizeof(*pd))))) {
-                err = -ENOMEM;
-                goto err_physmem_alloc_frames;
-        }
-
-        pd = pageframe_address(pfindex);*/
-        
         err = physmem_ref_frames(pageframe_index(&kernel_pd),
                                  pageframe_count(sizeof(*pd)));
-        if (err) {
+        if (err)
+        {
                 goto err_physmem_ref_page_frames;
         }
 
         pd = &kernel_pd;
 
-        if ((err = page_directory_init(pd)) < 0) {
+        if ((err = page_directory_init(pd)) < 0)
+        {
                 goto err_page_directory_init;
         }
 
-        /* init address space for kernel task */
+        /*
+         * init address space for kernel task 
+         */
 
-        if ((err = address_space_init(as, PAGING_32BIT, pd)) < 0) {
+        if ((err = address_space_init(as, PAGING_32BIT, pd)) < 0)
+        {
                 goto err_address_space_init;
         }
 
         err = 0;
 
-        /* install page tables in all kernel areas */
+        /*
+         * install page tables in all kernel areas 
+         */
 
-        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name) {
+        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name)
+        {
 
                 const struct virtmem_area *area;
                 unsigned long ptindex, ptcount;
 
                 area = virtmem_area_get_by_name(name);
 
-                if (!(area->flags&VIRTMEM_AREA_FLAG_PAGETABLES)) {
+                if (!(area->flags & VIRTMEM_AREA_FLAG_PAGETABLES))
+                {
                         continue;
                 }
 
@@ -103,43 +117,57 @@ address_space_helper_init_kernel_address_space(struct address_space *as)
                 ptcount = pagetable_count(page_address(area->pgindex),
                                           page_memory(area->npages));
 
-                /* create page tables for low area */
+                /*
+                 * create page tables for low area 
+                 */
 
                 err = address_space_alloc_page_tables_nopg(as,
                                                            ptindex,
                                                            ptcount,
-                                                           PDE_FLAG_PRESENT|
+                                                           PDE_FLAG_PRESENT |
                                                            PDE_FLAG_WRITEABLE);
         }
 
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_address_space_alloc_page_tables_nopg;
         }
 
-        /* create identity mapping for all identity areas */
+        /*
+         * create identity mapping for all identity areas 
+         */
 
-        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name) {
+        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name)
+        {
 
                 const struct virtmem_area *area;
 
                 area = virtmem_area_get_by_name(name);
 
-                if (!(area->flags&VIRTMEM_AREA_FLAG_POLUTE)) {
+                if (!(area->flags & VIRTMEM_AREA_FLAG_POLUTE))
+                {
                         continue;
                 }
 
-                if (area->flags&VIRTMEM_AREA_FLAG_IDENTITY) {
+                if (area->flags & VIRTMEM_AREA_FLAG_IDENTITY)
+                {
                         err = address_space_map_pageframes_nopg(as,
                                                                 area->pgindex,
                                                                 area->pgindex,
                                                                 area->npages,
-                                                                PTE_FLAG_PRESENT|
+                                                                PTE_FLAG_PRESENT
+                                                                |
                                                                 PTE_FLAG_WRITEABLE);
-                } else {
-                        os_index_t pfindex = physmem_alloc_frames(
-                                pageframe_count(page_memory(area->npages)));
+                }
+                else
+                {
+                        os_index_t pfindex =
+                                physmem_alloc_frames(pageframe_count
+                                                     (page_memory
+                                                      (area->npages)));
 
-                        if (!pfindex) {
+                        if (!pfindex)
+                        {
                                 err = -1;
                                 break;
                         }
@@ -148,18 +176,23 @@ address_space_helper_init_kernel_address_space(struct address_space *as)
                                                                 pfindex,
                                                                 area->pgindex,
                                                                 area->npages,
-                                                                PTE_FLAG_PRESENT|
+                                                                PTE_FLAG_PRESENT
+                                                                |
                                                                 PTE_FLAG_WRITEABLE);
                 }
         }
 
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_address_space_map_pageframes_nopg;
         }
 
-        /* prepare temporary mappings */
+        /*
+         * prepare temporary mappings 
+         */
 
-        if ((err = address_space_install_tmp(as)) < 0) {
+        if ((err = address_space_install_tmp(as)) < 0)
+        {
                 goto err_address_space_install_tmp;
         }
 
@@ -180,17 +213,19 @@ err_physmem_ref_page_frames:
 
 static int
 address_space_helper_flat_copy_areas(const struct address_space *src_as,
-                                           struct address_space *dst_as,
-                                           unsigned long pteflags)
+                                     struct address_space *dst_as,
+                                     unsigned long pteflags)
 {
         enum virtmem_area_name name;
 
-        for (name = 0; name < LAST_VIRTMEM_AREA; ++name) {
+        for (name = 0; name < LAST_VIRTMEM_AREA; ++name)
+        {
 
                 const struct virtmem_area *area =
                         virtmem_area_get_by_name(name);
 
-                if (area->flags&pteflags) {
+                if (area->flags & pteflags)
+                {
                         address_space_share_2nd_lvl_ps(dst_as,
                                                        src_as,
                                                        area->pgindex,
@@ -202,43 +237,54 @@ address_space_helper_flat_copy_areas(const struct address_space *src_as,
 }
 
 int
-address_space_helper_init_address_space_from_parent(struct address_space *parent,
+address_space_helper_init_address_space_from_parent(struct address_space
+                                                    *parent,
                                                     struct address_space *as)
 {
         int err;
         os_index_t pgindex;
         struct page_directory *pd;
 
-        /* create page directory (has to be at page boundary) */
+        /*
+         * create page directory (has to be at page boundary) 
+         */
 
         pgindex = virtmem_alloc_pages_in_area(parent,
                                               VIRTMEM_AREA_KERNEL,
                                               page_count(0, sizeof(*pd)),
-                                              PTE_FLAG_PRESENT|
+                                              PTE_FLAG_PRESENT |
                                               PTE_FLAG_WRITEABLE);
-        if (pgindex < 0) {
+        if (pgindex < 0)
+        {
                 err = pgindex;
                 goto err_virtmem_alloc_pages_in_area;
         }
 
         pd = page_address(pgindex);
 
-        if ((err = page_directory_init(pd)) < 0) {
+        if ((err = page_directory_init(pd)) < 0)
+        {
                 goto err_page_directory_init;
         }
 
-        /* init address space */
+        /*
+         * init address space 
+         */
 
-        if ((err = address_space_init(as, PAGING_32BIT, pd)) < 0) {
+        if ((err = address_space_init(as, PAGING_32BIT, pd)) < 0)
+        {
                 goto err_address_space_init;
         }
 
-        /* flat-copy page directory from parent */
+        /*
+         * flat-copy page directory from parent 
+         */
 
         err = address_space_helper_flat_copy_areas(parent,
                                                    as,
                                                    VIRTMEM_AREA_FLAG_GLOBAL);
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_address_space_helper_flat_copy_areas;
         }
 
@@ -249,25 +295,32 @@ err_address_space_helper_flat_copy_areas:
 err_address_space_init:
         page_directory_uninit(pd);
 err_page_directory_init:
-        /* TODO: unmap page-directory pages */
+        /*
+         * TODO: unmap page-directory pages 
+         */
 err_virtmem_alloc_pages_in_area:
         return err;
 }
 
 int
-address_space_helper_allocate_address_space_from_parent(struct address_space *parent,
-                                                        struct address_space **as)
+address_space_helper_allocate_address_space_from_parent(struct address_space
+                                                        *parent,
+                                                        struct address_space
+                                                        **as)
 {
         int err;
 
-        if ( !(*as = kmalloc(sizeof(**as))) ) {
+        if (!(*as = kmalloc(sizeof(**as))))
+        {
                 err = -ENOMEM;
                 goto err_kmalloc_as;
         }
 
-        err = address_space_helper_init_address_space_from_parent(parent, *as);
+        err = address_space_helper_init_address_space_from_parent(parent,
+                                                                  *as);
 
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_address_space_helper_init_address_space_from_parent;
         }
 
@@ -278,4 +331,3 @@ err_address_space_helper_init_address_space_from_parent:
 err_kmalloc_as:
         return err;
 }
-

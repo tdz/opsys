@@ -24,7 +24,7 @@
 #include "spinlock.h"
 
 int
-spinlock_init(spinlock_type *spinlock)
+spinlock_init(spinlock_type * spinlock)
 {
         *spinlock = 0;
 
@@ -32,34 +32,37 @@ spinlock_init(spinlock_type *spinlock)
 }
 
 void
-spinlock_uninit(spinlock_type *spinlock)
+spinlock_uninit(spinlock_type * spinlock)
 {
         return;
 }
 
 int
-spinlock_try_lock(spinlock_type *spinlock, unsigned long uid)
+spinlock_try_lock(spinlock_type * spinlock, unsigned long uid)
 {
         return atomic_xchg(spinlock, uid) ? -EBUSY : 0;
 }
 
 void
-spinlock_lock(spinlock_type *spinlock, unsigned long uid)
+spinlock_lock(spinlock_type * spinlock, unsigned long uid)
 {
         int err;
 
-        do {
-                if (*spinlock) {
+        do
+        {
+                if (*spinlock)
+                {
                         err = -EBUSY;
-                } else {
+                }
+                else
+                {
                         err = spinlock_try_lock(spinlock, uid);
                 }
         } while (err == -EBUSY);
 }
 
 void
-spinlock_unlock(spinlock_type *spinlock)
+spinlock_unlock(spinlock_type * spinlock)
 {
         *spinlock = 0;
 }
-

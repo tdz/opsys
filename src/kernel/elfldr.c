@@ -40,39 +40,43 @@
 
 static int
 elf_loader_construct_phdr_null(const struct address_space *as,
-                               const Elf32_Phdr *elf_phdr,
+                               const Elf32_Phdr * elf_phdr,
                                const unsigned char *img,
-                                     struct address_space *dst_as)
+                               struct address_space *dst_as)
 {
         return 0;
 }
 
 static int
 elf_loader_construct_phdr_load(const struct address_space *as,
-                               const Elf32_Phdr *elf_phdr,
+                               const Elf32_Phdr * elf_phdr,
                                const unsigned char *img,
-                                     struct address_space *dst_as)
+                               struct address_space *dst_as)
 {
         int err;
 
         err = virtmem_alloc_pageframes(dst_as,
-                                       pageframe_index(elf_phdr->p_offset+img),
-                                       page_index((void*)elf_phdr->p_vaddr),
-                                       page_count((void*)elf_phdr->p_vaddr,
-                                                         elf_phdr->p_filesz),
-                                       PTE_FLAG_PRESENT|
-                                       PTE_FLAG_WRITEABLE|
+                                       pageframe_index(elf_phdr->p_offset +
+                                                       img),
+                                       page_index((void *)elf_phdr->p_vaddr),
+                                       page_count((void *)elf_phdr->p_vaddr,
+                                                  elf_phdr->p_filesz),
+                                       PTE_FLAG_PRESENT | PTE_FLAG_WRITEABLE |
                                        PTE_FLAG_USERMODE);
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_virtmem_alloc_pageframes;
         }
 
-        /* set remaining bytes to zero */
+        /*
+         * set remaining bytes to zero 
+         */
 
-        if (elf_phdr->p_filesz < elf_phdr->p_memsz) {
-                unsigned char *vaddr = (unsigned char*)elf_phdr->p_vaddr;
-                memset(vaddr+elf_phdr->p_filesz, 0, elf_phdr->p_memsz -
-                                                    elf_phdr->p_filesz);
+        if (elf_phdr->p_filesz < elf_phdr->p_memsz)
+        {
+                unsigned char *vaddr = (unsigned char *)elf_phdr->p_vaddr;
+                memset(vaddr + elf_phdr->p_filesz, 0, elf_phdr->p_memsz -
+                       elf_phdr->p_filesz);
         }
 
         return 0;
@@ -83,40 +87,46 @@ err_virtmem_alloc_pageframes:
 
 static int
 elf_loader_construct_phdr(const struct address_space *as,
-                          const Elf32_Phdr *elf_phdr,
+                          const Elf32_Phdr * elf_phdr,
                           const unsigned char *img,
-                                struct address_space *dst_as)
+                          struct address_space *dst_as)
 {
-        static int (* const construct_phdr[])(const struct address_space*,
-                                              const Elf32_Phdr*,
-                                              const unsigned char*,
-                                                    struct address_space *) = {
-                elf_loader_construct_phdr_null,
-                elf_loader_construct_phdr_load};
+        static int (*const construct_phdr[]) (const struct address_space *,
+                                              const Elf32_Phdr *,
+                                              const unsigned char *,
+                                              struct address_space *) =
+        {
+        elf_loader_construct_phdr_null, elf_loader_construct_phdr_load};
 
-        /* some sanity checks */
+        /*
+         * some sanity checks 
+         */
 
-        if (!(elf_phdr->p_type < sizeof(construct_phdr)/sizeof(construct_phdr[0])) ||
-            !construct_phdr[elf_phdr->p_type]) {
+        if (!
+            (elf_phdr->p_type <
+             sizeof(construct_phdr) / sizeof(construct_phdr[0]))
+            || !construct_phdr[elf_phdr->p_type])
+        {
                 return 0;
         }
 
-        return construct_phdr[elf_phdr->p_type](as, elf_phdr, img, dst_as);
+        return construct_phdr[elf_phdr->p_type] (as, elf_phdr, img, dst_as);
 }
 
 int
 elf_loader_exec(const struct address_space *as,
                 const unsigned char *img,
-                      void **ip,
-                      struct address_space *dst_as)
+                void **ip, struct address_space *dst_as)
 {
         const Elf32_Ehdr *elf_ehdr;
         size_t i;
         int err;
 
-        elf_ehdr = (const Elf32_Ehdr*)img;
+        elf_ehdr = (const Elf32_Ehdr *)img;
 
-        /* some sanity checks */
+        /*
+         * some sanity checks 
+         */
 
         if (!elf_loader_is_elf(img) ||
             (elf_ehdr->e_ident[EI_CLASS] != ELFCLASS32) ||
@@ -125,32 +135,38 @@ elf_loader_exec(const struct address_space *as,
             (elf_ehdr->e_type != ET_EXEC) ||
             (elf_ehdr->e_machine != EM_386) ||
             (elf_ehdr->e_version != EV_CURRENT) ||
-            (!elf_ehdr->e_entry) ||
-            (!elf_ehdr->e_phoff)) {
+            (!elf_ehdr->e_entry) || (!elf_ehdr->e_phoff))
+        {
                 err = -ENOEXEC;
                 goto err_checks;
         }
 
-        /* construct sections from program headers */
+        /*
+         * construct sections from program headers 
+         */
 
-        for (i = 0; i < elf_ehdr->e_phnum; ++i) {
+        for (i = 0; i < elf_ehdr->e_phnum; ++i)
+        {
 
                 const Elf32_Phdr *elf_phdr;
 
-                elf_phdr = (const Elf32_Phdr*)((img) +
-                        elf_ehdr->e_phoff +
-                        elf_ehdr->e_phentsize*i);
+                elf_phdr = (const Elf32_Phdr *)((img) +
+                                                elf_ehdr->e_phoff +
+                                                elf_ehdr->e_phentsize * i);
 
                 err = elf_loader_construct_phdr(as, elf_phdr, img, dst_as);
 
-                if (err < 0) {
+                if (err < 0)
+                {
                         goto err_elf_loader_construct_phdr;
                 }
         }
 
-        /* init TCB of first thread */
+        /*
+         * init TCB of first thread 
+         */
 
-        *ip = (void*)elf_ehdr->e_entry;
+        *ip = (void *)elf_ehdr->e_entry;
 
         return 0;
 
@@ -162,8 +178,7 @@ err_checks:
 int
 elf_loader_is_elf(const unsigned char *img)
 {
-        static const char ident[4] = {ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3};
+        static const char ident[4] = { ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3 };
 
-        return !memcmp(img, ident, sizeof(ident)/sizeof(ident[0]));
+        return !memcmp(img, ident, sizeof(ident) / sizeof(ident[0]));
 }
-

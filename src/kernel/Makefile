@@ -10,6 +10,7 @@ archdir = ./arch
 SUBDIRS = $(archdir)
 
 CSOURCES = alloc.c \
+           assert.c \
            bitset.c \
            console.c \
            crt.c \

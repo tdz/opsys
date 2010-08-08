@@ -30,7 +30,8 @@ memcmp(const void *s1, const void *s2, size_t n)
         c1 = s1;
         c2 = s2;
 
-        while (n && !res) {
+        while (n && !res)
+        {
                 res = *c1 == *c2 ? 0 : *c1 < *c2 ? -1 : 1;
                 --n;
                 ++s1;
@@ -49,7 +50,8 @@ memcpy(void *dest, const void *src, size_t n)
         cdest = dest;
         csrc = src;
 
-        while (n) {
+        while (n)
+        {
                 *cdest = *csrc;
                 --n;
                 ++cdest;
@@ -64,7 +66,8 @@ memset(void *mem, int c, size_t n)
 {
         unsigned char *s = mem;
 
-        while (n) {
+        while (n)
+        {
                 *s = c;
                 ++s;
                 --n;
@@ -78,23 +81,28 @@ strerror(int errnum)
 {
         static char strerr[32];
 
-        return strerror_l(errnum, strerr, sizeof(strerr)/sizeof(strerr[0]));
+        return strerror_l(errnum, strerr, sizeof(strerr) / sizeof(strerr[0]));
 }
 
 char *
 strerror_l(int errnum, char *strerrbuf, size_t buflen)
 {
         if ((errnum < 1)
-            || (errnum >= sizeof(sys_errlist)/sizeof(sys_errlist[0]))) {
+            || (errnum >= sizeof(sys_errlist) / sizeof(sys_errlist[0])))
+        {
                 errnum = 0;
         }
 
-        if (buflen) {
-                size_t errstrlen = strlen(sys_errlist[errnum])+1;
+        if (buflen)
+        {
+                size_t errstrlen = strlen(sys_errlist[errnum]) + 1;
 
-                if (errstrlen < buflen) {
+                if (errstrlen < buflen)
+                {
                         buflen = errstrlen;
-                } else {
+                }
+                else
+                {
                         buflen -= 1;
                         strerrbuf[buflen] = '\0';
                 }
@@ -107,12 +115,12 @@ size_t
 strlen(const char *str)
 {
         size_t len = 0;
-        
-        while (*str) {
+
+        while (*str)
+        {
                 ++str;
                 ++len;
         }
 
         return len;
 }
-

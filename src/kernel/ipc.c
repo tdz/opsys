@@ -38,48 +38,64 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
 {
         int err;
 
-        /* check if rcv is ready to receive */
+        /*
+         * check if rcv is ready to receive 
+         */
 
         if ((ipc_msg_flags_get_timeout(msg) == IPC_TIMEOUT_NOW)
-                && (tcb_get_state(rcv) != THREAD_STATE_RECV)) {
+            && (tcb_get_state(rcv) != THREAD_STATE_RECV))
+        {
                 err = -EBUSY;
                 goto err_ipc_msg_flags_get_timeout;
         }
 
-        /* enque message */
-        /* TODO: enque at end, not at beginning; to prevent walk over list,
-                 first elemant could have prev pointer set to end of list */
+        /*
+         * enque message 
+         */
+        /*
+         * TODO: enque at end, not at beginning; to prevent walk over list,
+         * first elemant could have prev pointer set to end of list 
+         */
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
 
-        if (rcv->ipcin) {
+        if (rcv->ipcin)
+        {
                 rcv->ipcin = list_init(&msg->snd->ipcout, rcv->ipcin->prev,
-                                                          rcv->ipcin,
-                                                         &msg->snd->msg);
-        } else {
+                                       rcv->ipcin, &msg->snd->msg);
+        }
+        else
+        {
                 rcv->ipcin = list_init(&msg->snd->ipcout,
-                                        NULL,
-                                        NULL,
-                                       &msg->snd->msg);
+                                       NULL, NULL, &msg->snd->msg);
         }
 
         spinlock_unlock(&rcv->lock);
 
-        /* sender state */
+        /*
+         * sender state 
+         */
 
-        spinlock_lock(&msg->snd->lock, (unsigned long)sched_get_current_thread());
+        spinlock_lock(&msg->snd->lock,
+                      (unsigned long)sched_get_current_thread());
         tcb_set_state(msg->snd, THREAD_STATE_RECV);
         spinlock_unlock(&msg->snd->lock);
 
-        if (ipc_msg_flags_has_timeout_value(msg)) {
-                /* TODO: implement timeout */
+        if (ipc_msg_flags_has_timeout_value(msg))
+        {
+                /*
+                 * TODO: implement timeout 
+                 */
         }
 
-        /* wake up receiver if necessary */
+        /*
+         * wake up receiver if necessary 
+         */
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
 
-        if (tcb_get_state(rcv) == THREAD_STATE_RECV) {
+        if (tcb_get_state(rcv) == THREAD_STATE_RECV)
+        {
                 tcb_set_state(rcv, THREAD_STATE_READY);
         }
 
@@ -100,7 +116,8 @@ ipc_reply(struct ipc_msg *msg, struct tcb *rcv)
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
 
-        if (tcb_get_state(rcv) != THREAD_STATE_RECV) {
+        if (tcb_get_state(rcv) != THREAD_STATE_RECV)
+        {
                 err = -EBUSY;
                 goto err_tcb_get_state;
         }
@@ -123,8 +140,11 @@ ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
 
-        if (!rcv->ipcin) {
-                /* no pending messages; schedule possible senders */
+        if (!rcv->ipcin)
+        {
+                /*
+                 * no pending messages; schedule possible senders 
+                 */
                 tcb_set_state(rcv, THREAD_STATE_RECV);
                 spinlock_unlock(&rcv->lock);
                 sched_switch();
@@ -132,17 +152,21 @@ ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
                               (unsigned long)sched_get_current_thread());
         }
 
-        if (!rcv->ipcin) {
+        if (!rcv->ipcin)
+        {
                 err = -EAGAIN;
                 goto err_rcv_ipcin;
         }
 
-        /* deque first IPC message */                
+        /*
+         * deque first IPC message 
+         */
 
         *msg = list_data(rcv->ipcin);
         rcv->ipcin = list_next(rcv->ipcin);
 
-        if (!*msg) {
+        if (!*msg)
+        {
                 err = -EAGAIN;
                 goto err_msg;
         }
@@ -156,4 +180,3 @@ err_rcv_ipcin:
         spinlock_unlock(&rcv->lock);
         return err;
 }
-

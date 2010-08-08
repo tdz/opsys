@@ -38,7 +38,8 @@ semaphore_init(struct semaphore *sem, unsigned long slots)
 {
         int err;
 
-        if ((err = spinlock_init(&sem->lock)) < 0) {
+        if ((err = spinlock_init(&sem->lock)) < 0)
+        {
                 goto err_spinlock_init;
         }
 
@@ -67,7 +68,8 @@ semaphore_try_enter(struct semaphore *sem)
 
         avail = !!sem->slots;
 
-        if (avail) {
+        if (avail)
+        {
                 --sem->slots;
         }
 
@@ -82,29 +84,37 @@ semaphore_enter(struct semaphore *sem)
 
         self = sched_get_current_thread();
 
-        do {
+        do
+        {
                 spinlock_lock(&sem->lock, (unsigned long)self);
 
                 avail = !!sem->slots;
 
-                if (avail) {
-                        /* empty slots available */
+                if (avail)
+                {
+                        /*
+                         * empty slots available 
+                         */
                         --sem->slots;
-                } else {
+                }
+                else
+                {
                         struct list *waiters;
 
-                        /* no slots available, enque self in waiter list */
+                        /*
+                         * no slots available, enque self in waiter list 
+                         */
 
-                        if (sem->waiters) {
+                        if (sem->waiters)
+                        {
                                 waiters = list_init(&self->wait,
                                                     sem->waiters->prev,
-                                                    sem->waiters,
-                                                    self);
-                        } else {
+                                                    sem->waiters, self);
+                        }
+                        else
+                        {
                                 waiters = list_init(&self->wait,
-                                                    NULL,
-                                                    NULL,
-                                                    self);
+                                                    NULL, NULL, self);
                         }
 
                         sem->waiters = waiters;
@@ -114,15 +124,21 @@ semaphore_enter(struct semaphore *sem)
 
                 spinlock_unlock(&sem->lock);
 
-                if (!avail) {
-                        /* no slots available, schedule self */
-                        sched_switch(0);
+                if (!avail)
+                {
+                        /*
+                         * no slots available, schedule self 
+                         */
+                        sched_switch();
 
-                        /* when returning, self is not waiting anymore */
+                        /*
+                         * when returning, self is not waiting anymore 
+                         */
 
                         spinlock_lock(&sem->lock, (unsigned long)self);
 
-                        if (sem->waiters == &self->wait) {
+                        if (sem->waiters == &self->wait)
+                        {
                                 sem->waiters = self->wait.next;
                         }
                         list_deque(&self->wait);
@@ -142,19 +158,27 @@ semaphore_leave(struct semaphore *sem)
 
         spinlock_lock(&sem->lock, (unsigned long)self);
 
-        /* free slot */
+        /*
+         * free slot 
+         */
         ++sem->slots;
 
-        /* wake up one waiter */
+        /*
+         * wake up one waiter 
+         */
 
-        for (waiters = sem->waiters; waiters; waiters = list_next(waiters)) {
+        for (waiters = sem->waiters; waiters; waiters = list_next(waiters))
+        {
                 struct tcb *waiter = list_data(sem->waiters);
 
-                /* any thread in this list is either blocked or has been
-                   woken up by some other, concurrent invocation of this
-                   function, therefore only consider waiting threads */
+                /*
+                 * any thread in this list is either blocked or has been
+                 * woken up by some other, concurrent invocation of this
+                 * function, therefore only consider waiting threads 
+                 */
 
-                if (tcb_get_state(waiter) == THREAD_STATE_WAITING) {
+                if (tcb_get_state(waiter) == THREAD_STATE_WAITING)
+                {
                         tcb_set_state(waiter, THREAD_STATE_READY);
                         break;
                 }
@@ -162,4 +186,3 @@ semaphore_leave(struct semaphore *sem)
 
         spinlock_unlock(&sem->lock);
 }
-

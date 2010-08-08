@@ -51,7 +51,7 @@ address_space_get_page_table_tmp(void)
         low = virtmem_area_get_by_name(VIRTMEM_AREA_LOW);
         tmp = virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 
-        return page_address(low->pgindex + low->npages - (tmp->npages>>10));
+        return page_address(low->pgindex + low->npages - (tmp->npages >> 10));
 }
 
 static os_index_t
@@ -81,7 +81,6 @@ address_space_get_index_tmp(os_index_t pgindex)
         return pgindex - tmp->pgindex;
 }
 
-
 static os_index_t
 address_space_install_page_frame_tmp(os_index_t pfindex)
 {
@@ -91,28 +90,36 @@ address_space_install_page_frame_tmp(os_index_t pfindex)
 
         pt = address_space_get_page_table_tmp();
 
-        /* find empty temporary page */
+        /*
+         * find empty temporary page 
+         */
 
         ptebeg = pt->entry;
-        pteend = pt->entry + sizeof(pt->entry)/sizeof(pt->entry[0]);
+        pteend = pt->entry + sizeof(pt->entry) / sizeof(pt->entry[0]);
         pte = ptebeg;
 
-        while ((pte < pteend) && (pte_get_pageframe_index(*pte))) {
+        while ((pte < pteend) && (pte_get_pageframe_index(*pte)))
+        {
                 ++pte;
         }
 
-        if (!(pteend-pte)) {
-                /* none found */
+        if (!(pteend - pte))
+        {
+                /*
+                 * none found 
+                 */
                 return -EBUSY;
         }
 
-        /* establish mapping to page frame */
+        /*
+         * establish mapping to page frame 
+         */
 
         physmem_ref_frames(pfindex, 1);
 
-        *pte = pte_create(pfindex, PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
+        *pte = pte_create(pfindex, PTE_FLAG_PRESENT | PTE_FLAG_WRITEABLE);
 
-        pgindex = address_space_get_page_tmp(pte-ptebeg);
+        pgindex = address_space_get_page_tmp(pte - ptebeg);
 
         mmu_flush_tlb_entry(page_address(pgindex));
 
@@ -126,8 +133,11 @@ address_space_uninstall_page_tmp(os_index_t pgindex)
         os_index_t index;
         int err;
 
-        if (!address_space_page_is_tmp(pgindex)) {
-                /* not temporarily mapped */
+        if (!address_space_page_is_tmp(pgindex))
+        {
+                /*
+                 * not temporarily mapped 
+                 */
                 return -EINVAL;
         }
 
@@ -135,11 +145,16 @@ address_space_uninstall_page_tmp(os_index_t pgindex)
 
         index = address_space_get_index_tmp(pgindex);
 
-        /* finish access before unmapping page */
+        /*
+         * finish access before unmapping page 
+         */
         rwmembar();
 
-        /* remove mapping */
-        if ((err = page_table_unmap_page_frame(pt, index)) < 0) {
+        /*
+         * remove mapping 
+         */
+        if ((err = page_table_unmap_page_frame(pt, index)) < 0)
+        {
                 goto err_page_table_unmap_page_frame;
         }
 
@@ -154,12 +169,12 @@ err_page_table_unmap_page_frame:
 
 int
 address_space_init(struct address_space *as,
-                   enum paging_mode pgmode,
-                   void *tlps)
+                   enum paging_mode pgmode, void *tlps)
 {
         int err;
 
-        if ((err = semaphore_init(&as->sem, 1)) < 0) {
+        if ((err = semaphore_init(&as->sem, 1)) < 0)
+        {
                 goto err_semaphore_init;
         }
 
@@ -191,7 +206,8 @@ address_space_install_tmp(struct address_space *as)
 
         pt = address_space_get_page_table_tmp();
 
-        if ((err = page_table_init(pt)) < 0) {
+        if ((err = page_table_init(pt)) < 0)
+        {
                 goto err_page_table_init;
         }
 
@@ -204,9 +220,10 @@ address_space_install_tmp(struct address_space *as)
         err = page_directory_install_page_table(pd,
                                                 ptpfindex,
                                                 index,
-                                                PTE_FLAG_PRESENT|
+                                                PTE_FLAG_PRESENT |
                                                 PTE_FLAG_WRITEABLE);
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_page_directory_install_page_table;
         }
 
@@ -219,12 +236,14 @@ err_page_table_init:
 void
 address_space_enable(const struct address_space *as)
 {
-        switch (as->pgmode) {
+        switch (as->pgmode)
+        {
                 case PAGING_32BIT:
                         {
                                 const struct page_directory *pd = as->tlps;
 
-                                mmu_load(((unsigned long)pd->entry)&(~0xfff));
+                                mmu_load(((unsigned long)pd->entry) &
+                                         (~0xfff));
                                 mmu_enable_paging();
                         }
                         break;
@@ -238,8 +257,7 @@ address_space_enable(const struct address_space *as)
 static int
 address_space_map_pageframe_nopg_32bit(void *tlps,
                                        os_index_t pfindex,
-                                       os_index_t pgindex,
-                                       unsigned int flags)
+                                       os_index_t pgindex, unsigned int flags)
 {
         struct page_directory *pd;
         os_index_t ptindex;
@@ -248,21 +266,27 @@ address_space_map_pageframe_nopg_32bit(void *tlps,
 
         pd = tlps;
 
-        /* get page table */
+        /*
+         * get page table 
+         */
 
         ptindex = pagetable_index(page_address(pgindex));
 
         pt = pageframe_address(pde_get_pageframe_index(pd->entry[ptindex]));
 
-        if (!pt) {
-                /* no page table present */
+        if (!pt)
+        {
+                /*
+                 * no page table present 
+                 */
                 err = -ENOMEM;
                 goto err_nopagetable;
         }
 
         return page_table_map_page_frame(pt,
                                          pfindex,
-                                         pagetable_page_index(pgindex), flags);
+                                         pagetable_page_index(pgindex),
+                                         flags);
 
 err_nopagetable:
         return err;
@@ -271,8 +295,7 @@ err_nopagetable:
 static int
 address_space_map_pageframe_nopg_pae(void *tlps,
                                      os_index_t pfindex,
-                                     os_index_t pgindex,
-                                     unsigned int flags)
+                                     os_index_t pgindex, unsigned int flags)
 {
         return -ENOSYS;
 }
@@ -280,34 +303,31 @@ address_space_map_pageframe_nopg_pae(void *tlps,
 static int
 address_space_map_pageframe_nopg(struct address_space *as,
                                  os_index_t pfindex,
-                                 os_index_t pgindex,
-                                 unsigned int flags)
+                                 os_index_t pgindex, unsigned int flags)
 {
-        static int (* const map_pageframe_nopg[])(void*,
+        static int (*const map_pageframe_nopg[]) (void *,
                                                   os_index_t,
-                                                  os_index_t,
-                                                  unsigned int) = {
-                address_space_map_pageframe_nopg_32bit,
-                address_space_map_pageframe_nopg_pae};
+                                                  os_index_t, unsigned int) =
+        {
+        address_space_map_pageframe_nopg_32bit,
+                        address_space_map_pageframe_nopg_pae};
 
-        return map_pageframe_nopg[as->pgmode](as->tlps,
-                                              pgindex,
-                                              pgindex,
-                                              flags);
+        return map_pageframe_nopg[as->pgmode] (as->tlps,
+                                               pgindex, pgindex, flags);
 }
 
 int
 address_space_map_pageframes_nopg(struct address_space *as,
                                   os_index_t pfindex,
                                   os_index_t pgindex,
-                                  size_t count,
-                                  unsigned int flags)
+                                  size_t count, unsigned int flags)
 {
         int err = 0;
 
-        while (count && !(err < 0)) {
+        while (count && !(err < 0))
+        {
                 err = address_space_map_pageframe_nopg(as, pfindex,
-                                                           pgindex, flags);
+                                                       pgindex, flags);
                 ++pgindex;
                 ++pfindex;
                 --count;
@@ -327,28 +347,31 @@ address_space_alloc_page_table_nopg_32bit(void *tlps,
 
         pd = tlps;
 
-        if (pde_get_pageframe_index(pd->entry[ptindex])) {
-                return 0; /* page table already exists */
+        if (pde_get_pageframe_index(pd->entry[ptindex]))
+        {
+                return 0;       /* page table already exists */
         }
 
-        pfindex = physmem_alloc_frames(pageframe_count(sizeof(struct page_table)));
+        pfindex =
+                physmem_alloc_frames(pageframe_count
+                                     (sizeof(struct page_table)));
 
-        if (!pfindex) {
+        if (!pfindex)
+        {
                 err = -ENOMEM;
                 goto err_physmem_alloc_frames;
         }
 
-        if ((err = page_table_init(pageframe_address(pfindex))) < 0) {
+        if ((err = page_table_init(pageframe_address(pfindex))) < 0)
+        {
                 goto err_page_table_init;
         }
 
-        return page_directory_install_page_table(pd,
-                                                 pfindex,
-                                                 ptindex,
-                                                 flags);
+        return page_directory_install_page_table(pd, pfindex, ptindex, flags);
 
 err_page_table_init:
-        physmem_unref_frames(pfindex, pageframe_count(sizeof(struct page_table)));
+        physmem_unref_frames(pfindex,
+                             pageframe_count(sizeof(struct page_table)));
 err_physmem_alloc_frames:
         return err;
 }
@@ -363,27 +386,26 @@ address_space_alloc_page_table_nopg_pae(void *tlps,
 
 static int
 address_space_alloc_page_table_nopg(struct address_space *as,
-                                    os_index_t ptindex,
-                                    unsigned int flags)
+                                    os_index_t ptindex, unsigned int flags)
 {
-        static int (* const alloc_page_table_pg[])(void*,
-                                                   os_index_t,
-                                                   unsigned int) = {
-                address_space_alloc_page_table_nopg_32bit,
-                address_space_alloc_page_table_nopg_pae};
+        static int (*const alloc_page_table_pg[]) (void *,
+                                                   os_index_t, unsigned int) =
+        {
+        address_space_alloc_page_table_nopg_32bit,
+                        address_space_alloc_page_table_nopg_pae};
 
-        return alloc_page_table_pg[as->pgmode](as->tlps, ptindex, flags);
+        return alloc_page_table_pg[as->pgmode] (as->tlps, ptindex, flags);
 }
 
 int
 address_space_alloc_page_tables_nopg(struct address_space *as,
                                      os_index_t ptindex,
-                                     size_t ptcount,
-                                     unsigned int flags)
+                                     size_t ptcount, unsigned int flags)
 {
         int err;
 
-        for (err = 0; ptcount && !(err < 0); ++ptindex, --ptcount) {
+        for (err = 0; ptcount && !(err < 0); ++ptindex, --ptcount)
+        {
                 err = address_space_alloc_page_table_nopg(as, ptindex, flags);
         }
 
@@ -392,8 +414,7 @@ address_space_alloc_page_tables_nopg(struct address_space *as,
 
 static size_t
 address_space_check_empty_pages_32bit(const void *tlps,
-                                            os_index_t pgindex,
-                                            size_t pgcount)
+                                      os_index_t pgindex, size_t pgcount)
 {
         const struct page_directory *pd;
         os_index_t ptindex;
@@ -402,47 +423,60 @@ address_space_check_empty_pages_32bit(const void *tlps,
         pd = tlps;
 
         ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+        ptcount =
+                pagetable_count(page_address(pgindex), page_memory(pgcount));
 
-        for (nempty = 0; ptcount; --ptcount, ++ptindex) {
+        for (nempty = 0; ptcount; --ptcount, ++ptindex)
+        {
 
                 os_index_t pfindex;
 
                 pfindex = pde_get_pageframe_index(pd->entry[ptindex]);
 
-                if (!pfindex) {
+                if (!pfindex)
+                {
                         nempty +=
                                 minul(pgcount,
-                                      1024-pagetable_page_index(pgindex));
-                } else {
+                                      1024 - pagetable_page_index(pgindex));
+                }
+                else
+                {
 
                         os_index_t ptpgindex;
                         const struct page_table *pt;
                         size_t i;
 
-                        /* install page table in virtual address space */
+                        /*
+                         * install page table in virtual address space 
+                         */
 
-                        ptpgindex = address_space_install_page_frame_tmp(pfindex);
+                        ptpgindex =
+                                address_space_install_page_frame_tmp(pfindex);
 
-                        if (ptpgindex < 0) {
+                        if (ptpgindex < 0)
+                        {
                                 break;
                         }
 
                         pt = page_address(ptpgindex);
 
-                        /* count empty pages */
+                        /*
+                         * count empty pages 
+                         */
 
                         for (i = pagetable_page_index(pgindex);
                              pgcount
-                             && (i < sizeof(pt->entry)/sizeof(pt->entry[0]))
-                             && (!pte_get_pageframe_index(pt->entry[i]));
-                           ++i) {
+                             && (i < sizeof(pt->entry) / sizeof(pt->entry[0]))
+                             && (!pte_get_pageframe_index(pt->entry[i])); ++i)
+                        {
                                 --pgcount;
                                 ++pgindex;
                                 ++nempty;
                         }
 
-                        /* uninstall page table */
+                        /*
+                         * uninstall page table 
+                         */
                         address_space_uninstall_page_tmp(ptpgindex);
                 }
         }
@@ -452,48 +486,50 @@ address_space_check_empty_pages_32bit(const void *tlps,
 
 static size_t
 address_space_check_empty_pages_pae(const void *tlps,
-                                          os_index_t pgindex,
-                                          size_t pgcount)
+                                    os_index_t pgindex, size_t pgcount)
 {
         return -ENOSYS;
 }
 
 size_t
-address_space_check_empty_pages(const struct address_space *as,
-                                      os_index_t pgindex,
-                                      size_t pgcount)
+address_space_check_empty_pages(const struct address_space * as,
+                                os_index_t pgindex, size_t pgcount)
 {
-        static size_t (* const check_empty[])(const void*,
-                                                    os_index_t,
-                                                    size_t) = {
-                address_space_check_empty_pages_32bit,
-                address_space_check_empty_pages_pae};
+        static size_t(*const check_empty[]) (const void *,
+                                             os_index_t, size_t) =
+        {
+        address_space_check_empty_pages_32bit,
+                        address_space_check_empty_pages_pae};
 
-        return check_empty[as->pgmode](as->tlps, pgindex, pgcount);
+        return check_empty[as->pgmode] (as->tlps, pgindex, pgcount);
 }
 
 os_index_t
-address_space_find_empty_pages(const struct address_space *as,
-                                     size_t npages,
-                                     os_index_t pgindex_beg,
-                                     os_index_t pgindex_end)
+address_space_find_empty_pages(const struct address_space * as,
+                               size_t npages,
+                               os_index_t pgindex_beg, os_index_t pgindex_end)
 {
-        /* find continuous area in virtual memory */
+        /*
+         * find continuous area in virtual memory 
+         */
 
         while ((pgindex_beg < pgindex_end)
-                && (npages < (pgindex_end-pgindex_beg))) {
+               && (npages < (pgindex_end - pgindex_beg)))
+        {
 
                 size_t nempty;
 
                 nempty = address_space_check_empty_pages(as,
-                                                         pgindex_beg,
-                                                         npages);
-                if (nempty == npages) {
+                                                         pgindex_beg, npages);
+                if (nempty == npages)
+                {
                         return pgindex_beg;
                 }
 
-                /* goto page after non-empty one */
-                pgindex_beg += nempty+1;
+                /*
+                 * goto page after non-empty one 
+                 */
+                pgindex_beg += nempty + 1;
         }
 
         return -ENOMEM;
@@ -503,8 +539,7 @@ static int
 address_space_alloc_pageframes_32bit(void *tlps,
                                      os_index_t pfindex,
                                      os_index_t pgindex,
-                                     size_t pgcount,
-                                     unsigned int pteflags)
+                                     size_t pgcount, unsigned int pteflags)
 {
         struct page_directory *pd;
         os_index_t ptindex;
@@ -514,64 +549,87 @@ address_space_alloc_pageframes_32bit(void *tlps,
         pd = tlps;
 
         ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+        ptcount =
+                pagetable_count(page_address(pgindex), page_memory(pgcount));
 
         err = 0;
 
-        for (i = 0; (i < ptcount) && !(err < 0); ++i) {
+        for (i = 0; (i < ptcount) && !(err < 0); ++i)
+        {
 
                 os_index_t ptpfindex;
                 os_index_t ptpgindex;
                 struct page_table *pt;
                 size_t j;
 
-                ptpfindex = pde_get_pageframe_index(pd->entry[ptindex+i]);
+                ptpfindex = pde_get_pageframe_index(pd->entry[ptindex + i]);
 
-                if (!ptpfindex) {
+                if (!ptpfindex)
+                {
 
-                        /* allocate and map page-table page frames */
+                        /*
+                         * allocate and map page-table page frames 
+                         */
 
-                        ptpfindex = physmem_alloc_frames(
-                                pageframe_count(sizeof(struct page_table)));
+                        ptpfindex =
+                                physmem_alloc_frames(pageframe_count
+                                                     (sizeof
+                                                      (struct page_table)));
 
-                        if (!ptpfindex) {
+                        if (!ptpfindex)
+                        {
                                 err = -ENOMEM;
                                 break;
                         }
 
-                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
+                        ptpgindex =
+                                address_space_install_page_frame_tmp
+                                (ptpfindex);
 
-                        if (ptpgindex < 0) {
+                        if (ptpgindex < 0)
+                        {
                                 err = ptpgindex;
                                 break;
                         }
 
-                        /* init and install page table */
+                        /*
+                         * init and install page table 
+                         */
 
                         pt = page_address(ptpgindex);
 
-                        if ((err = page_table_init(pt)) < 0) {
+                        if ((err = page_table_init(pt)) < 0)
+                        {
                                 break;
                         }
 
                         err = page_directory_install_page_table(pd,
-                                                        ptpfindex,
-                                                        ptindex+i,
-                                                        PDE_FLAG_PRESENT|
-                                                        PDE_FLAG_WRITEABLE);
-                        if (err < 0) {
+                                                                ptpfindex,
+                                                                ptindex + i,
+                                                                PDE_FLAG_PRESENT
+                                                                |
+                                                                PDE_FLAG_WRITEABLE);
+                        if (err < 0)
+                        {
                                 break;
                         }
 
                         mmu_flush_tlb();
 
-                } else {
+                }
+                else
+                {
 
-                        /* map page-table page frames */
+                        /*
+                         * map page-table page frames 
+                         */
 
-                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
+                        ptpgindex =
+                                address_space_install_page_frame_tmp
+                                (ptpfindex);
 
-                        if (ptpgindex < 0) {
+                        if (ptpgindex < 0)
+                        {
                                 err = ptpgindex;
                                 break;
                         }
@@ -579,22 +637,26 @@ address_space_alloc_pageframes_32bit(void *tlps,
                         pt = page_address(ptpgindex);
                 }
 
-                /* allocate pages within page table */
+                /*
+                 * allocate pages within page table 
+                 */
 
                 for (j = pagetable_page_index(pgindex);
                      pgcount
-                     && (j < sizeof(pt->entry)/sizeof(pt->entry[0]))
-                     && !(err < 0);
-                   --pgcount, ++j, ++pgindex, ++pfindex) {
+                     && (j < sizeof(pt->entry) / sizeof(pt->entry[0]))
+                     && !(err < 0); --pgcount, ++j, ++pgindex, ++pfindex)
+                {
                         err = page_table_map_page_frame(pt,
-                                                        pfindex, j,
-                                                        pteflags);
-                        if (err < 0) {
+                                                        pfindex, j, pteflags);
+                        if (err < 0)
+                        {
                                 break;
                         }
                 }
 
-                /* unmap page table */
+                /*
+                 * unmap page table 
+                 */
                 address_space_uninstall_page_tmp(ptpgindex);
         }
 
@@ -607,8 +669,7 @@ static int
 address_space_alloc_pageframes_pae(void *tlps,
                                    os_index_t pfindex,
                                    os_index_t pgindex,
-                                   size_t pgcount,
-                                   unsigned int pteflags)
+                                   size_t pgcount, unsigned int pteflags)
 {
         return -ENOSYS;
 }
@@ -617,28 +678,24 @@ int
 address_space_alloc_pageframes(struct address_space *as,
                                os_index_t pfindex,
                                os_index_t pgindex,
-                               size_t pgcount,
-                               unsigned int pteflags)
+                               size_t pgcount, unsigned int pteflags)
 {
-        static int (* const alloc_pageframes[])(void*,
+        static int (*const alloc_pageframes[]) (void *,
                                                 os_index_t,
                                                 os_index_t,
-                                                size_t,
-                                                unsigned int) = {
-                address_space_alloc_pageframes_32bit,
-                address_space_alloc_pageframes_pae};
+                                                size_t, unsigned int) =
+        {
+        address_space_alloc_pageframes_32bit,
+                        address_space_alloc_pageframes_pae};
 
-        return alloc_pageframes[as->pgmode](as->tlps, pfindex,
-                                                      pgindex,
-                                                      pgcount,
-                                                      pteflags);
+        return alloc_pageframes[as->pgmode] (as->tlps, pfindex,
+                                             pgindex, pgcount, pteflags);
 }
 
 static int
 address_space_alloc_pages_32bit(void *tlps,
                                 os_index_t pgindex,
-                                size_t pgcount,
-                                unsigned int pteflags)
+                                size_t pgcount, unsigned int pteflags)
 {
         struct page_directory *pd;
         os_index_t ptindex;
@@ -649,64 +706,87 @@ address_space_alloc_pages_32bit(void *tlps,
         pd = tlps;
 
         ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+        ptcount =
+                pagetable_count(page_address(pgindex), page_memory(pgcount));
 
         err = 0;
 
-        for (i = 0; (i < ptcount) && !(err < 0); ++i) {
+        for (i = 0; (i < ptcount) && !(err < 0); ++i)
+        {
 
                 os_index_t ptpfindex;
                 os_index_t ptpgindex;
                 struct page_table *pt;
                 size_t j;
 
-                ptpfindex = pde_get_pageframe_index(pd->entry[ptindex+i]);
+                ptpfindex = pde_get_pageframe_index(pd->entry[ptindex + i]);
 
-                if (!ptpfindex) {
+                if (!ptpfindex)
+                {
 
-                        /* allocate and map page-table page frames */
+                        /*
+                         * allocate and map page-table page frames 
+                         */
 
-                        ptpfindex = physmem_alloc_frames(
-                                pageframe_count(sizeof(struct page_table)));
+                        ptpfindex =
+                                physmem_alloc_frames(pageframe_count
+                                                     (sizeof
+                                                      (struct page_table)));
 
-                        if (!ptpfindex) {
+                        if (!ptpfindex)
+                        {
                                 err = -ENOMEM;
                                 break;
                         }
 
-                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
+                        ptpgindex =
+                                address_space_install_page_frame_tmp
+                                (ptpfindex);
 
-                        if (ptpgindex < 0) {
+                        if (ptpgindex < 0)
+                        {
                                 err = ptpgindex;
                                 break;
                         }
 
-                        /* init and install page table */
+                        /*
+                         * init and install page table 
+                         */
 
                         pt = page_address(ptpgindex);
 
-                        if ((err = page_table_init(pt)) < 0) {
+                        if ((err = page_table_init(pt)) < 0)
+                        {
                                 break;
                         }
 
                         err = page_directory_install_page_table(pd,
-                                                        ptpfindex,
-                                                        ptindex+i,
-                                                        PDE_FLAG_PRESENT|
-                                                        PDE_FLAG_WRITEABLE);
-                        if (err < 0) {
+                                                                ptpfindex,
+                                                                ptindex + i,
+                                                                PDE_FLAG_PRESENT
+                                                                |
+                                                                PDE_FLAG_WRITEABLE);
+                        if (err < 0)
+                        {
                                 break;
                         }
 
                         mmu_flush_tlb();
 
-                } else {
+                }
+                else
+                {
 
-                        /* map page-table page frames */
+                        /*
+                         * map page-table page frames 
+                         */
 
-                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
+                        ptpgindex =
+                                address_space_install_page_frame_tmp
+                                (ptpfindex);
 
-                        if (ptpgindex < 0) {
+                        if (ptpgindex < 0)
+                        {
                                 err = ptpgindex;
                                 break;
                         }
@@ -714,29 +794,34 @@ address_space_alloc_pages_32bit(void *tlps,
                         pt = page_address(ptpgindex);
                 }
 
-                /* allocate pages within page table */
+                /*
+                 * allocate pages within page table 
+                 */
 
                 for (j = pagetable_page_index(pgindex);
                      pgcount
-                     && (j < sizeof(pt->entry)/sizeof(pt->entry[0]))
-                     && !(err < 0);
-                   --pgcount, ++j, ++pgindex) {
+                     && (j < sizeof(pt->entry) / sizeof(pt->entry[0]))
+                     && !(err < 0); --pgcount, ++j, ++pgindex)
+                {
                         os_index_t pfindex = physmem_alloc_frames(1);
 
-                        if (!pfindex) {
+                        if (!pfindex)
+                        {
                                 err = -ENOMEM;
                                 break;
                         }
 
                         err = page_table_map_page_frame(pt,
-                                                        pfindex, j,
-                                                        pteflags);
-                        if (err < 0) {
+                                                        pfindex, j, pteflags);
+                        if (err < 0)
+                        {
                                 break;
                         }
                 }
 
-                /* unmap page table */
+                /*
+                 * unmap page table 
+                 */
                 address_space_uninstall_page_tmp(ptpgindex);
         }
 
@@ -748,8 +833,7 @@ address_space_alloc_pages_32bit(void *tlps,
 static int
 address_space_alloc_pages_pae(void *tlps,
                               os_index_t pgindex,
-                              size_t pgcount,
-                              unsigned int pteflags)
+                              size_t pgcount, unsigned int pteflags)
 {
         return -ENOSYS;
 }
@@ -757,26 +841,22 @@ address_space_alloc_pages_pae(void *tlps,
 int
 address_space_alloc_pages(struct address_space *as,
                           os_index_t pgindex,
-                          size_t pgcount,
-                          unsigned int pteflags)
+                          size_t pgcount, unsigned int pteflags)
 {
-        static int (* const alloc_pages[])(void*,
-                                           os_index_t,
-                                           size_t,
-                                           unsigned int) = {
-                address_space_alloc_pages_32bit,
-                address_space_alloc_pages_pae};
+        static int (*const alloc_pages[]) (void *,
+                                           os_index_t, size_t, unsigned int) =
+        {
+        address_space_alloc_pages_32bit, address_space_alloc_pages_pae};
 
-        return alloc_pages[as->pgmode](as->tlps, pgindex, pgcount, pteflags);
+        return alloc_pages[as->pgmode] (as->tlps, pgindex, pgcount, pteflags);
 }
 
 static int
 address_space_map_pages_32bit(void *dst_tlps,
                               os_index_t dst_pgindex,
-                        const struct address_space *src_as,
+                              const struct address_space *src_as,
                               os_index_t src_pgindex,
-                              size_t pgcount,
-                              unsigned long pteflags)
+                              size_t pgcount, unsigned long pteflags)
 {
         os_index_t dst_ptindex, dst_ptcount;
         int err;
@@ -790,7 +870,8 @@ address_space_map_pages_32bit(void *dst_tlps,
 
         err = 0;
 
-        for (i = 0; (i < dst_ptcount) && !(err < 0); ++i) {
+        for (i = 0; (i < dst_ptcount) && !(err < 0); ++i)
+        {
 
                 os_index_t ptpfindex;
                 os_index_t ptpgindex;
@@ -798,53 +879,76 @@ address_space_map_pages_32bit(void *dst_tlps,
                 size_t j;
 
                 ptpfindex =
-                        pde_get_pageframe_index(dst_pd->entry[dst_ptindex+i]);
+                        pde_get_pageframe_index(dst_pd->entry
+                                                [dst_ptindex + i]);
 
-                if (!ptpfindex) {
+                if (!ptpfindex)
+                {
 
-                        /* allocate and map page-table page frames */
+                        /*
+                         * allocate and map page-table page frames 
+                         */
 
-                        ptpfindex = physmem_alloc_frames(
-                                pageframe_count(sizeof(struct page_table)));
+                        ptpfindex =
+                                physmem_alloc_frames(pageframe_count
+                                                     (sizeof
+                                                      (struct page_table)));
 
-                        if (!ptpfindex) {
+                        if (!ptpfindex)
+                        {
                                 err = -ENOMEM;
                                 break;
                         }
 
-                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
+                        ptpgindex =
+                                address_space_install_page_frame_tmp
+                                (ptpfindex);
 
-                        if (ptpgindex < 0) {
+                        if (ptpgindex < 0)
+                        {
                                 err = ptpgindex;
                                 break;
                         }
 
-                        /* init and install page table */
+                        /*
+                         * init and install page table 
+                         */
 
                         dst_pt = page_address(ptpgindex);
 
-                        if ((err = page_table_init(dst_pt)) < 0) {
+                        if ((err = page_table_init(dst_pt)) < 0)
+                        {
                                 break;
                         }
 
                         err = page_directory_install_page_table(dst_pd,
-                                                        ptpfindex,
-                                                        dst_ptindex+i,
-                                                        PDE_FLAG_PRESENT|
-                                                        PDE_FLAG_WRITEABLE);
-                        if (err < 0) {
+                                                                ptpfindex,
+                                                                dst_ptindex +
+                                                                i,
+                                                                PDE_FLAG_PRESENT
+                                                                |
+                                                                PDE_FLAG_WRITEABLE);
+                        if (err < 0)
+                        {
                                 break;
                         }
 
                         mmu_flush_tlb();
 
-                } else {
+                }
+                else
+                {
 
-                        /* map page-table page frames */
+                        /*
+                         * map page-table page frames 
+                         */
 
-                        ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
+                        ptpgindex =
+                                address_space_install_page_frame_tmp
+                                (ptpfindex);
 
-                        if (ptpgindex < 0) {
+                        if (ptpgindex < 0)
+                        {
                                 err = ptpgindex;
                                 break;
                         }
@@ -852,32 +956,40 @@ address_space_map_pages_32bit(void *dst_tlps,
                         dst_pt = page_address(ptpgindex);
                 }
 
-                /* map pages within page table */
+                /*
+                 * map pages within page table 
+                 */
 
                 for (j = pagetable_page_index(dst_pgindex);
                      pgcount
-                     && (j < sizeof(dst_pt->entry)/sizeof(dst_pt->entry[0]))
-                     && !(err < 0);
-                   --pgcount, ++j, ++dst_pgindex) {
+                     && (j < sizeof(dst_pt->entry) / sizeof(dst_pt->entry[0]))
+                     && !(err < 0); --pgcount, ++j, ++dst_pgindex)
+                {
 
                         os_index_t src_pfindex;
 
                         src_pfindex = address_space_lookup_pageframe(src_as,
                                                                      src_pgindex);
-                        if (src_pfindex < 0) {
+                        if (src_pfindex < 0)
+                        {
                                 err = src_pfindex;
-                                /* handle error */
+                                /*
+                                 * handle error 
+                                 */
                         }
 
                         err = page_table_map_page_frame(dst_pt,
                                                         src_pfindex, j,
                                                         pteflags);
-                        if (err < 0) {
+                        if (err < 0)
+                        {
                                 break;
                         }
                 }
 
-                /* unmap page table */
+                /*
+                 * unmap page table 
+                 */
                 address_space_uninstall_page_tmp(ptpgindex);
         }
 
@@ -889,10 +1001,9 @@ address_space_map_pages_32bit(void *dst_tlps,
 static int
 address_space_map_pages_pae(void *dst_tlps,
                             os_index_t dst_pgindex,
-                      const struct address_space *src_as,
+                            const struct address_space *src_as,
                             os_index_t src_pgindex,
-                            size_t pgcount,
-                            unsigned long dst_pteflags)
+                            size_t pgcount, unsigned long dst_pteflags)
 {
         return -ENOSYS;
 }
@@ -900,26 +1011,21 @@ address_space_map_pages_pae(void *dst_tlps,
 int
 address_space_map_pages(struct address_space *dst_as,
                         os_index_t dst_pgindex,
-                  const struct address_space *src_as,
+                        const struct address_space *src_as,
                         os_index_t src_pgindex,
-                        size_t pgcount,
-                        unsigned long pteflags)
+                        size_t pgcount, unsigned long pteflags)
 {
-        static int (* const map_pages[])(void*,
+        static int (*const map_pages[]) (void *,
                                          os_index_t,
-                                   const struct address_space*,
-                                         os_index_t,
-                                         size_t,
-                                         unsigned long) = {
-                address_space_map_pages_32bit,
-                address_space_map_pages_pae};
+                                         const struct address_space *,
+                                         os_index_t, size_t, unsigned long) =
+        {
+        address_space_map_pages_32bit, address_space_map_pages_pae};
 
-        return map_pages[dst_as->pgmode](dst_as->tlps,
-                                         dst_pgindex,
-                                         src_as,
-                                         src_pgindex,
-                                         pgcount,
-                                         pteflags);
+        return map_pages[dst_as->pgmode] (dst_as->tlps,
+                                          dst_pgindex,
+                                          src_as,
+                                          src_pgindex, pgcount, pteflags);
 }
 
 static os_index_t
@@ -939,27 +1045,35 @@ address_space_lookup_pageframe_32bit(const void *tlps, os_index_t pgindex)
 
         ptpfindex = pde_get_pageframe_index(pd->entry[ptindex]);
 
-        /* map page table of page address */
+        /*
+         * map page table of page address 
+         */
 
         ptpgindex = address_space_install_page_frame_tmp(ptpfindex);
 
-        if (ptpgindex < 0) {
+        if (ptpgindex < 0)
+        {
                 err = ptpgindex;
                 goto err_address_space_install_page_frame_tmp;
         }
 
-        /* read page frame */
+        /*
+         * read page frame 
+         */
 
         pt = page_address(ptpgindex);
 
-        if (!pte_is_present(pt->entry[pgindex&0x3ff])) {
+        if (!pte_is_present(pt->entry[pgindex & 0x3ff]))
+        {
                 err = -EFAULT;
                 goto err_pte_is_present;
         }
 
-        pfindex = pte_get_pageframe_index(pt->entry[pgindex&0x3ff]);
+        pfindex = pte_get_pageframe_index(pt->entry[pgindex & 0x3ff]);
 
-        /* unmap page table */
+        /*
+         * unmap page table 
+         */
         address_space_uninstall_page_tmp(ptpgindex);
 
         return pfindex;
@@ -977,22 +1091,22 @@ address_space_lookup_pageframe_pae(const void *tlps, os_index_t pgindex)
 }
 
 os_index_t
-address_space_lookup_pageframe(const struct address_space *as,
-                                     os_index_t pgindex)
+address_space_lookup_pageframe(const struct address_space * as,
+                               os_index_t pgindex)
 {
-        static os_index_t (* const lookup_pageframe[])(const void*,
-                                                             os_index_t) = {
-                address_space_lookup_pageframe_32bit,
-                address_space_lookup_pageframe_pae};
+        static os_index_t(*const lookup_pageframe[]) (const void *,
+                                                      os_index_t) =
+        {
+        address_space_lookup_pageframe_32bit,
+                        address_space_lookup_pageframe_pae};
 
-        return lookup_pageframe[as->pgmode](as->tlps, pgindex);
+        return lookup_pageframe[as->pgmode] (as->tlps, pgindex);
 }
 
 static int
 address_space_share_2nd_lvl_ps_32bit(void *dst_tlps,
-                               const void *src_tlps,
-                                     os_index_t pgindex,
-                                     size_t pgcount)
+                                     const void *src_tlps,
+                                     os_index_t pgindex, size_t pgcount)
 {
         struct page_directory *dst_pd;
         const struct page_directory *src_pd;
@@ -1003,9 +1117,11 @@ address_space_share_2nd_lvl_ps_32bit(void *dst_tlps,
         src_pd = src_tlps;
 
         ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+        ptcount =
+                pagetable_count(page_address(pgindex), page_memory(pgcount));
 
-        while (ptcount) {
+        while (ptcount)
+        {
                 dst_pd->entry[ptindex] = src_pd->entry[ptindex];
                 ++ptindex;
                 --ptcount;
@@ -1016,27 +1132,25 @@ address_space_share_2nd_lvl_ps_32bit(void *dst_tlps,
 
 static int
 address_space_share_2nd_lvl_ps_pae(void *dst_tlps,
-                             const void *src_tlps,
-                                   os_index_t pgindex,
-                                   size_t pgcount)
+                                   const void *src_tlps,
+                                   os_index_t pgindex, size_t pgcount)
 {
         return -ENOSYS;
 }
 
 int
 address_space_share_2nd_lvl_ps(struct address_space *dst_as,
-                         const struct address_space *src_as,
-                               os_index_t pgindex,
-                               size_t pgcount)
+                               const struct address_space *src_as,
+                               os_index_t pgindex, size_t pgcount)
 {
-        static int (* const share_2nd_lvl_ps[])(void*,
-                                          const void*, os_index_t, size_t) = {
-                address_space_share_2nd_lvl_ps_32bit,
-                address_space_share_2nd_lvl_ps_pae};
+        static int (*const share_2nd_lvl_ps[]) (void *,
+                                                const void *, os_index_t,
+                                                size_t) =
+        {
+        address_space_share_2nd_lvl_ps_32bit,
+                        address_space_share_2nd_lvl_ps_pae};
 
-        return share_2nd_lvl_ps[dst_as->pgmode](dst_as->tlps,
-                                                src_as->tlps,
-                                                pgindex,
-                                                pgcount);
+        return share_2nd_lvl_ps[dst_as->pgmode] (dst_as->tlps,
+                                                 src_as->tlps,
+                                                 pgindex, pgcount);
 }
-

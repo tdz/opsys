@@ -24,21 +24,11 @@ syscall(unsigned long r0,
         unsigned long r2,
         unsigned long r3,
         unsigned long *res0,
-        unsigned long *res1,
-        unsigned long *res2,
-        unsigned long *res3)
+        unsigned long *res1, unsigned long *res2, unsigned long *res3)
 {
-        __asm__("int $0x80\n\t"
-                        : "=a"(*res0),
-                          "=b"(*res1),
-                          "=c"(*res2),
-                          "=d"(*res3)
-                        : "a"(r0),
-                          "b"(r1),
-                          "c"(r2),
-                          "d"(r3)
-                        );
+__asm__("int $0x80\n\t": "=a"(*res0), "=b"(*res1), "=c"(*res2), "=d"(*res3):"a"(r0), "b"(r1),
+                "c"(r2),
+                "d"(r3));
 
-        return *res1&0x1 ? (int)*res2 : 0; /* return possible error code */
+        return *res1 & 0x1 ? (int)*res2 : 0;    /* return possible error code */
 }
-

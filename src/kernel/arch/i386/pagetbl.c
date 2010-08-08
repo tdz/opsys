@@ -43,25 +43,32 @@ page_table_uninit(struct page_table *pt)
 int
 page_table_map_page_frame(struct page_table *pt,
                           os_index_t pfindex,
-                          os_index_t index,
-                          unsigned int flags)
+                          os_index_t index, unsigned int flags)
 {
         int err;
 
-        /* ref new page frame */
+        /*
+         * ref new page frame 
+         */
 
-        if ((err = physmem_ref_frames(pfindex, 1)) < 0) {
+        if ((err = physmem_ref_frames(pfindex, 1)) < 0)
+        {
                 goto err_physmem_ref_frames;
         }
 
-        /* unref old page frame */
+        /*
+         * unref old page frame 
+         */
 
-        if (pte_get_pageframe_index(pt->entry[index])) {
-                physmem_unref_frames(
-                        pte_get_pageframe_index(pt->entry[index]), 1);
+        if (pte_get_pageframe_index(pt->entry[index]))
+        {
+                physmem_unref_frames(pte_get_pageframe_index
+                                     (pt->entry[index]), 1);
         }
 
-        /* update page table entry */
+        /*
+         * update page table entry 
+         */
         pt->entry[index] = pte_create(pfindex, flags);
 
         return 0;
@@ -73,13 +80,12 @@ err_physmem_ref_frames:
 int
 page_table_map_page_frames(struct page_table *pt,
                            os_index_t pfindex,
-                           os_index_t index,
-                           size_t count,
-                           unsigned int flags)
+                           os_index_t index, size_t count, unsigned int flags)
 {
         int err;
 
-        for (err = 0; count && !(err < 0); --count, ++index, ++pfindex) {
+        for (err = 0; count && !(err < 0); --count, ++index, ++pfindex)
+        {
                 err = page_table_map_page_frame(pt, pfindex, index, flags);
         }
 
@@ -89,14 +95,19 @@ page_table_map_page_frames(struct page_table *pt,
 int
 page_table_unmap_page_frame(struct page_table *pt, os_index_t index)
 {
-        /* unref page frame */
+        /*
+         * unref page frame 
+         */
 
-        if (pte_get_pageframe_index(pt->entry[index])) {
-                physmem_unref_frames(
-                        pte_get_pageframe_index(pt->entry[index]), 1);
+        if (pte_get_pageframe_index(pt->entry[index]))
+        {
+                physmem_unref_frames(pte_get_pageframe_index
+                                     (pt->entry[index]), 1);
         }
 
-        /* clear page table entry */
+        /*
+         * clear page table entry 
+         */
         pt->entry[index] = pte_create(0, 0);
 
         return 0;
@@ -104,14 +115,14 @@ page_table_unmap_page_frame(struct page_table *pt, os_index_t index)
 
 int
 page_table_unmap_page_frames(struct page_table *pt, os_index_t index,
-                                                    size_t count)
+                             size_t count)
 {
         int err;
 
-        for (err = 0; count && !(err < 0); --count, ++index) {
+        for (err = 0; count && !(err < 0); --count, ++index)
+        {
                 err = page_table_unmap_page_frame(pt, index);
         }
 
         return err;
 }
-

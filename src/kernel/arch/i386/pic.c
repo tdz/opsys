@@ -19,26 +19,21 @@
 void
 pic_install()
 {
-        __asm__ (/* out ICW 1 */
-                 "mov $0x11, %%al\n\t"
-                 "out %%al, $0x20\n\t"
-                 "out %%al, $0xa0\n\t"
-                 /* out ICW 2 */
-                 "mov $0x20, %%al\n\t"
-                 "out %%al, $0x21\n\t"
-                 "mov $0x28, %%al\n\t"
-                 "out %%al, $0xa1\n\t"
-                 /* out ICW 3 */
-                 "mov $0x04, %%al\n\t"
-                 "out %%al, $0x21\n\t"
-                 "mov $0x02, %%al\n\t"
-                 "out %%al, $0xa1\n\t"
-                 /* out ICW 4 */
-                 "mov $0x01, %%al\n\t"
-                 "out %%al, $0x21\n\t"
-                 "out %%al, $0xa1\n\t"
-                        :
-                        :
-                        : "al");
+        __asm__(/* out ICW 1 */
+                "mov $0x11, %%al\n\t"
+                "out %%al, $0x20\n\t" "out %%al, $0xa0\n\t"
+                /* out ICW 2 */
+                "mov $0x20, %%al\n\t"
+                "out %%al, $0x21\n\t"
+                "mov $0x28, %%al\n\t" "out %%al, $0xa1\n\t"
+                /* out ICW 3 */
+                "mov $0x04, %%al\n\t"
+                "out %%al, $0x21\n\t"
+                "mov $0x02, %%al\n\t" "out %%al, $0xa1\n\t"
+                /* out ICW 4 */
+                "mov $0x01, %%al\n\t" "out %%al, $0x21\n\t" "out %%al, $0xa1\n\t"
+                :
+                :
+                : "al");
 }
 

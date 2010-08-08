@@ -38,11 +38,16 @@ sti()
 void
 eoi(unsigned char intno)
 {
-        if (intno > 15) {
+        if (intno > 15)
+        {
                 return;
-        } else if (intno > 7) {
+        }
+        else if (intno > 7)
+        {
                 io_outb(0xa0, 0x20);
-        } else {
+        }
+        else
+        {
                 io_outb(0x20, 0x20);
         }
 }
@@ -52,4 +57,3 @@ int_enabled()
 {
         return !!(eflags() & EFLAGS_IF);
 }
-

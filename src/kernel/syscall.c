@@ -43,50 +43,63 @@
 
 void
 syscall_entry_handler(unsigned long *r0,
-                      unsigned long *r1,
-                      unsigned long *r2,
-                      unsigned long *r3)
+                      unsigned long *r1, unsigned long *r2, unsigned long *r3)
 {
         int err;
         struct tcb *snd, *rcv;
 
-        console_printf("%s:%x: r0=%x r1=%x r2=%x r3=%x.\n", __FILE__, __LINE__,
-                        *r0, *r1, *r2, *r3);
+        console_printf("%s:%x: r0=%x r1=%x r2=%x r3=%x.\n", __FILE__,
+                       __LINE__, *r0, *r1, *r2, *r3);
 
-        /* get current thread */
+        /*
+         * get current thread 
+         */
 
-        if (!(snd = sched_get_current_thread())) {
+        if (!(snd = sched_get_current_thread()))
+        {
                 err = -EAGAIN;
                 goto err_sched_get_current_thread;
         }
 
-        /* get receiver thread */
+        /*
+         * get receiver thread 
+         */
 
         rcv = sched_search_thread(threadid_get_taskid(R0_THREADID(*r0)),
                                   threadid_get_tcbid(R0_THREADID(*r0)));
-        if (!rcv) {
+        if (!rcv)
+        {
                 err = -EAGAIN;
                 goto err_sched_search_thread;
         }
 
-        /* send message to receiver */
+        /*
+         * send message to receiver 
+         */
 
-        if ((err = ipc_msg_init(&snd->msg, snd, *r1, *r2, *r3)) < 0) {
+        if ((err = ipc_msg_init(&snd->msg, snd, *r1, *r2, *r3)) < 0)
+        {
                 goto err_ipc_msg_init;
         }
 
-        if ((err = ipc_send_and_wait(&snd->msg, rcv)) < 0) {
+        if ((err = ipc_send_and_wait(&snd->msg, rcv)) < 0)
+        {
                 goto err_ipc_send_and_wait;
         }
 
-        /* sender is always ready when returning here */
+        /*
+         * sender is always ready when returning here 
+         */
 
-        if (ipc_msg_flags_is_errno(&snd->msg)) {
+        if (ipc_msg_flags_is_errno(&snd->msg))
+        {
                 err = -snd->msg.msg0;
                 goto err_ipc_msg_flags_is_errno;
         }
 
-        /* before returning, sender should have received a reply */
+        /*
+         * before returning, sender should have received a reply 
+         */
 
         *r0 = threadid_create(snd->msg.snd->task->id, snd->msg.snd->id);
         *r1 = snd->msg.flags;
@@ -103,4 +116,3 @@ err_sched_get_current_thread:
         *r1 = IPC_MSG_FLAG_IS_ERRNO;
         *r2 = err;
 }
-

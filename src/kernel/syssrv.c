@@ -40,18 +40,23 @@ system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
 {
         console_printf("%s:%x.\n", __FILE__, __LINE__);
 
-        switch (msg->msg0) {
-                case 0: /* thread quit */
-                        /* mark sender thread for removal */
+        switch (msg->msg0)
+        {
+                case 0:        /* thread quit */
+                        /*
+                         * mark sender thread for removal 
+                         */
                         tcb_set_state(msg->snd, THREAD_STATE_ZOMBIE);
                         break;
                 default:
-                        /* unknown command */
+                        /*
+                         * unknown command 
+                         */
                         {
                                 struct tcb *rcv = msg->snd;
                                 ipc_msg_init(msg, self,
-                                                  IPC_MSG_FLAG_IS_ERRNO,
-                                                  ENOSYS, 0);
+                                             IPC_MSG_FLAG_IS_ERRNO,
+                                             ENOSYS, 0);
                                 ipc_reply(msg, rcv);
                         }
                         break;
@@ -63,17 +68,21 @@ system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
 void
 system_srv_start(struct tcb *self)
 {
-        while (1) {
+        while (1)
+        {
                 int err;
                 struct ipc_msg *msg;
 
-                console_printf("%s:%x syssrv=%x.\n", __FILE__, __LINE__, self);
+                console_printf("%s:%x syssrv=%x.\n", __FILE__, __LINE__,
+                               self);
 
-                if ((err = ipc_recv(&msg, self)) < 0) {
+                if ((err = ipc_recv(&msg, self)) < 0)
+                {
                         goto err_ipc_recv;
                 }
 
-                if ((err = system_srv_handle_msg(msg, self)) < 0) {
+                if ((err = system_srv_handle_msg(msg, self)) < 0)
+                {
                         goto err_system_srv_handle_msg;
                 }
 
@@ -86,4 +95,3 @@ system_srv_start(struct tcb *self)
                 continue;
         }
 }
-

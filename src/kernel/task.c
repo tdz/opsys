@@ -24,11 +24,12 @@
 #include "spinlock.h"
 #include "task.h"
 
-enum {
+enum
+{
         MAXTASK = 1024
 };
 
-static unsigned char g_taskid[MAXTASK>>3];
+static unsigned char g_taskid[MAXTASK >> 3];
 
 int
 task_init(struct task *task, struct address_space *as)
@@ -36,7 +37,8 @@ task_init(struct task *task, struct address_space *as)
         int err;
         ssize_t taskid;
 
-        if ((taskid = bitset_find_unset(g_taskid, sizeof(g_taskid))) < 0) {
+        if ((taskid = bitset_find_unset(g_taskid, sizeof(g_taskid))) < 0)
+        {
                 err = taskid;
                 goto err_find_taskid;
         }
@@ -63,13 +65,14 @@ task_uninit(struct task *task)
 size_t
 task_max_nthreads(const struct task *task)
 {
-        return sizeof(task->threadid)*8;
+        return sizeof(task->threadid) * 8;
 }
 
 int
 task_ref(struct task *task)
 {
-        if (!(task->nthreads < task_max_nthreads(task))) {
+        if (!(task->nthreads < task_max_nthreads(task)))
+        {
                 return -EAGAIN;
         }
 
@@ -79,10 +82,10 @@ task_ref(struct task *task)
 int
 task_unref(struct task *task)
 {
-        if (!task->nthreads) {
+        if (!task->nthreads)
+        {
                 return -EINVAL;
         }
 
         return --task->nthreads;
 }
-

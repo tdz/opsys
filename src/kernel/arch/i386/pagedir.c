@@ -42,25 +42,32 @@ page_directory_uninit(struct page_directory *pd)
 int
 page_directory_install_page_table(struct page_directory *pd,
                                   unsigned long pfindex,
-                                  unsigned long index,
-                                  unsigned int flags)
+                                  unsigned long index, unsigned int flags)
 {
         int err;
 
-        /* ref new page table's page frame */
+        /*
+         * ref new page table's page frame 
+         */
 
-        if ((err = physmem_ref_frames(pfindex, 1)) < 0) {
+        if ((err = physmem_ref_frames(pfindex, 1)) < 0)
+        {
                 goto err_physmem_ref_frames;
         }
 
-        /* unref old page table's page frame */
+        /*
+         * unref old page table's page frame 
+         */
 
-        if (pde_get_pageframe_index(pd->entry[index])) {
-                physmem_unref_frames(
-                        pde_get_pageframe_index(pd->entry[index]), 1);
+        if (pde_get_pageframe_index(pd->entry[index]))
+        {
+                physmem_unref_frames(pde_get_pageframe_index
+                                     (pd->entry[index]), 1);
         }
 
-        /* update page directory entry */
+        /*
+         * update page directory entry 
+         */
         pd->entry[index] = pde_create(pfindex, flags);
 
         return 0;
@@ -73,16 +80,15 @@ int
 page_directory_install_page_tables(struct page_directory *pd,
                                    unsigned long pfindex,
                                    unsigned long index,
-                                   unsigned long count,
-                                   unsigned int flags)
+                                   unsigned long count, unsigned int flags)
 {
         int err;
 
-        for (err = 0; count && !(err < 0); --count, ++index, ++pfindex) {
+        for (err = 0; count && !(err < 0); --count, ++index, ++pfindex)
+        {
                 err = page_directory_install_page_table(pd,
                                                         pfindex,
-                                                        index,
-                                                        flags);
+                                                        index, flags);
         }
 
         return err;
@@ -92,14 +98,19 @@ int
 page_directory_uninstall_page_table(struct page_directory *pd,
                                     unsigned long index)
 {
-        /* unref page frame of page-table */
+        /*
+         * unref page frame of page-table 
+         */
 
-        if (pde_get_pageframe_index(pd->entry[index])) {
-                physmem_unref_frames(
-                        pde_get_pageframe_index(pd->entry[index]), 1);
+        if (pde_get_pageframe_index(pd->entry[index]))
+        {
+                physmem_unref_frames(pde_get_pageframe_index
+                                     (pd->entry[index]), 1);
         }
 
-        /* clear page directory entry */
+        /*
+         * clear page directory entry 
+         */
         pd->entry[index] = pde_create(0, 0);
 
         return 0;
@@ -107,15 +118,14 @@ page_directory_uninstall_page_table(struct page_directory *pd,
 
 int
 page_directory_uninstall_page_tables(struct page_directory *pd,
-                                     unsigned long index,
-                                     unsigned long count)
+                                     unsigned long index, unsigned long count)
 {
         int err;
 
-        for (err = 0; count && !(err < 0); --count, ++index) {
+        for (err = 0; count && !(err < 0); --count, ++index)
+        {
                 err = page_directory_uninstall_page_table(pd, index);
         }
 
         return err;
 }
-

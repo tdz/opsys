@@ -22,40 +22,37 @@
 #include "vmemarea.h"
 
 static const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
-        {/* system: <4 KiB */
+        {                       /* system: <4 KiB */
          .pgindex = 0,
-         .npages  = 1,
-         .flags   = 0},
-        {/* low kernel virtual memory: <4 MiB */
+         .npages = 1,
+         .flags = 0},
+        {                       /* low kernel virtual memory: <4 MiB */
          .pgindex = 1,
-         .npages  = 1023,
-         .flags   = VIRTMEM_AREA_FLAG_KERNEL|
-                    VIRTMEM_AREA_FLAG_IDENTITY|
-                    VIRTMEM_AREA_FLAG_POLUTE|
-                    VIRTMEM_AREA_FLAG_PAGETABLES|
-                    VIRTMEM_AREA_FLAG_GLOBAL},
-        {/* user virtual memory: 4 MiB - 3 GiB */
+         .npages = 1023,
+         .flags = VIRTMEM_AREA_FLAG_KERNEL |
+         VIRTMEM_AREA_FLAG_IDENTITY |
+         VIRTMEM_AREA_FLAG_POLUTE |
+         VIRTMEM_AREA_FLAG_PAGETABLES | VIRTMEM_AREA_FLAG_GLOBAL},
+        {                       /* user virtual memory: 4 MiB - 3 GiB */
          .pgindex = 1024,
-         .npages  = 785408,
-         .flags   = VIRTMEM_AREA_FLAG_USER},
-        {/* high kernel temporary virtual memory: >3 GiB */
+         .npages = 785408,
+         .flags = VIRTMEM_AREA_FLAG_USER},
+        {                       /* high kernel temporary virtual memory: >3 GiB */
          .pgindex = 786432,
-         .npages  = 1024,
-         .flags   = VIRTMEM_AREA_FLAG_KERNEL|
-                    VIRTMEM_AREA_FLAG_PAGETABLES|
-                    VIRTMEM_AREA_FLAG_GLOBAL},
-        {/* high kernel virtual memory: >3 GiB */
+         .npages = 1024,
+         .flags = VIRTMEM_AREA_FLAG_KERNEL |
+         VIRTMEM_AREA_FLAG_PAGETABLES | VIRTMEM_AREA_FLAG_GLOBAL},
+        {                       /* high kernel virtual memory: >3 GiB */
          .pgindex = 787456,
-         .npages  = 261120,
-         .flags   = VIRTMEM_AREA_FLAG_KERNEL|
-                    VIRTMEM_AREA_FLAG_PAGETABLES|
-                    VIRTMEM_AREA_FLAG_GLOBAL}
+         .npages = 261120,
+         .flags = VIRTMEM_AREA_FLAG_KERNEL |
+         VIRTMEM_AREA_FLAG_PAGETABLES | VIRTMEM_AREA_FLAG_GLOBAL}
 };
 
-const struct virtmem_area*
+const struct virtmem_area *
 virtmem_area_get_by_name(enum virtmem_area_name name)
 {
-        return g_virtmem_area+name;
+        return g_virtmem_area + name;
 }
 
 const struct virtmem_area *
@@ -64,10 +61,13 @@ virtmem_area_get_by_page(os_index_t pgindex)
         const struct virtmem_area *beg, *end;
 
         beg = g_virtmem_area;
-        end = g_virtmem_area+sizeof(g_virtmem_area)/sizeof(g_virtmem_area[0]);
+        end = g_virtmem_area +
+                sizeof(g_virtmem_area) / sizeof(g_virtmem_area[0]);
 
-        while (beg < end) {
-                if (virtmem_area_contains_page(beg, pgindex)) {
+        while (beg < end)
+        {
+                if (virtmem_area_contains_page(beg, pgindex))
+                {
                         return beg;
                 }
                 ++beg;
@@ -77,9 +77,9 @@ virtmem_area_get_by_page(os_index_t pgindex)
 }
 
 int
-virtmem_area_contains_page(const struct virtmem_area *area, os_index_t pgindex)
+virtmem_area_contains_page(const struct virtmem_area *area,
+                           os_index_t pgindex)
 {
         return (area->pgindex <= pgindex)
-                        && (pgindex < area->pgindex+area->npages);
+                && (pgindex < area->pgindex + area->npages);
 }
-

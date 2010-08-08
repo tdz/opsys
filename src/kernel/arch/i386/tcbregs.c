@@ -31,7 +31,7 @@ tcb_regs_set_tlps(struct tcb_regs *regs, void *tlps)
 {
         os_index_t pfindex = pageframe_index(tlps);
 
-        regs->cr3 = (pfindex<<12) | (regs->cr3&0xfff);
+        regs->cr3 = (pfindex << 12) | (regs->cr3 & 0xfff);
 
         return 0;
 }
@@ -43,7 +43,8 @@ tcb_regs_init(struct tcb_regs *regs, void *stack, void *tlps)
 
         memset(regs, 0, sizeof(*regs));
 
-        if ((err = tcb_regs_set_tlps(regs, tlps)) < 0) {
+        if ((err = tcb_regs_set_tlps(regs, tlps)) < 0)
+        {
                 goto err_tcb_regs_set_tlps;
         }
 
@@ -80,7 +81,7 @@ tcb_regs_set_ip(struct tcb_regs *regs, void *ip)
 unsigned char *
 tcb_regs_get_sp(struct tcb_regs *regs)
 {
-        return (void*)regs->esp;
+        return (void *)regs->esp;
 }
 
 void
@@ -92,7 +93,7 @@ tcb_regs_set_fp(struct tcb_regs *regs, void *fp)
 unsigned char *
 tcb_regs_get_fp(struct tcb_regs *regs)
 {
-        return (void*)regs->ebp;
+        return (void *)regs->ebp;
 }
 
 void
@@ -106,4 +107,3 @@ tcb_regs_stack_pop(struct tcb_regs *regs, size_t nbytes)
 {
         regs->esp += nbytes;
 }
-

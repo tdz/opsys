@@ -27,18 +27,17 @@
 /* system interupts
  */
 
-void (*invalop_handler)(void *ip);
-void (*segfault_handler)(void *ip);
-void (*pagefault_handler)(void *ip, void *addr, unsigned long);
-void (*syscall_handler)(unsigned long *r0,
-                        unsigned long *r1,
-                        unsigned long *r2,
-                        unsigned long *r3);
+void (*invalop_handler) (void *ip);
+void (*segfault_handler) (void *ip);
+void (*pagefault_handler) (void *ip, void *addr, unsigned long);
+void (*syscall_handler) (unsigned long *r0,
+                         unsigned long *r1,
+                         unsigned long *r2, unsigned long *r3);
 
 /* hardware interupts
  */
 
-void (*irq_table[16])(unsigned char);
+void (*irq_table[16]) (unsigned char);
 
 static struct idt_entry g_idt[256];
 
@@ -77,18 +76,23 @@ idt_init()
 
         size_t i;
 
-        for (i = 0; i < sizeof(g_idt)/sizeof(g_idt[0]); ++i) {
+        for (i = 0; i < sizeof(g_idt) / sizeof(g_idt[0]); ++i)
+        {
                 IDT_ENTRY_INIT(i, isr_drop_interupt);
         }
 
-        /* system interupts */
+        /*
+         * system interupts 
+         */
 
         IDT_ENTRY_INIT(0x01, isr_handle_invalop);
         IDT_ENTRY_INIT(0x06, isr_handle_invalop);
         IDT_ENTRY_INIT(0x0d, isr_handle_segfault);
         IDT_ENTRY_INIT(0x0e, isr_handle_pagefault);
 
-        /* hardware interupts */
+        /*
+         * hardware interupts 
+         */
 
         IDT_ENTRY_INIT(0x20, isr_handle_irq0);
         IDT_ENTRY_INIT(0x21, isr_handle_irq1);
@@ -107,7 +111,9 @@ idt_init()
         IDT_ENTRY_INIT(0x2e, isr_handle_irq14);
         IDT_ENTRY_INIT(0x2f, isr_handle_irq15);
 
-        /* syscall interrupt */
+        /*
+         * syscall interrupt 
+         */
 
         IDT_ENTRY_INIT(0x80, isr_handle_syscall);
 }
@@ -115,7 +121,7 @@ idt_init()
 struct idt_register
 {
         unsigned short limit __attribute__ ((packed));
-        unsigned long  base  __attribute__ ((packed));
+        unsigned long base __attribute__ ((packed));
 };
 
 void
@@ -123,26 +129,28 @@ idt_install()
 {
         const static struct idt_register idtr = {
                 .limit = sizeof(g_idt),
-                .base  = (unsigned long)g_idt,
+                .base = (unsigned long)g_idt,
         };
 
-        __asm__ ("lidt (%0)\n\t"
-                        :
-                        : "r"(&idtr));
+        __asm__("lidt (%0)\n\t"
+                :
+                :"r"(&idtr));
 }
 
 int
-idt_install_invalid_opcode_handler(void (*hdlr)(void*))
+idt_install_invalid_opcode_handler(void (*hdlr) (void *))
 {
         const int ints = int_enabled();
 
-        if (ints) {
+        if (ints)
+        {
                 cli();
         }
 
         invalop_handler = hdlr;
 
-        if (ints) {
+        if (ints)
+        {
                 sti();
         }
 
@@ -150,17 +158,19 @@ idt_install_invalid_opcode_handler(void (*hdlr)(void*))
 }
 
 int
-idt_install_segfault_handler(void (*hdlr)(void*))
+idt_install_segfault_handler(void (*hdlr) (void *))
 {
         const int ints = int_enabled();
 
-        if (ints) {
+        if (ints)
+        {
                 cli();
         }
 
         segfault_handler = hdlr;
 
-        if (ints) {
+        if (ints)
+        {
                 sti();
         }
 
@@ -168,17 +178,19 @@ idt_install_segfault_handler(void (*hdlr)(void*))
 }
 
 int
-idt_install_pagefault_handler(void (*hdlr)(void*, void*, unsigned long))
+idt_install_pagefault_handler(void (*hdlr) (void *, void *, unsigned long))
 {
         const int ints = int_enabled();
 
-        if (ints) {
+        if (ints)
+        {
                 cli();
         }
 
         pagefault_handler = hdlr;
 
-        if (ints) {
+        if (ints)
+        {
                 sti();
         }
 
@@ -186,19 +198,21 @@ idt_install_pagefault_handler(void (*hdlr)(void*, void*, unsigned long))
 }
 
 int
-idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char))
+idt_install_irq_handler(unsigned char irqno, void (*hdlr) (unsigned char))
 {
-        if (irqno < sizeof(irq_table)/sizeof(irq_table[0])) {
-
+        if (irqno < sizeof(irq_table) / sizeof(irq_table[0]))
+        {
                 const int ints = int_enabled();
 
-                if (ints) {
+                if (ints)
+                {
                         cli();
                 }
 
                 irq_table[irqno] = hdlr;
 
-                if (ints) {
+                if (ints)
+                {
                         sti();
                 }
         }
@@ -207,23 +221,23 @@ idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char))
 }
 
 int
-idt_install_syscall_handler(void (*hdlr)(unsigned long*,
-                                         unsigned long*,
-                                         unsigned long*,
-                                         unsigned long*))
+idt_install_syscall_handler(void (*hdlr) (unsigned long *,
+                                          unsigned long *,
+                                          unsigned long *, unsigned long *))
 {
         const int ints = int_enabled();
 
-        if (ints) {
+        if (ints)
+        {
                 cli();
         }
 
         syscall_handler = hdlr;
 
-        if (ints) {
+        if (ints)
+        {
                 sti();
         }
 
         return 0;
 }
-

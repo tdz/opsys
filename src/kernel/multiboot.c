@@ -61,24 +61,29 @@
 static void *
 mmap_base_addr(const struct multiboot_mmap *mmap)
 {
-        /* only lowest 4 byte are available in 32-bit protected mode */
-        return (void*)(intptr_t)((((uint64_t)mmap->base_addr_high)<<32) +
-                                             mmap->base_addr_low);
+        /*
+         * only lowest 4 byte are available in 32-bit protected mode 
+         */
+        return (void *)(intptr_t) ((((uint64_t) mmap->base_addr_high) << 32)
+                                   + mmap->base_addr_low);
 }
 
 static uint64_t
 mmap_length(const struct multiboot_mmap *mmap)
 {
-        return (((uint64_t)mmap->length_high)<<32) + mmap->length_low;
+        return (((uint64_t) mmap->length_high) << 32) + mmap->length_low;
 }
 
 static int
 range_order(unsigned long beg1, unsigned long end1,
             unsigned long beg2, unsigned long end2)
 {
-        if (end1 <= beg2) {
+        if (end1 <= beg2)
+        {
                 return -1;
-        } else if (end2 <= beg1) {
+        }
+        else if (end2 <= beg1)
+        {
                 return 1;
         }
 
@@ -87,86 +92,114 @@ range_order(unsigned long beg1, unsigned long end1,
 
 static unsigned long
 find_unused_area(const struct multiboot_header *mb_header,
-                 const struct multiboot_info *mb_info,
-                 unsigned long nframes)
+                 const struct multiboot_info *mb_info, unsigned long nframes)
 {
         size_t i;
         unsigned long mmap_addr;
         unsigned long kernel_pfindex, kernel_nframes;
         unsigned long pfoffset;
 
-        kernel_pfindex = pageframe_index((void*)mb_header->load_addr);
-        kernel_nframes = pageframe_span((void*)mb_header->load_addr,
-                                               mb_header->bss_end_addr -
-                                               mb_header->load_addr+1);
+        kernel_pfindex = pageframe_index((void *)mb_header->load_addr);
+        kernel_nframes = pageframe_span((void *)mb_header->load_addr,
+                                        mb_header->bss_end_addr -
+                                        mb_header->load_addr + 1);
 
         mmap_addr = mb_info->mmap_addr;
 
-        for (pfoffset = 0, i = 0; !pfoffset && (i < mb_info->mmap_length);) {
+        for (pfoffset = 0, i = 0; !pfoffset && (i < mb_info->mmap_length);)
+        {
                 const struct multiboot_mmap *mmap;
                 unsigned long area_pfindex;
                 unsigned long area_nframes;
                 unsigned long pfindex;
 
-                mmap = (const struct multiboot_mmap*)mmap_addr;
+                mmap = (const struct multiboot_mmap *)mmap_addr;
 
-                /* next entry address */
-                mmap_addr += mmap->size+4;
-                i += mmap->size+4;
+                /*
+                 * next entry address 
+                 */
+                mmap_addr += mmap->size + 4;
+                i += mmap->size + 4;
 
-                /* area is not useable */
-                if (mmap->type != 1) {
+                /*
+                 * area is not useable 
+                 */
+                if (mmap->type != 1)
+                {
                         continue;
                 }
 
-                /* area page index and length */
+                /*
+                 * area page index and length 
+                 */
 
                 area_pfindex = pageframe_index(mmap_base_addr(mmap));
                 area_nframes = pageframe_count(mmap_length(mmap));
 
-                /* area at address 0, or too small */
-                if (!area_pfindex || (area_nframes < nframes)) {
+                /*
+                 * area at address 0, or too small 
+                 */
+                if (!area_pfindex || (area_nframes < nframes))
+                {
                         continue;
                 }
 
-                /* possible index */
+                /*
+                 * possible index 
+                 */
                 pfindex = area_pfindex;
 
-                /* check for intersection with kernel */
+                /*
+                 * check for intersection with kernel 
+                 */
                 if (!range_order(kernel_pfindex,
-                                 kernel_pfindex+kernel_nframes,
-                                 pfindex,
-                                 pfindex+nframes)) {
-                        pfindex = kernel_pfindex+kernel_nframes;
+                                 kernel_pfindex + kernel_nframes,
+                                 pfindex, pfindex + nframes))
+                {
+                        pfindex = kernel_pfindex + kernel_nframes;
                 }
 
-                /* check for intersection with modules */
+                /*
+                 * check for intersection with modules 
+                 */
 
-                while ( !pfoffset &&
-                       ((pfindex+nframes) < (area_pfindex+area_nframes)) ) {
+                while (!pfoffset &&
+                       ((pfindex + nframes) < (area_pfindex + area_nframes)))
+                {
 
                         size_t j;
                         const struct multiboot_module *mod;
 
-                        mod = (const struct multiboot_module*)mb_info->mods_addr;
+                        mod = (const struct multiboot_module *)mb_info->
+                                mods_addr;
 
-                        for (j = 0; j < mb_info->mods_count; ++j, ++mod) {
+                        for (j = 0; j < mb_info->mods_count; ++j, ++mod)
+                        {
                                 unsigned long mod_pfindex;
                                 unsigned long mod_nframes;
 
-                                mod_pfindex = pageframe_index((void*)mod->mod_start);
-                                mod_nframes = pageframe_count(mod->mod_end -
-                                                              mod->mod_start);
+                                mod_pfindex =
+                                        pageframe_index((void *)mod->
+                                                        mod_start);
+                                mod_nframes =
+                                        pageframe_count(mod->mod_end -
+                                                        mod->mod_start);
 
-                                /* check intersection */
+                                /*
+                                 * check intersection 
+                                 */
                                 if (range_order(mod_pfindex,
-                                                mod_pfindex+mod_nframes,
-                                                pfindex,
-                                                pfindex+nframes)) {
-                                        /* no intersection, offset found */
+                                                mod_pfindex + mod_nframes,
+                                                pfindex, pfindex + nframes))
+                                {
+                                        /*
+                                         * no intersection, offset found 
+                                         */
                                         pfoffset = pageframe_offset(pfindex);
-                                } else {
-                                        pfindex = mod_pfindex+mod_nframes;
+                                }
+                                else
+                                {
+                                        pfindex = mod_pfindex + mod_nframes;
                                 }
                         }
                 }
@@ -182,16 +215,16 @@ multiboot_init_physmem(const struct multiboot_header *mb_header,
         int err;
         unsigned long pfindex, pfcount;
 
-        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MEM)) {
+        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MEM))
+        {
                 err = -EINVAL;
                 goto err_multiboot_info_flag_mem;
         }
 
-        pfcount = pageframe_span(0, (mb_info->mem_upper+1024)<<10);
+        pfcount = pageframe_span(0, (mb_info->mem_upper + 1024) << 10);
 
         pfindex = find_unused_area(mb_header,
-                                   mb_info,
-                                   pfcount>>PAGEFRAME_SHIFT);
+                                   mb_info, pfcount >> PAGEFRAME_SHIFT);
 
         console_printf("found physmap area at %x\n", (unsigned long)pfindex);
 
@@ -204,8 +237,9 @@ err_multiboot_info_flag_mem:
 static int
 multiboot_init_physmem_kernel(const struct multiboot_header *mb_header)
 {
-        return physmem_set_flags(pageframe_index((void*)mb_header->load_addr),
-                                 pageframe_count(mb_header->bss_end_addr-
+        return physmem_set_flags(pageframe_index
+                                 ((void *)mb_header->load_addr),
+                                 pageframe_count(mb_header->bss_end_addr -
                                                  mb_header->load_addr),
                                  PHYSMEM_FLAG_RESERVED);
 }
@@ -216,29 +250,31 @@ multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
         size_t i;
         unsigned long mmap_addr;
 
-        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MMAP)) {
+        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MMAP))
+        {
                 return 0;
         }
 
         mmap_addr = mb_info->mmap_addr;
 
-        for (i = 0; i < mb_info->mmap_length;) {
+        for (i = 0; i < mb_info->mmap_length;)
+        {
                 const struct multiboot_mmap *mmap;
                 unsigned long pfindex;
                 unsigned long nframes;
 
-                mmap = (const struct multiboot_mmap*)mmap_addr;
+                mmap = (const struct multiboot_mmap *)mmap_addr;
 
                 pfindex = pageframe_index(mmap_base_addr(mmap));
                 nframes = pageframe_count(mmap_length(mmap));
 
                 physmem_set_flags(pfindex,
                                   nframes,
-                                  mmap->type==1 ? PHYSMEM_FLAG_USEABLE
-                                                : PHYSMEM_FLAG_RESERVED);
+                                  mmap->type == 1 ? PHYSMEM_FLAG_USEABLE
+                                  : PHYSMEM_FLAG_RESERVED);
 
-                mmap_addr += mmap->size+4;
-                i += mmap->size+4;
+                mmap_addr += mmap->size + 4;
+                i += mmap->size + 4;
         }
 
         return 0;
@@ -247,8 +283,9 @@ multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
 static int
 multiboot_init_physmem_module(const struct multiboot_module *mod)
 {
-        return physmem_set_flags(pageframe_index((void*)mod->mod_start),
-                                 pageframe_count(mod->mod_end-mod->mod_start),
+        return physmem_set_flags(pageframe_index((void *)mod->mod_start),
+                                 pageframe_count(mod->mod_end -
+                                                 mod->mod_start),
                                  PHYSMEM_FLAG_RESERVED);
 }
 
@@ -258,16 +295,18 @@ multiboot_init_physmem_modules(const struct multiboot_info *mb_info)
         int err;
         const struct multiboot_module *mod, *modend;
 
-        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MODS)) {
+        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MODS))
+        {
                 return 0;
         }
 
         err = 0;
-        mod = (const struct multiboot_module*)mb_info->mods_addr;
-        modend = mod+mb_info->mods_count;
+        mod = (const struct multiboot_module *)mb_info->mods_addr;
+        modend = mod + mb_info->mods_count;
 
         while ((mod < modend)
-                && ((err = multiboot_init_physmem_module(mod)) < 0)) {
+               && ((err = multiboot_init_physmem_module(mod)) < 0))
+        {
                 ++mod;
         }
 
@@ -282,60 +321,83 @@ multiboot_load_modules(struct task *parent,
         const struct multiboot_module *mod;
         size_t i;
 
-        if (!(mb_info->flags&MULTIBOOT_INFO_FLAG_MODS)) {
+        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MODS))
+        {
                 return 0;
         }
 
-        mod = (const struct multiboot_module*)mb_info->mods_addr;
+        mod = (const struct multiboot_module *)mb_info->mods_addr;
 
-        for (i = 0; i < mb_info->mods_count; ++i, ++mod) {
+        for (i = 0; i < mb_info->mods_count; ++i, ++mod)
+        {
 
                 struct task *tsk;
                 struct tcb *tcb;
                 void *ip;
 
-                if (mod->string) {
+                if (mod->string)
+                {
                         console_printf("loading module '\%s'\n", mod->string);
-                } else {
+                }
+                else
+                {
                         console_printf("loading module %x\n", i);
                 }
 
-                /* allocate task */
+                /*
+                 * allocate task 
+                 */
 
                 err = task_helper_allocate_task_from_parent(parent, &tsk);
 
-                if (err < 0) {
-                        console_perror("task_helper_allocate_task_from_parent", -err);
+                if (err < 0)
+                {
+                        console_perror
+                                ("task_helper_allocate_task_from_parent",
+                                 -err);
                         goto err_task_helper_allocate_task_from_parent;
                 }
 
-                /* allocate tcb */
+                /*
+                 * allocate tcb 
+                 */
 
                 err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb);
 
-                if (err < 0) {
-                        console_perror("tcb_helper_allocate_tcb_and_stack", -err);
+                if (err < 0)
+                {
+                        console_perror("tcb_helper_allocate_tcb_and_stack",
+                                       -err);
                         goto err_tcb_helper_allocate_tcb_and_stack;
                 }
 
-                /* load binary image */
+                /*
+                 * load binary image 
+                 */
 
-                if ((err = loader_exec(tcb, (void*)mod->mod_start, &ip, tcb)) < 0) {
+                if ((err =
+                     loader_exec(tcb, (void *)mod->mod_start, &ip, tcb)) < 0)
+                {
                         console_perror("loader_exec", -err);
                         goto err_loader_exec;
                 }
 
-                /* set thread to starting state */
+                /*
+                 * set thread to starting state 
+                 */
                 err = tcb_helper_run_user_thread(sched_get_current_thread(),
-                                                 tcb,
-                                                 ip);
+                                                 tcb, ip);
 
-                if (err < 0) {
+                if (err < 0)
+                {
                         goto err_tcb_helper_run_user_thread;
                 }
 
-                /* schedule thread */
-                if ((err = sched_add_thread(tcb)) < 0) {
+                /*
+                 * schedule thread 
+                 */
+                if ((err = sched_add_thread(tcb)) < 0)
+                {
                         console_perror("sched_add_thread", -err);
                         goto err_sched_add_thread;
                 }
@@ -347,9 +409,13 @@ multiboot_load_modules(struct task *parent,
         err_sched_add_thread:
         err_tcb_helper_run_user_thread:
         err_loader_exec:
-                /* FIXME: free tcb */
+                /*
+                 * FIXME: free tcb 
+                 */
         err_tcb_helper_allocate_tcb_and_stack:
-                /* FIXME: free task */
+                /*
+                 * FIXME: free task 
+                 */
         err_task_helper_allocate_task_from_parent:
                 continue;
         }
@@ -363,10 +429,11 @@ main_invalop_handler(void *ip)
         console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
 }
 
+#include <cpu.h>
+
 void
 multiboot_main(const struct multiboot_header *mb_header,
-               const struct multiboot_info *mb_info,
-               void *stack)
+               const struct multiboot_info *mb_info, void *stack)
 {
         static struct address_space g_kernel_as;
 
@@ -376,126 +443,172 @@ multiboot_main(const struct multiboot_header *mb_header,
 
         console_printf("opsys booting...\n");
 
-        /* init physical memory with lowest 4 MiB reserved for DMA,
-           kernel, etc
+        /*
+         * init physical memory with lowest 4 MiB reserved for DMA,
+         * kernel, etc
          */
 
-        if ((err = multiboot_init_physmem(mb_header, mb_info)) < 0) {
+        if ((err = multiboot_init_physmem(mb_header, mb_info)) < 0)
+        {
                 console_perror("multiboot_init_physmem", -err);
                 return;
         }
 
         physmem_set_flags(0, 1024, PHYSMEM_FLAG_RESERVED);
 
-        if ((err = multiboot_init_physmem_kernel(mb_header)) < 0) {
+        if ((err = multiboot_init_physmem_kernel(mb_header)) < 0)
+        {
                 console_perror("multiboot_init_physmem_kernel", -err);
                 return;
         }
-        if ((err = multiboot_init_physmem_mmap(mb_info)) < 0) {
+        if ((err = multiboot_init_physmem_mmap(mb_info)) < 0)
+        {
                 console_perror("multiboot_init_physmem_mmap", -err);
                 return;
         }
-        if ((err = multiboot_init_physmem_modules(mb_info)) < 0) {
+        if ((err = multiboot_init_physmem_modules(mb_info)) < 0)
+        {
                 console_perror("multiboot_init_physmem_modules", -err);
                 return;
         }
 
-        /* setup GDT for protected mode */
+        /*
+         * setup GDT for protected mode 
+         */
         gdt_init();
         gdt_install();
 
-        /* setup IDT for protected mode */
+        /*
+         * setup IDT for protected mode 
+         */
         idt_init();
         idt_install();
 
         idt_install_invalid_opcode_handler(main_invalop_handler);
 
-        /* setup interupt controller */
+        /*
+         * setup interupt controller 
+         */
         pic_install();
 
-        /* setup keyboard */
-        if ((err = kbd_init()) < 0) {
+        /*
+         * setup keyboard 
+         */
+        if ((err = kbd_init()) < 0)
+        {
                 console_perror("kbd_init", -err);
-        } else {
+        }
+        else
+        {
                 idt_install_irq_handler(1, kbd_irq_handler);
         }
 
-        /* setup PIT for system timer */
+        /*
+         * setup PIT for system timer 
+         */
         pit_install(0, 20, PIT_MODE_RATEGEN);
         idt_install_irq_handler(0, pit_irq_handler);
 
         idt_install_syscall_handler(syscall_entry_handler);
 
-        /* setup scheduler
+        /*
+         * setup scheduler
          */
 
-        if ((err = sched_init()) < 0) {
+        if ((err = sched_init()) < 0)
+        {
                 console_perror("sched_init", -err);
                 return;
         }
 
-        /* build initial task and address space
+        /*
+         * build initial task and address space
          */
 
         idt_install_segfault_handler(virtmem_segfault_handler);
         idt_install_pagefault_handler(virtmem_pagefault_handler);
 
-        if ((err = task_helper_init_kernel_task(&g_kernel_as, &tsk)) < 0) {
+        if ((err = task_helper_init_kernel_task(&g_kernel_as, &tsk)) < 0)
+        {
                 console_perror("task_helper_init_kernel_task", -err);
                 return;
         }
 
-        /* setup memory allocator
+        /*
+         * setup memory allocator
          */
 
-        if ((err = allocator_init(&g_kernel_as)) < 0) {
+        if ((err = allocator_init(&g_kernel_as)) < 0)
+        {
                 console_perror("allocator_init", -err);
                 return;
         }
 
-        /* setup current execution as thread 0 of kernel task
+        /*
+         * setup current execution as thread 0 of kernel task
          */
 
-        if ((err = tcb_helper_allocate_tcb(tsk, stack, &tcb)) < 0) {
+        if ((err = tcb_helper_allocate_tcb(tsk, stack, &tcb)) < 0)
+        {
                 console_perror("tcb_helper_allocate_tcb", -err);
                 return;
         }
 
         tcb_set_state(tcb, THREAD_STATE_READY);
 
-        /* connect scheduler to timer interupt */
+        /*
+         * connect scheduler to timer interupt 
+         */
         idt_install_irq_handler(0, sched_irq_handler);
 
-        if ((err = sched_add_thread(tcb)) < 0) {
+        if ((err = sched_add_thread(tcb)) < 0)
+        {
                 console_perror("sched_add_thread", -err);
                 return;
         }
 
         sti();
 
-        /* create and schedule system service */
+        /*
+         * create and schedule system service 
+         */
 
-        if ((err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb)) < 0) {
+        if ((err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb)) < 0)
+        {
                 console_perror("tcb_helper_allocate_tcb_and_stack", -err);
                 return;
         }
 
-        if ((err = tcb_helper_run_kernel_thread(tcb, system_srv_start)) < 0) {
+        if ((err = tcb_helper_run_kernel_thread(tcb, system_srv_start)) < 0)
+        {
                 console_perror("tcb_set_initial_ready_state", -err);
                 return;
         }
 
-        if ((err = sched_add_thread(tcb)) < 0) {
+        if ((err = sched_add_thread(tcb)) < 0)
+        {
                 console_perror("sched_add_thread", -err);
                 return;
         }
 
-        /* load modules as ELF binaries
+        /*
+         * load modules as ELF binaries
          */
 
-        if ((err = multiboot_load_modules(tsk, mb_info)) < 0) {
+        if ((err = multiboot_load_modules(tsk, mb_info)) < 0)
+        {
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
-}
 
+        do
+        {
+                unsigned long esp;
+
+                sched_switch();
+
+                hlt();
+        __asm__("movl %%esp, %0\n\t":"=r"(esp));
+                console_printf("%s:%x: %%esp=%x\n", __FILE__, __LINE__, esp);
+        } while (1);
+}

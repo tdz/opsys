@@ -44,32 +44,41 @@ task_helper_init_kernel_task(struct address_space *kernel_as,
         int err;
         os_index_t pgindex;
 
-        /* init page directory and address space for kernel task */
+        /*
+         * init page directory and address space for kernel task 
+         */
 
         err = address_space_helper_init_kernel_address_space(kernel_as);
 
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_address_space_helper_init_kernel_address_space;
         }
 
-        /* enable paging */
+        /*
+         * enable paging 
+         */
         address_space_enable(kernel_as);
 
-        /* create kernel task */
+        /*
+         * create kernel task 
+         */
 
         pgindex = virtmem_alloc_pages_in_area(kernel_as,
                                               VIRTMEM_AREA_KERNEL,
                                               page_count(0, sizeof(**tsk)),
-                                              PTE_FLAG_PRESENT|
+                                              PTE_FLAG_PRESENT |
                                               PTE_FLAG_WRITEABLE);
-        if (pgindex < 0) {
+        if (pgindex < 0)
+        {
                 err = pgindex;
                 goto err_virtmem_alloc_pages_in_area_tsk;
         }
 
         *tsk = page_address(pgindex);
 
-        if ((err = task_init(*tsk, kernel_as)) < 0) {
+        if ((err = task_init(*tsk, kernel_as)) < 0)
+        {
                 goto err_task_init;
         }
 
@@ -79,27 +88,35 @@ err_task_init:
 /*        physmem_unref_frames(pageframe_index(*tsk),
                              pageframe_count(sizeof(**tsk)));*/
 err_virtmem_alloc_pages_in_area_tsk:
-        /* TODO: uninit kernel address space */
+        /*
+         * TODO: uninit kernel address space 
+         */
 err_address_space_helper_init_kernel_address_space:
         return err;
 }
 
 int
 task_helper_allocate_task_from_parent(const struct task *parent,
-                                            struct task **tsk)
+                                      struct task **tsk)
 {
         int err;
 
-        /* allocate task memory */
+        /*
+         * allocate task memory 
+         */
 
-        if (!(*tsk = kmalloc(sizeof(**tsk)))) {
+        if (!(*tsk = kmalloc(sizeof(**tsk))))
+        {
                 err = -ENOMEM;
                 goto err_kmalloc_tsk;
         }
 
-        /* init task from parent */
+        /*
+         * init task from parent 
+         */
 
-        if ((err = task_helper_init_task_from_parent(parent, *tsk)) < 0) {
+        if ((err = task_helper_init_task_from_parent(parent, *tsk)) < 0)
+        {
                 goto err_task_helper_init_task_from_parent;
         }
 
@@ -114,31 +131,37 @@ err_kmalloc_tsk:
 #include "console.h"
 
 int
-task_helper_init_task_from_parent(const struct task *parent,
-                                        struct task *tsk)
+task_helper_init_task_from_parent(const struct task *parent, struct task *tsk)
 {
         int err;
         struct address_space *as;
 
-        /* create address space from parent */
+        /*
+         * create address space from parent 
+         */
 
-        err = address_space_helper_allocate_address_space_from_parent(parent->as,
-                                                                     &as);
-        if (err < 0) {
+        err = address_space_helper_allocate_address_space_from_parent
+                (parent->as, &as);
+        if (err < 0)
+        {
                 goto err_address_space_helper_allocate_address_space_from_parent;
         }
 
-        /* init task */
+        /*
+         * init task 
+         */
 
-        if ((err = task_init(tsk, as)) < 0) {
+        if ((err = task_init(tsk, as)) < 0)
+        {
                 goto err_task_init;
         }
 
         return 0;
 
 err_task_init:
-        /* TODO: free address space */
+        /*
+         * TODO: free address space 
+         */
 err_address_space_helper_allocate_address_space_from_parent:
         return err;
 }
-

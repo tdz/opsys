@@ -21,18 +21,17 @@
 threadid_type
 threadid_create(unsigned int taskid, unsigned char tcbid)
 {
-        return (taskid<<8) | (tcbid&0xff);
+        return (taskid << 8) | (tcbid & 0xff);
 }
 
 unsigned int
 threadid_get_taskid(threadid_type tid)
 {
-        return tid>>8;
+        return tid >> 8;
 }
 
 unsigned char
 threadid_get_tcbid(threadid_type tid)
 {
-        return tid&0xff;
+        return tid & 0xff;
 }
-

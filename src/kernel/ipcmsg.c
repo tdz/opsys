@@ -23,9 +23,7 @@
 
 int
 ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
-                                  unsigned long flags,
-                                  unsigned long msg0,
-                                  unsigned long msg1)
+             unsigned long flags, unsigned long msg0, unsigned long msg1)
 {
         msg->snd = snd;
         msg->flags = flags;
@@ -52,6 +50,5 @@ ipc_msg_flags_get_timeout(const struct ipc_msg *msg)
 int
 ipc_msg_flags_is_errno(const struct ipc_msg *msg)
 {
-        return !!(msg->flags&IPC_MSG_FLAG_IS_ERRNO);
+        return !!(msg->flags & IPC_MSG_FLAG_IS_ERRNO);
 }
-

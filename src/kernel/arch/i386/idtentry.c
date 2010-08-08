@@ -19,15 +19,12 @@
 #include "idtentry.h"
 
 void
-idt_entry_init(struct idt_entry *idte, unsigned long  func,
-                                       unsigned short tss,
-                                       unsigned char  ring,
-                                       unsigned char  flags)
+idt_entry_init(struct idt_entry *idte, unsigned long func,
+               unsigned short tss, unsigned char ring, unsigned char flags)
 {
-        idte->base_low = func&0xffff;
+        idte->base_low = func & 0xffff;
         idte->tss = tss;
         idte->reserved = 0;
-        idte->flags = flags | ((ring&0x03)<<7);
-        idte->base_high = (func>>16)&0xffff;
+        idte->flags = flags | ((ring & 0x03) << 7);
+        idte->base_high = (func >> 16) & 0xffff;
 }
-

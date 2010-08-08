@@ -1,6 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,14 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/types.h>
-#include <opsys/syscall.h>
-#include <crt.h>
+#include <cpu.h>
+#include <interupt.h>
 
-int
-crt_write(const char *buf, size_t buflen, unsigned char attr)
+#include "console.h"
+#include "assert.h"
+
+void
+__assert_failed(const char *cond, const char *file, unsigned long line)
 {
-        return syscall0((unsigned long)IPC_CRT_WRITE,
-                        (unsigned long)buf,
-                        (unsigned long)buflen, (unsigned long)attr);
+        cli();
+
+        console_printf("%s:%d: condition (%s) failed\n", file, line, cond);
+
+        hlt();
 }
+

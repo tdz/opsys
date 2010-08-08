@@ -42,9 +42,10 @@ kmalloc(size_t nbytes)
         size_t nchunks;
 
         nchunks = memzone_get_nchunks(&g_memzone_kernel,
-                                       nbytes+2*sizeof(size_t));
+                                      nbytes + 2 * sizeof(size_t));
 
-        if ((chunk = memzone_alloc(&g_memzone_kernel, nchunks)) < 0) {
+        if ((chunk = memzone_alloc(&g_memzone_kernel, nchunks)) < 0)
+        {
                 goto err_memzone_alloc;
         }
 
@@ -53,7 +54,7 @@ kmalloc(size_t nbytes)
         mem[0] = chunk;
         mem[1] = nbytes;
 
-        return mem+2;
+        return mem + 2;
 
 err_memzone_alloc:
         return NULL;
@@ -64,11 +65,12 @@ kcalloc(size_t nmemb, size_t nbytes)
 {
         void *mem;
 
-        if (!(mem = kmalloc(nmemb*nbytes))) {
+        if (!(mem = kmalloc(nmemb * nbytes)))
+        {
                 return NULL;
         }
 
-        return memset(mem, 0, nmemb*nbytes);
+        return memset(mem, 0, nmemb * nbytes);
 }
 
 void
@@ -77,7 +79,5 @@ kfree(void *mem)
         size_t *mem2 = mem;
 
         memzone_free(&g_memzone_kernel, mem2[-2],
-                                        memzone_get_nchunks(&g_memzone_kernel,
-                                                             mem2[-1]));
+                     memzone_get_nchunks(&g_memzone_kernel, mem2[-1]));
 }
-

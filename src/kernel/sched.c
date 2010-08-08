@@ -23,6 +23,8 @@
 #include <cpu.h>
 #include <interupt.h>
 
+#include "assert.h"
+
 #include "task.h"
 
 #include "spinlock.h"
@@ -35,15 +37,27 @@
 
 #include "console.h"
 
-/** Current list head in thread list */
+/**
+ * \brief  Current list head in thread list
+ * \internal
+ */
 static struct list *g_current_thread = NULL;
 
+/**
+ * \brief init scheduler
+ * \return 0 on success, or a negative error code otherwise
+ */
 int
 sched_init()
 {
         return 0;
 }
 
+/**
+ * \brief add a thread to the scheduler
+ * \param[in] tcb the new thread
+ * \return 0 on success, or a negative error code otherwise
+ */
 int
 sched_add_thread(struct tcb *tcb)
 {
@@ -51,27 +65,40 @@ sched_add_thread(struct tcb *tcb)
 
         list_init(&tcb->sched, &tcb->sched, &tcb->sched, tcb);
 
-        if (!g_current_thread) {
+        if (!g_current_thread)
+        {
                 g_current_thread = &tcb->sched;
-        } else {
+        }
+        else
+        {
                 list_enque_in_front(g_current_thread, &tcb->sched);
         }
 
         return 0;
 }
 
+/**
+ * \brief return the thread that is currently scheduled on the CPU
+ * \return the currently scheduled thread's tcb structure
+ */
 struct tcb *
 sched_get_current_thread()
 {
         return sched_get_thread(g_current_thread);
 }
 
+/**
+ * \brief return the thread at the beginning of the list
+ * \param[in] listhead a list of threads
+ * \return the first thread in the list, or NULL otherwise
+ */
 struct tcb *
 sched_get_thread(struct list *listhead)
 {
         struct tcb *tcb;
 
-        if (!listhead) {
+        if (!listhead)
+        {
                 return NULL;
         }
 
@@ -80,6 +107,12 @@ sched_get_thread(struct list *listhead)
         return tcb;
 }
 
+/**
+ * \brief search for a thread with the task and thread id
+ * \param taskid a task id
+ * \param tcbid a thread id
+ * \return the found thread, or NULL otherwise
+ */
 struct tcb *
 sched_search_thread(unsigned int taskid, unsigned char tcbid)
 {
@@ -88,14 +121,17 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
 
         tcb = NULL;
 
-        if (g_current_thread) {
+        if (g_current_thread)
+        {
                 current = g_current_thread;
 
-                do {
+                do
+                {
                         struct tcb *currenttcb = list_data(current);
 
                         if ((currenttcb->id == tcbid) &&
-                            (currenttcb->task->id == taskid)) {
+                            (currenttcb->task->id == taskid))
+                        {
                                 tcb = currenttcb;
                         }
                         current = current->next;
@@ -105,18 +141,31 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
         return tcb;
 }
 
+/**
+ * \brief switch to a specific thread
+ * \param[in] next the tcb of the destination thread
+ * \return 0 on success, or a negative error code otherwise
+ *
+ * \attention The destination thread has to be in runnable state.
+ */
 int
 sched_switch_to(struct tcb *next)
 {
         int err;
         struct tcb *tcb;
 
+        assert(next && tcb_is_runnable(next));
+
         tcb = list_data(g_current_thread);
 
-        g_current_thread = &next->sched;
+        /*if (next != tcb)*/
+        {
+                g_current_thread = &next->sched;
 
-        if ((err = tcb_switch(tcb, next)) < 0) {
-                goto err_tcb_switch;
+                if ((err = tcb_switch(tcb, next)) < 0)
+                {
+                        goto err_tcb_switch;
+                }
         }
 
         return 0;
@@ -125,6 +174,11 @@ err_tcb_switch:
         return err;
 }
 
+/**
+ * \brief select a runnable thread
+ * \return the tcb of a runnable thread, or NULL otherwise
+ * \internal
+ */
 static struct tcb *
 sched_select_thread(void)
 {
@@ -132,13 +186,15 @@ sched_select_thread(void)
         struct list *listhead;
         int is_runable;
 
-        if (!g_current_thread) {
+        if (!g_current_thread)
+        {
                 return NULL;
         }
 
         listhead = g_current_thread;
 
-        do {
+        do
+        {
                 listhead = listhead->next;
                 tcb = list_data(listhead);
                 is_runable = tcb_is_runnable(tcb);
@@ -147,39 +203,40 @@ sched_select_thread(void)
         return tcb;
 }
 
+/**
+ * \brief switch to any thread the is runnable
+ * \return 0 on success, or a negative error code otherwise
+ */
 int
 sched_switch()
 {
+        struct tcb *tcb;
         int err;
 
-        do {
-                struct tcb *tcb = sched_select_thread();
+        /* at least the idle thread should always be runnable */
+        tcb = sched_select_thread();
 
-                if (tcb && tcb_is_runnable(tcb)) {
+        if ((err = sched_switch_to(tcb)) < 0)
+        {
+                goto err_sched_switch_to;
+        }
 
-                        if ((err = sched_switch_to(tcb)) < 0) {
-                                goto err_sched_switch_to;
-                        }
-
-                        return 0;
-                }
-
-                /* no thread ready; wait and search again after wakeup */
-                hlt();
-        } while (1);
+        return 0;
 
 err_sched_switch_to:
         return err;
 }
 
+/**
+ * \brief handle schedule interrupt
+ * \param irqno the interrupt that triggered the call
+ *
+ * This function is the high-level entry point for the thread-schedule
+ * interrupt. It triggers switches to other runnable threads.
+ */
 void
 sched_irq_handler(unsigned char irqno)
 {
-        /* scheduler might sleep, so turn on interrupts */
-        sti();
-
         sched_switch();
-
-        cli();
 }
 

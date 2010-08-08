@@ -21,12 +21,11 @@
 pte_type
 pte_create(unsigned long pfindex, unsigned long flags)
 {
-        return (pfindex<<12) | (flags&PTE_ALL_FLAGS);
+        return (pfindex << 12) | (flags & PTE_ALL_FLAGS);
 }
 
 unsigned long
 pte_get_pageframe_index(pte_type pte)
 {
-        return pte>>12;
+        return pte >> 12;
 }
-

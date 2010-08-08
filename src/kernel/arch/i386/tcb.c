@@ -55,11 +55,13 @@ tcb_init_with_id(struct tcb *tcb,
 
         console_printf("tcb id=%x.\n", id);
 
-        if ((err = task_ref(task)) < 0) {
+        if ((err = task_ref(task)) < 0)
+        {
                 goto err_task_ref;
         }
 
-        if (bitset_isset(task->threadid, id)) {
+        if (bitset_isset(task->threadid, id))
+        {
                 err = -EINVAL;
                 goto err_bitset_isset;
         }
@@ -82,15 +84,15 @@ tcb_init_with_id(struct tcb *tcb,
 
         pfindex = virtmem_lookup_pageframe(task->as,
                                            page_index(task->as->tlps));
-        if (pfindex < 0) {
+        if (pfindex < 0)
+        {
                 err = pfindex;
                 goto err_virtmem_lookup_pageframe;
         }
 
-        err = tcb_regs_init(&tcb->regs,
-                            stack,
-                            pageframe_address(pfindex));
-        if (err < 0) {
+        err = tcb_regs_init(&tcb->regs, stack, pageframe_address(pfindex));
+        if (err < 0)
+        {
                 goto err_tcb_regs_init;
         }
 
@@ -114,12 +116,14 @@ tcb_init(struct tcb *tcb, struct task *task, void *stack)
 
         id = bitset_find_unset(task->threadid, sizeof(task->threadid));
 
-        if (id < 0) {
+        if (id < 0)
+        {
                 err = id;
                 goto err_bitset_find_unset;
         }
 
-        if ((err = tcb_init_with_id(tcb, task, id, stack)) < 0) {
+        if ((err = tcb_init_with_id(tcb, task, id, stack)) < 0)
+        {
                 goto err_tcb_init_with_id;
         }
 
@@ -173,19 +177,21 @@ int
 tcb_set_initial_ready_state(struct tcb *tcb,
                             const void *ip,
                             unsigned char irqno,
-                            unsigned long *stack,
-                            int nargs, ...)
+                            unsigned long *stack, int nargs, ...)
 {
         extern void tcb_regs_switch_entry_point(void);
         extern void tcb_regs_switch_first_return(void);
 
         va_list ap;
 
-        /* generate thread execution stack */
+        /*
+         * generate thread execution stack 
+         */
 
         va_start(ap, nargs);
 
-        while (nargs) {
+        while (nargs)
+        {
                 unsigned long arg = va_arg(ap, unsigned long);
 
                 tcb_stack_push4(tcb, &stack, arg);
@@ -195,26 +201,34 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         va_end(ap);
 
-        tcb_stack_push4(tcb, &stack, 0); /* no return ip */
+        tcb_stack_push4(tcb, &stack, 0);        /* no return ip */
 
-        /* prepare stack as if thread was scheduled from irq */
+        /*
+         * prepare stack as if thread was scheduled from irq 
+         */
 
-        /* stack after irq */
+        /*
+         * stack after irq 
+         */
         tcb_stack_push4(tcb, &stack, eflags());
         tcb_stack_push4(tcb, &stack, cs());
         tcb_stack_push4(tcb, &stack, (unsigned long)ip);
         tcb_stack_push4(tcb, &stack, irqno);
 
-        tcb_stack_push4(tcb, &stack, 0); /* %eax */
-        tcb_stack_push4(tcb, &stack, 0); /* %ecx */
-        tcb_stack_push4(tcb, &stack, 0); /* %edx */
-        tcb_stack_push4(tcb, &stack, irqno); /* pushed by irq handler */
+        tcb_stack_push4(tcb, &stack, 0);        /* %eax */
+        tcb_stack_push4(tcb, &stack, 0);        /* %ecx */
+        tcb_stack_push4(tcb, &stack, 0);        /* %edx */
+        tcb_stack_push4(tcb, &stack, irqno);    /* pushed by irq handler */
 
-        /* tcb_regs_switch */
+        /*
+         * tcb_regs_switch 
+         */
         tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
         tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
-        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_regs_switch_first_return);
-        tcb_stack_push4(tcb, &stack, (unsigned long)tcb_regs_get_fp(&tcb->regs));
+        tcb_stack_push4(tcb, &stack,
+                        (unsigned long)tcb_regs_switch_first_return);
+        tcb_stack_push4(tcb, &stack,
+                        (unsigned long)tcb_regs_get_fp(&tcb->regs));
         tcb_regs_set_fp(&tcb->regs, tcb_regs_get_sp(&tcb->regs));
 
         tcb_regs_init_state(&tcb->regs);
@@ -225,4 +239,3 @@ tcb_set_initial_ready_state(struct tcb *tcb,
 
         return 0;
 }
-

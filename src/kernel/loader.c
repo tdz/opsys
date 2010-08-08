@@ -33,21 +33,26 @@
 
 int
 loader_exec(const struct tcb *tcb,
-            const void *img,
-                  void **ip,
-                  struct tcb *dst_tcb)
+            const void *img, void **ip, struct tcb *dst_tcb)
 {
         int err;
 
-        /* load image into address space */
+        /*
+         * load image into address space 
+         */
 
-        if (elf_loader_is_elf(img)) {
-                err = elf_loader_exec(tcb->task->as, img, ip, dst_tcb->task->as);
-        } else {
+        if (elf_loader_is_elf(img))
+        {
+                err = elf_loader_exec(tcb->task->as, img, ip,
+                                      dst_tcb->task->as);
+        }
+        else
+        {
                 err = -EINVAL;
         }
 
-        if (err < 0) {
+        if (err < 0)
+        {
                 goto err_is_image;
         }
 
@@ -56,4 +61,3 @@ loader_exec(const struct tcb *tcb,
 err_is_image:
         return err;
 }
-

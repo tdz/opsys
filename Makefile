@@ -13,7 +13,7 @@ IMAGES = opsyshdd.img
 
 .PHONY += image doc html
 
-image: $(IMAGES)
+image: clean $(IMAGES)
 
 maintainer-clean: clean
 	$(RM) -fr doc/ $(IMAGES)

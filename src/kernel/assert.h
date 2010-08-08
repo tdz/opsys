@@ -16,30 +16,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct list;
-struct tcb;
-
-int
-sched_init(void);
-
-int
-sched_add_thread(struct tcb *tcb);
-
-struct tcb *
-sched_get_current_thread(void);
-
-struct tcb *
-sched_get_thread(struct list *listhead);
-
-struct tcb *
-sched_search_thread(unsigned int taskid, unsigned char tcbid);
-
-int
-sched_switch_to(struct tcb *next);
-
-int
-sched_switch(void);
+#if NDEBUG != 0
+        #define assert(c_)
+#else
+        #define assert(c_)                                                      \
+                {                                                               \
+                        int succ = !!(c_);                                      \
+                        if (!succ)                                              \
+                        {                                                       \
+                                __assert_failed(#c_, __FILE__, __LINE__);       \
+                        }                                                       \
+                }
+#endif
 
 void
-sched_irq_handler(unsigned char irqno);
+__assert_failed(const char *cond, const char *file, unsigned long line);
 

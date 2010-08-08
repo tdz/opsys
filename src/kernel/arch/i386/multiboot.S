@@ -54,7 +54,7 @@ multiboot_entry:
         pushl %esp
         pushl %ebx
         pushl $multiboot_header
-        call multiboot_main
+        call multiboot_init
 
 hltloop:
         hlt

@@ -24,6 +24,7 @@ CSOURCES = addrspace.c \
            idtentry.c \
            interupt.c \
            ioports.c \
+           main.c \
            multiboot.c \
            pagedir.c \
            pagetbl.c \

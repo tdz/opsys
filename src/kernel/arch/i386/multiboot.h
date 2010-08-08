@@ -16,11 +16,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum {
+enum
+{
         MULTIBOOT_HEADER_MAGIC = 0x1badb002
 };
 
-enum {
+enum
+{
         MULTIBOOT_HEADER_FLAG_ALIGNED = 1<<0,
         MULTIBOOT_HEADER_FLAG_MEMINFO = 1<<1,
         MULTIBOOT_HEADER_FLAG_VIDMODE = 1<<2,
@@ -59,7 +61,8 @@ struct elf_section_header_table
         unsigned long shndx;
 };
 
-enum {
+enum
+{
         MULTIBOOT_INFO_FLAG_MEM        = 1<<0,
         MULTIBOOT_INFO_FLAG_BOOTDEV    = 1<<1,
         MULTIBOOT_INFO_FLAG_CMDLINE    = 1<<2,
@@ -110,7 +113,7 @@ struct multiboot_mmap
 };
 
 void
-multiboot_main(const struct multiboot_header *mb_header,
+multiboot_init(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info,
                void *stack);
 

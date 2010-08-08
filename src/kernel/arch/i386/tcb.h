@@ -21,12 +21,13 @@ struct list;
 struct task;
 struct tcb_regs;
 
-enum thread_state {
-        THREAD_STATE_ZOMBIE = 0, /* waiting for removal */
-        THREAD_STATE_READY, /* ready to be executed */
-        THREAD_STATE_SEND, /* blocked by send action */
-        THREAD_STATE_RECV, /* blocked by receive action */
-        THREAD_STATE_WAITING /* blocked by waiting for some lock */
+enum thread_state
+{
+        THREAD_STATE_ZOMBIE = 0, /**< \brief waiting for removal */
+        THREAD_STATE_READY, /**< \brief ready to be executed */
+        THREAD_STATE_SEND, /**< \brief blocked by send action */
+        THREAD_STATE_RECV, /**< \brief blocked by receive action */
+        THREAD_STATE_WAITING /**< \brief blocked by waiting for some lock */
 };
 
 struct tcb

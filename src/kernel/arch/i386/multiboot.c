@@ -18,57 +18,26 @@
 
 #include <errno.h>
 #include <stdint.h>
-#include <sys/types.h>
-
-#include <interupt.h>
-#include <gdt.h>
-#include <idt.h>
-
-#include "pic.h"
-#include "pit.h"
-
-#include "spinlock.h"
-#include "semaphore.h"
 
 /* physical memory */
 #include <pageframe.h>
 #include "physmem.h"
 
-/* virtual memory */
-#include <addrspace.h>
-#include "virtmem.h"
-#include "alloc.h"
-
-#include "kbd.h"
-
-#include "task.h"
 #include "taskhlp.h"
 
-#include "list.h"
-#include "ipcmsg.h"
-
-#include <tcbregs.h>
-#include <tcb.h>
 #include "tcbhlp.h"
+
 #include "sched.h"
 #include "loader.h"
-#include "syscall.h"
 #include "console.h"
 
-#include "syssrv.h"
+#include "main.h"
 #include "multiboot.h"
-
-enum
-{
-        SCHED_FREQ = 20 /**< \brief frequency for thread scheduling */
-};
 
 static void *
 mmap_base_addr(const struct multiboot_mmap *mmap)
 {
-        /*
-         * only lowest 4 byte are available in 32-bit protected mode 
-         */
+        /* only lowest 4 byte are available in 32-bit protected mode */
         return (void *)(intptr_t) ((((uint64_t) mmap->base_addr_high) << 32)
                                    + mmap->base_addr_low);
 }
@@ -428,28 +397,16 @@ multiboot_load_modules(struct task *parent,
         return 0;
 }
 
-static void
-main_invalop_handler(void *ip)
-{
-        console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
-}
-
-#include <cpu.h>
-
 void
-multiboot_main(const struct multiboot_header *mb_header,
+multiboot_init(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info, void *stack)
 {
-        static struct address_space g_kernel_as;
-
         int err;
         struct task *tsk;
-        struct tcb *tcb;
 
         console_printf("opsys booting...\n");
 
-        /*
-         * init physical memory with lowest 4 MiB reserved for DMA,
+        /* init physical memory with lowest 4 MiB reserved for DMA,
          * kernel, etc
          */
 
@@ -477,127 +434,16 @@ multiboot_main(const struct multiboot_header *mb_header,
                 return;
         }
 
-        /*
-         * setup GDT for protected mode 
+        /* setup virtual memory and system services
          */
-        gdt_init();
-        gdt_install();
 
-        /*
-         * setup IDT for protected mode 
-         */
-        idt_init();
-        idt_install();
-
-        idt_install_invalid_opcode_handler(main_invalop_handler);
-
-        /*
-         * setup interupt controller 
-         */
-        pic_install();
-
-        /*
-         * setup keyboard 
-         */
-        if ((err = kbd_init()) < 0)
+        if ((err = general_init(&tsk, &stack)) < 0)
         {
-                console_perror("kbd_init", -err);
-        }
-        else
-        {
-                idt_install_irq_handler(1, kbd_irq_handler);
-        }
-
-        /*
-         * setup PIT for system timer 
-         */
-        pit_install(0, SCHED_FREQ, PIT_MODE_RATEGEN);
-        idt_install_irq_handler(0, pit_irq_handler);
-
-        idt_install_syscall_handler(syscall_entry_handler);
-
-        /*
-         * setup scheduler
-         */
-
-        if ((err = sched_init()) < 0)
-        {
-                console_perror("sched_init", -err);
+                console_perror("general_init", -err);
                 return;
         }
 
-        /*
-         * build initial task and address space
-         */
-
-        idt_install_segfault_handler(virtmem_segfault_handler);
-        idt_install_pagefault_handler(virtmem_pagefault_handler);
-
-        if ((err = task_helper_init_kernel_task(&g_kernel_as, &tsk)) < 0)
-        {
-                console_perror("task_helper_init_kernel_task", -err);
-                return;
-        }
-
-        /*
-         * setup memory allocator
-         */
-
-        if ((err = allocator_init(&g_kernel_as)) < 0)
-        {
-                console_perror("allocator_init", -err);
-                return;
-        }
-
-        /*
-         * setup current execution as thread 0 of kernel task
-         */
-
-        if ((err = tcb_helper_allocate_tcb(tsk, stack, &tcb)) < 0)
-        {
-                console_perror("tcb_helper_allocate_tcb", -err);
-                return;
-        }
-
-        tcb_set_state(tcb, THREAD_STATE_READY);
-
-        /*
-         * connect scheduler to timer interupt 
-         */
-        idt_install_irq_handler(0, sched_irq_handler);
-
-        if ((err = sched_add_thread(tcb)) < 0)
-        {
-                console_perror("sched_add_thread", -err);
-                return;
-        }
-
-        sti();
-
-        /*
-         * create and schedule system service 
-         */
-
-        if ((err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb)) < 0)
-        {
-                console_perror("tcb_helper_allocate_tcb_and_stack", -err);
-                return;
-        }
-
-        if ((err = tcb_helper_run_kernel_thread(tcb, system_srv_start)) < 0)
-        {
-                console_perror("tcb_set_initial_ready_state", -err);
-                return;
-        }
-
-        if ((err = sched_add_thread(tcb)) < 0)
-        {
-                console_perror("sched_add_thread", -err);
-                return;
-        }
-
-        /*
-         * load modules as ELF binaries
+        /* load modules as ELF binaries
          */
 
         if ((err = multiboot_load_modules(tsk, mb_info)) < 0)

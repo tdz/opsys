@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <cpu.h>
 #include <interupt.h>
 
 #include "list.h"
@@ -62,7 +63,7 @@ semaphore_try_enter(struct semaphore *sem)
         int avail;
         struct tcb *self;
 
-        self = sched_get_current_thread();
+        self = sched_get_current_thread(cpuid());
 
         spinlock_lock(&sem->lock, (unsigned long)self);
 
@@ -82,7 +83,7 @@ semaphore_enter(struct semaphore *sem)
         int avail;
         struct tcb *self;
 
-        self = sched_get_current_thread();
+        self = sched_get_current_thread(cpuid());
 
         do
         {
@@ -129,7 +130,7 @@ semaphore_enter(struct semaphore *sem)
                         /*
                          * no slots available, schedule self 
                          */
-                        sched_switch();
+                        sched_switch(cpuid());
 
                         /*
                          * when returning, self is not waiting anymore 
@@ -154,7 +155,7 @@ semaphore_leave(struct semaphore *sem)
         struct list *waiters;
         struct tcb *self;
 
-        self = sched_get_current_thread();
+        self = sched_get_current_thread(cpuid());
 
         spinlock_lock(&sem->lock, (unsigned long)self);
 

@@ -138,3 +138,12 @@ eflags(void)
         return eflags;
 }
 
+/**
+ * \brief returns the id of the local CPU's APIC
+ */
+static __inline__ unsigned int
+cpuid(void)
+{
+        return 0;
+}
+

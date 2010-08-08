@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <cpu.h>
 #include <interupt.h>
 
 #include "list.h"
@@ -57,7 +58,7 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
          * first elemant could have prev pointer set to end of list 
          */
 
-        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
         if (rcv->ipcin)
         {
@@ -77,7 +78,7 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
          */
 
         spinlock_lock(&msg->snd->lock,
-                      (unsigned long)sched_get_current_thread());
+                      (unsigned long)sched_get_current_thread(cpuid()));
         tcb_set_state(msg->snd, THREAD_STATE_RECV);
         spinlock_unlock(&msg->snd->lock);
 
@@ -92,7 +93,7 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
          * wake up receiver if necessary 
          */
 
-        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
         if (tcb_get_state(rcv) == THREAD_STATE_RECV)
         {
@@ -101,7 +102,7 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
 
         spinlock_unlock(&rcv->lock);
 
-        sched_switch();
+        sched_switch(cpuid());
 
         return 0;
 
@@ -114,7 +115,7 @@ ipc_reply(struct ipc_msg *msg, struct tcb *rcv)
 {
         int err;
 
-        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
         if (tcb_get_state(rcv) != THREAD_STATE_RECV)
         {
@@ -138,7 +139,7 @@ ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
 {
         int err;
 
-        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread());
+        spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
         if (!rcv->ipcin)
         {
@@ -147,9 +148,9 @@ ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
                  */
                 tcb_set_state(rcv, THREAD_STATE_RECV);
                 spinlock_unlock(&rcv->lock);
-                sched_switch();
+                sched_switch(cpuid());
                 spinlock_lock(&rcv->lock,
-                              (unsigned long)sched_get_current_thread());
+                              (unsigned long)sched_get_current_thread(cpuid()));
         }
 
         if (!rcv->ipcin)

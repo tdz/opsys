@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <cpu.h>
 #include <debug.h>
 #include <interupt.h>
 #include "spinlock.h"
@@ -57,7 +58,7 @@ syscall_entry_handler(unsigned long *tid,
          * get current thread 
          */
 
-        if (!(snd = sched_get_current_thread()))
+        if (!(snd = sched_get_current_thread(cpuid())))
         {
                 err = -EAGAIN;
                 goto err_sched_get_current_thread;

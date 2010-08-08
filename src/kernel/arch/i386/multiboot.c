@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <stdint.h>
 
+#include <cpu.h>
+
 /* physical memory */
 #include <pageframe.h>
 #include "physmem.h"
@@ -345,7 +347,7 @@ multiboot_load_modules(struct task *parent,
                 /*
                  * set thread to starting state 
                  */
-                err = tcb_helper_run_user_thread(sched_get_current_thread(),
+                err = tcb_helper_run_user_thread(sched_get_current_thread(cpuid()),
                                                  tcb, ip);
 
                 if (err < 0)

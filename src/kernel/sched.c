@@ -16,6 +16,26 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * \file sched.c
+ * \author Thomas Zimmermann <tdz@users.sourceforge.net>
+ * \date 2010
+ *
+ * The thread scheduler supports simple priorities for threads. The idle
+ * thread always runs with a priority of zero, which is the lowest available.
+ *
+ * The algorithm for selecting the next thread
+ *
+ *  - first determines the highest priority class with runnable threads, and
+ *  - schedules the threads in round-robin order with fixed time slices.
+ *
+ * \todo Current many scheduler function receive the current CPU's index as
+ *       parameter. This can lead to problems when the thread is migrated
+ *       between two depended calls. A possible solution is to never migrate
+ *       threads that in a system call. (What about kernel threads?) Otherwise
+ *       pin the thread to a specific CPU during the critical phase.
+ */
+
 #include <errno.h>
 #include <stddef.h>
 #include <sys/types.h>
@@ -43,7 +63,7 @@
  */
 static struct list *g_thread[SCHED_NPRIOS];
 
-static struct list *g_current_thread;
+static struct list *g_current_thread[SCHED_NCPUS];
 
 /**
  * \brief init scheduler
@@ -58,9 +78,10 @@ static struct list *g_current_thread;
 int
 sched_init(unsigned int cpu, struct tcb *idle)
 {
+        assert(cpu < sizeof(g_current_thread)/sizeof(g_current_thread[0]));
         assert(idle);
 
-        g_current_thread = &idle->sched;
+        g_current_thread[cpu] = &idle->sched;
 
         return sched_add_thread(idle, 0);
 }
@@ -92,12 +113,15 @@ sched_add_thread(struct tcb *tcb, prio_class_type prio)
 
 /**
  * \brief return the thread that is currently scheduled on the CPU
+ * \param cpu the CPU on which the thread is running
  * \return the currently scheduled thread's tcb structure
  */
 struct tcb *
-sched_get_current_thread()
+sched_get_current_thread(unsigned int cpu)
 {
-        return sched_get_thread(g_current_thread);
+        assert(cpu < sizeof(g_current_thread)/sizeof(g_current_thread[0]));
+
+        return sched_get_thread(g_current_thread[cpu]);
 }
 
 /**
@@ -165,24 +189,26 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
 
 /**
  * \brief switch to a specific thread
+ * \param cpu the CPU on which the thread is running
  * \param[in] next the tcb of the destination thread
  * \return 0 on success, or a negative error code otherwise
  *
  * \attention The destination thread has to be in runnable state.
  */
 int
-sched_switch_to(struct tcb *next)
+sched_switch_to(unsigned int cpu, struct tcb *next)
 {
         int err;
         struct tcb *tcb;
 
+        assert(cpu < sizeof(g_current_thread)/sizeof(g_current_thread[0]));
         assert(next && tcb_is_runnable(next));
 
-        tcb = list_data(g_current_thread);
+        tcb = list_data(g_current_thread[cpu]);
 
         /*if (next != tcb)*/
         {
-                g_current_thread = &next->sched;
+                g_current_thread[cpu] = &next->sched;
 
                 if ((err = tcb_switch(tcb, next)) < 0)
                 {
@@ -240,10 +266,11 @@ sched_select_thread(void)
 
 /**
  * \brief switch to any thread the is runnable
+ * \param cpu the CPU on which the thread is running
  * \return 0 on success, or a negative error code otherwise
  */
 int
-sched_switch()
+sched_switch(unsigned int cpu)
 {
         struct tcb *tcb;
         int err;
@@ -251,7 +278,7 @@ sched_switch()
         /* at least the idle thread should always be runnable */
         tcb = sched_select_thread();
 
-        if ((err = sched_switch_to(tcb)) < 0)
+        if ((err = sched_switch_to(cpu, tcb)) < 0)
         {
                 goto err_sched_switch_to;
         }
@@ -272,6 +299,6 @@ err_sched_switch_to:
 void
 sched_irq_handler(unsigned char irqno)
 {
-        sched_switch();
+        sched_switch(cpuid());
 }
 

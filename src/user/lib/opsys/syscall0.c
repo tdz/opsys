@@ -19,14 +19,13 @@
 #include <syscall.h>
 
 int
-syscall0(unsigned long r0,
-         unsigned long r1, unsigned long r2, unsigned long r3)
+syscall0(unsigned long rcv,
+         unsigned long flags,
+         unsigned long msg0,
+         unsigned long msg1)
 {
-        unsigned long flags, errno;
+        unsigned long nil[4];
 
-__asm__("int $0x80\n\t": "=b"(flags), "=c"(errno):"a"(r0), "b"(r1),
-                "c"(r2),
-                "d"(r3));
-
-        return flags & 0x1 ? (int)errno : 0;    /* return possible error code */
+        return syscall(rcv, flags, msg0, msg1, nil+0, nil+1, nil+2, nil+3);
 }
+

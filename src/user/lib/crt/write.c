@@ -16,6 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <sys/types.h>
 #include <opsys/syscall.h>
 #include <crt.h>
@@ -23,7 +24,12 @@
 int
 crt_write(const char *buf, size_t buflen, unsigned char attr)
 {
+#if 0
         return syscall0((unsigned long)IPC_CRT_WRITE,
                         (unsigned long)buf,
                         (unsigned long)buflen, (unsigned long)attr);
+#else
+        return -ENOSYS;
+#endif
 }
+

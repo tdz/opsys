@@ -17,8 +17,8 @@
  */
 
 void
-syscall_entry_handler(unsigned long *r0,
-                      unsigned long *r1,
-                      unsigned long *r2,
-                      unsigned long *r3);
+syscall_entry_handler(unsigned long *tid,
+                      unsigned long *flags,
+                      unsigned long *msg0,
+                      unsigned long *msg1);
 

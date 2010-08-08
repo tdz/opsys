@@ -19,16 +19,24 @@
 #include <syscall.h>
 
 int
-syscall(unsigned long r0,
-        unsigned long r1,
-        unsigned long r2,
-        unsigned long r3,
-        unsigned long *res0,
-        unsigned long *res1, unsigned long *res2, unsigned long *res3)
+syscall(unsigned long rcv,
+        unsigned long flags,
+        unsigned long msg0,
+        unsigned long msg1,
+        unsigned long *reply_rcv,
+        unsigned long *reply_flags,
+        unsigned long *reply_msg0, unsigned long *reply_msg1)
 {
-__asm__("int $0x80\n\t": "=a"(*res0), "=b"(*res1), "=c"(*res2), "=d"(*res3):"a"(r0), "b"(r1),
-                "c"(r2),
-                "d"(r3));
+        __asm__ volatile ("int $0x80\n\t"
+                        : "=a"(*reply_rcv),
+                          "=b"(*reply_flags),
+                          "=c"(*reply_msg0),
+                          "=d"(*reply_msg1)
+                        : "0"(rcv),
+                          "1"(flags),
+                          "2"(msg0),
+                          "3"(msg1));
 
-        return *res1 & 0x1 ? (int)*res2 : 0;    /* return possible error code */
+        return *reply_flags & 0x1 ? (int)*reply_msg0 : 0;       /* return possible error code */
 }
+

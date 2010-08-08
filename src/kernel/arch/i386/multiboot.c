@@ -89,43 +89,35 @@ find_unused_area(const struct multiboot_header *mb_header,
 
                 mmap = (const struct multiboot_mmap *)mmap_addr;
 
-                /*
-                 * next entry address 
-                 */
+                /* next entry address  */
+
                 mmap_addr += mmap->size + 4;
                 i += mmap->size + 4;
 
-                /*
-                 * area is not useable 
-                 */
+                /* area is not useable */
                 if (mmap->type != 1)
                 {
                         continue;
                 }
 
-                /*
-                 * area page index and length 
-                 */
+                /* area page index and length */
 
                 area_pfindex = pageframe_index(mmap_base_addr(mmap));
                 area_nframes = pageframe_count(mmap_length(mmap));
 
-                /*
-                 * area at address 0, or too small 
-                 */
+                /* area at address 0, or too small */
+
                 if (!area_pfindex || (area_nframes < nframes))
                 {
                         continue;
                 }
 
-                /*
-                 * possible index 
-                 */
+                /* possible index */
+
                 pfindex = area_pfindex;
 
-                /*
-                 * check for intersection with kernel 
-                 */
+                /* check for intersection with kernel */
+
                 if (!range_order(kernel_pfindex,
                                  kernel_pfindex + kernel_nframes,
                                  pfindex, pfindex + nframes))
@@ -133,9 +125,7 @@ find_unused_area(const struct multiboot_header *mb_header,
                         pfindex = kernel_pfindex + kernel_nframes;
                 }
 
-                /*
-                 * check for intersection with modules 
-                 */
+                /* check for intersection with modules */
 
                 while (!pfoffset &&
                        ((pfindex + nframes) < (area_pfindex + area_nframes)))
@@ -159,16 +149,13 @@ find_unused_area(const struct multiboot_header *mb_header,
                                         pageframe_count(mod->mod_end -
                                                         mod->mod_start);
 
-                                /*
-                                 * check intersection 
-                                 */
+                                /* check intersection */
+
                                 if (range_order(mod_pfindex,
                                                 mod_pfindex + mod_nframes,
                                                 pfindex, pfindex + nframes))
                                 {
-                                        /*
-                                         * no intersection, offset found 
-                                         */
+                                        /* no intersection, offset found */
                                         pfoffset = pageframe_offset(pfindex);
                                 }
                                 else
@@ -304,7 +291,6 @@ multiboot_load_modules(struct task *parent,
 
         for (i = 0; i < mb_info->mods_count; ++i, ++mod)
         {
-
                 struct task *tsk;
                 struct tcb *tcb;
                 void *ip;

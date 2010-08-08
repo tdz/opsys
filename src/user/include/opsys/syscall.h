@@ -16,23 +16,24 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum {
+enum
+{
         IPC_OPSYS_TASK_QUIT = 0,
 };
 
 int
-syscall(unsigned long r0,
-        unsigned long r1,
-        unsigned long r2,
-        unsigned long r3,
-        unsigned long *res0,
-        unsigned long *res1,
-        unsigned long *res2,
-        unsigned long *res3);
+syscall(unsigned long rcv,
+        unsigned long flags,
+        unsigned long msg0,
+        unsigned long msg1,
+        unsigned long *reply_rcv,
+        unsigned long *reply_flags,
+        unsigned long *reply_msg0,
+        unsigned long *reply_msg1);
 
 int
-syscall0(unsigned long r0,
-         unsigned long r1,
-         unsigned long r2,
-         unsigned long r3);
+syscall0(unsigned long rcv,
+         unsigned long flags,
+         unsigned long msg0,
+         unsigned long msg1);
 

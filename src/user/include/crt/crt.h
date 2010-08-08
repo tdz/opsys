@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum {
+enum
+{
         IPC_CRT_WRITE = 1,
         IPC_CRT_GETSIZE,
         IPC_CRT_GETPOS,

@@ -16,17 +16,40 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * \file pit.c
+ * \author Thomas Zimmermann <tdz@users.sourceforge.net>
+ * \date 2010
+ *
+ * The Programmable Interval Timer (abbr. PIT) is the oldest timer of
+ * the IBM PC. The chip is an Intel 8254, or compatible. It has three
+ * individual counters for
+ *
+ *  - generating timer interrupts,
+ *  - configuring DRAM refresh, and
+ *  - programming the PC speaker.
+ *
+ * Only the first and third are relevant anymore.
+ *
+ * \see http://www.stanford.edu/class/cs140/projects/pintos/specs/8254.pdf
+ */
+
 #include <ioports.h>
 #include "pit.h"
 
+/**
+ * \brief program PIT
+ * \param counter the PIT counter to use
+ * \param freq the trigger frequency
+ * \param mode the mode
+ */
 void
-pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode)
+pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
 {
         unsigned char byte;
         unsigned short word;
 
-        /*
-         * setup PIT control word 
+        /* setup PIT control word 
          */
 
         byte = ((counter & 0x3) << 6) | (0x3 << 4) |    /* LSB then MSB */
@@ -34,8 +57,7 @@ pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode)
 
         io_outb(0x43, byte);
 
-        /*
-         * setup PIT counter 
+        /* setup PIT counter 
          */
 
         word = 1193180 / freq;

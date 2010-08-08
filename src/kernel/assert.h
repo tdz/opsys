@@ -21,8 +21,8 @@
 #else
         #define assert(c_)                                                      \
                 {                                                               \
-                        int succ = !!(c_);                                      \
-                        if (!succ)                                              \
+                        int failed = !(c_);                                     \
+                        if (failed)                                             \
                         {                                                       \
                                 __assert_failed(#c_, __FILE__, __LINE__);       \
                         }                                                       \

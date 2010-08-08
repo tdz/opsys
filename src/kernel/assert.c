@@ -27,7 +27,7 @@ __assert_failed(const char *cond, const char *file, unsigned long line)
 {
         cli();
 
-        console_printf("%s:%d: condition (%s) failed\n", file, line, cond);
+        console_printf("%s:%x: condition (%s) failed\n", file, line, cond);
 
         hlt();
 }

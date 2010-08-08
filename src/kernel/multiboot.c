@@ -58,6 +58,11 @@
 #include "syssrv.h"
 #include "multiboot.h"
 
+enum
+{
+        SCHED_FREQ = 20 /**< \brief frequency for thread scheduling */
+};
+
 static void *
 mmap_base_addr(const struct multiboot_mmap *mmap)
 {
@@ -506,7 +511,7 @@ multiboot_main(const struct multiboot_header *mb_header,
         /*
          * setup PIT for system timer 
          */
-        pit_install(0, 20, PIT_MODE_RATEGEN);
+        pit_install(0, SCHED_FREQ, PIT_MODE_RATEGEN);
         idt_install_irq_handler(0, pit_irq_handler);
 
         idt_install_syscall_handler(syscall_entry_handler);
@@ -600,15 +605,5 @@ multiboot_main(const struct multiboot_header *mb_header,
                 console_perror("multiboot_load_modules", -err);
                 return;
         }
-
-        do
-        {
-                unsigned long esp;
-
-                sched_switch();
-
-                hlt();
-        __asm__("movl %%esp, %0\n\t":"=r"(esp));
-                console_printf("%s:%x: %%esp=%x\n", __FILE__, __LINE__, esp);
-        } while (1);
 }
+

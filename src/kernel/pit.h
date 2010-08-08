@@ -16,7 +16,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum pit_mode {
+enum pit_counter
+{
+        PIT_COUNTER_TIMER = 0,
+        PIT_COUNTER_DRAM  = 1,
+        PIT_COUNTER_SPKR  = 2
+};
+
+enum pit_mode
+{
         PIT_MODE_TERMINAL = 0x00,
         PIT_MODE_ONESHOT  = 0x01,
         PIT_MODE_RATEGEN  = 0x02,
@@ -26,7 +34,7 @@ enum pit_mode {
 };
 
 void
-pit_install(unsigned int counter, unsigned long freq, enum pit_mode mode);
+pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode);
 
 void
 pit_irq_handler(unsigned char irqno);

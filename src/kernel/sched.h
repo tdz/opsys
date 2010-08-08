@@ -19,11 +19,18 @@
 struct list;
 struct tcb;
 
-int
-sched_init(void);
+typedef unsigned char prio_class_type;
+
+enum
+{
+        SCHED_NPRIOS = 1<<(sizeof(prio_class_type)*8)
+};
 
 int
-sched_add_thread(struct tcb *tcb);
+sched_init(unsigned int cpu, struct tcb *idle);
+
+int
+sched_add_thread(struct tcb *tcb, prio_class_type prio);
 
 struct tcb *
 sched_get_current_thread(void);

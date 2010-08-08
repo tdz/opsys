@@ -117,16 +117,6 @@ general_init(struct task **tsk, void *stack)
         idt_install_syscall_handler(syscall_entry_handler);
 
         /*
-         * setup scheduler
-         */
-
-        if ((err = sched_init()) < 0)
-        {
-                console_perror("sched_init", -err);
-                goto err_sched_init;
-        }
-
-        /*
          * build initial task and address space
          */
 
@@ -162,15 +152,23 @@ general_init(struct task **tsk, void *stack)
         tcb_set_state(tcb, THREAD_STATE_READY);
 
         /*
-         * connect scheduler to timer interupt 
+         * setup scheduler
          */
+
+        if ((err = sched_init(0, tcb)) < 0)
+        {
+                console_perror("sched_init", -err);
+                goto err_sched_init;
+        }
+
         idt_install_irq_handler(0, sched_irq_handler);
 
-        if ((err = sched_add_thread(tcb)) < 0)
+/*
+        if ((err = sched_add_thread(tcb, 0)) < 0)
         {
                 console_perror("sched_add_idle_thread", -err);
                 goto err_sched_add_idle_thread;
-        }
+        }*/
 
         sti();
 
@@ -190,7 +188,7 @@ general_init(struct task **tsk, void *stack)
                 goto err_tcb_set_initial_ready_state;
         }
 
-        if ((err = sched_add_thread(tcb)) < 0)
+        if ((err = sched_add_thread(tcb, 255)) < 0)
         {
                 console_perror("sched_add_service_thread", -err);
                 goto err_sched_add_service_thread;
@@ -202,11 +200,10 @@ err_sched_add_service_thread:
 err_tcb_set_initial_ready_state:
 err_tcb_helper_allocate_tcb_and_stack:
         cli();
-err_sched_add_idle_thread:
+err_sched_init:
 err_tcb_helper_allocate_tcb:
 err_allocator_init:
 err_task_helper_init_kernel_task:
-err_sched_init:
         return err;
 }
 

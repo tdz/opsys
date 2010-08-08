@@ -356,7 +356,7 @@ multiboot_load_modules(struct task *parent,
                 /*
                  * schedule thread 
                  */
-                if ((err = sched_add_thread(tcb)) < 0)
+                if ((err = sched_add_thread(tcb, 64)) < 0)
                 {
                         console_perror("sched_add_thread", -err);
                         goto err_sched_add_thread;

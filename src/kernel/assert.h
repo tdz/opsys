@@ -18,6 +18,8 @@
 
 #if NDEBUG != 0
         #define assert(c_)
+
+        #define assert_never_reach()
 #else
         #define assert(c_)                                                      \
                 {                                                               \
@@ -26,6 +28,11 @@
                         {                                                       \
                                 __assert_failed(#c_, __FILE__, __LINE__);       \
                         }                                                       \
+                }
+
+        #define assert_never_reach()                                            \
+                {                                                               \
+                        __assert_failed("never reach", __FILE__, __LINE__);     \
                 }
 #endif
 

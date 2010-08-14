@@ -31,7 +31,7 @@
 
 /* physical memory */
 #include "pageframe.h"
-#include <physmem.h>
+#include <pmem.h>
 
 /* virtual memory */
 #include "page.h"

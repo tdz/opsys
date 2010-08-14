@@ -23,7 +23,7 @@
 
 /* physical memory */
 #include <pageframe.h>
-#include "physmem.h"
+#include "pmem.h"
 
 #include "taskhlp.h"
 
@@ -172,7 +172,7 @@ find_unused_area(const struct multiboot_header *mb_header,
 }
 
 static int
-multiboot_init_physmem(const struct multiboot_header *mb_header,
+multiboot_init_pmem(const struct multiboot_header *mb_header,
                        const struct multiboot_info *mb_info)
 {
         int err;
@@ -198,7 +198,7 @@ err_multiboot_info_flag_mem:
 }
 
 static int
-multiboot_init_physmem_kernel(const struct multiboot_header *mb_header)
+multiboot_init_pmem_kernel(const struct multiboot_header *mb_header)
 {
         return pmem_set_flags(pageframe_index
                               ((void *)mb_header->load_addr),
@@ -208,7 +208,7 @@ multiboot_init_physmem_kernel(const struct multiboot_header *mb_header)
 }
 
 static int
-multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
+multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
 {
         size_t i;
         unsigned long mmap_addr;
@@ -244,7 +244,7 @@ multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
 }
 
 static int
-multiboot_init_physmem_module(const struct multiboot_module *mod)
+multiboot_init_pmem_module(const struct multiboot_module *mod)
 {
         return pmem_set_flags(pageframe_index((void *)mod->mod_start),
                               pageframe_count(mod->mod_end -
@@ -253,7 +253,7 @@ multiboot_init_physmem_module(const struct multiboot_module *mod)
 }
 
 static int
-multiboot_init_physmem_modules(const struct multiboot_info *mb_info)
+multiboot_init_pmem_modules(const struct multiboot_info *mb_info)
 {
         int err;
         const struct multiboot_module *mod, *modend;
@@ -268,7 +268,7 @@ multiboot_init_physmem_modules(const struct multiboot_info *mb_info)
         modend = mod + mb_info->mods_count;
 
         while ((mod < modend)
-               && ((err = multiboot_init_physmem_module(mod)) < 0))
+               && ((err = multiboot_init_pmem_module(mod)) < 0))
         {
                 ++mod;
         }
@@ -398,27 +398,27 @@ multiboot_init(const struct multiboot_header *mb_header,
          * kernel, etc
          */
 
-        if ((err = multiboot_init_physmem(mb_header, mb_info)) < 0)
+        if ((err = multiboot_init_pmem(mb_header, mb_info)) < 0)
         {
-                console_perror("multiboot_init_physmem", -err);
+                console_perror("multiboot_init_pmem", -err);
                 return;
         }
 
         pmem_set_flags(0, 1024, PMEM_FLAG_RESERVED);
 
-        if ((err = multiboot_init_physmem_kernel(mb_header)) < 0)
+        if ((err = multiboot_init_pmem_kernel(mb_header)) < 0)
         {
-                console_perror("multiboot_init_physmem_kernel", -err);
+                console_perror("multiboot_init_pmem_kernel", -err);
                 return;
         }
-        if ((err = multiboot_init_physmem_mmap(mb_info)) < 0)
+        if ((err = multiboot_init_pmem_mmap(mb_info)) < 0)
         {
-                console_perror("multiboot_init_physmem_mmap", -err);
+                console_perror("multiboot_init_pmem_mmap", -err);
                 return;
         }
-        if ((err = multiboot_init_physmem_modules(mb_info)) < 0)
+        if ((err = multiboot_init_pmem_modules(mb_info)) < 0)
         {
-                console_perror("multiboot_init_physmem_modules", -err);
+                console_perror("multiboot_init_pmem_modules", -err);
                 return;
         }
 

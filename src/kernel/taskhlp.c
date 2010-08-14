@@ -83,7 +83,7 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
         return 0;
 
 err_task_init:
-/*        physmem_unref_frames(pageframe_index(*tsk),
+/*        pmem_unref_frames(pageframe_index(*tsk),
                              pageframe_count(sizeof(**tsk)));*/
 err_vmem_helper_alloc_pages_in_area_tsk:
         /*

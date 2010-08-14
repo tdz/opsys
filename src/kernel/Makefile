@@ -21,8 +21,8 @@ CSOURCES = alloc.c \
            list.c \
            loader.c \
            memzone.c \
-           physmem.c \
            pit.c \
+           pmem.c \
            sched.c \
            semaphore.c \
            spinlock.c \

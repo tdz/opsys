@@ -26,7 +26,7 @@
 #include "semaphore.h"
 
 #include <pageframe.h>
-#include "physmem.h"
+#include "pmem.h"
 
 static struct semaphore g_physmap_sem;
 static unsigned char *g_physmap = NULL;
@@ -36,7 +36,7 @@ static int
 pmem_set_flags_self(void)
 {
         /*
-         * add global variables of physmem 
+         * add global variables of pmem 
          */
         pmem_set_flags(pageframe_index(&g_physmap),
                        pageframe_count(sizeof(g_physmap)),

@@ -20,7 +20,7 @@
 #include <sys/types.h>
 
 #include "pageframe.h"
-#include <physmem.h>
+#include <pmem.h>
 
 #include "pde.h"
 #include "pagedir.h"

@@ -24,7 +24,7 @@
 
 /* physical memory */
 #include "pageframe.h"
-#include "physmem.h"
+#include "pmem.h"
 
 /* virtual memory */
 #include "page.h"
@@ -62,9 +62,9 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
         /*
          * os_index_t pfindex;
          * 
-         * if (!(pfindex = physmem_alloc_frames(pageframe_count(sizeof(*pd))))) {
+         * if (!(pfindex = pmem_alloc_frames(pageframe_count(sizeof(*pd))))) {
          * err = -ENOMEM;
-         * goto err_physmem_alloc_frames;
+         * goto err_pmem_alloc_frames;
          * }
          * 
          * pd = pageframe_address(pfindex);

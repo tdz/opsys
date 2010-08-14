@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum virtmem_area_name
+enum vmem_area_name
 {
         VIRTMEM_AREA_SYSTEM     = 0,
         VIRTMEM_AREA_LOW        = 1,
@@ -26,7 +26,7 @@ enum virtmem_area_name
         LAST_VIRTMEM_AREA       = 5
 };
 
-enum virtmem_area_flags
+enum vmem_area_flags
 {
         VIRTMEM_AREA_FLAG_EMPTY      = 0,
         VIRTMEM_AREA_FLAG_KERNEL     = 1<<0,
@@ -37,20 +37,20 @@ enum virtmem_area_flags
         VIRTMEM_AREA_FLAG_USER       = 1<<5
 };
 
-struct virtmem_area
+struct vmem_area
 {
         os_index_t   pgindex;
         size_t       npages;
         unsigned int flags;
 };
 
-const struct virtmem_area *
-virtmem_area_get_by_name(enum virtmem_area_name name);
+const struct vmem_area *
+vmem_area_get_by_name(enum vmem_area_name name);
 
-const struct virtmem_area *
-virtmem_area_get_by_page(os_index_t pgindex);
+const struct vmem_area *
+vmem_area_get_by_page(os_index_t pgindex);
 
 int
-virtmem_area_contains_page(const struct virtmem_area *area,
+vmem_area_contains_page(const struct vmem_area *area,
                            os_index_t pgindex);
 

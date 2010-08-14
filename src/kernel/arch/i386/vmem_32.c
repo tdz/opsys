@@ -47,10 +47,10 @@
 static struct page_table *
 vmem_32_get_page_table_tmp(void)
 {
-        const struct virtmem_area *low, *tmp;
+        const struct vmem_area *low, *tmp;
 
-        low = virtmem_area_get_by_name(VIRTMEM_AREA_LOW);
-        tmp = virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        low = vmem_area_get_by_name(VIRTMEM_AREA_LOW);
+        tmp = vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 
         return page_address(low->pgindex + low->npages - (tmp->npages >> 10));
 }
@@ -58,8 +58,8 @@ vmem_32_get_page_table_tmp(void)
 static os_index_t
 vmem_32_get_page_tmp(size_t i)
 {
-        const struct virtmem_area *tmp =
-                virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        const struct vmem_area *tmp =
+                vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 
         return tmp->pgindex + i;
 }
@@ -67,17 +67,17 @@ vmem_32_get_page_tmp(size_t i)
 static int
 vmem_32_page_is_tmp(os_index_t pgindex)
 {
-        const struct virtmem_area *tmp =
-                virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        const struct vmem_area *tmp =
+                vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 
-        return virtmem_area_contains_page(tmp, pgindex);
+        return vmem_area_contains_page(tmp, pgindex);
 }
 
 static os_index_t
 vmem_32_get_index_tmp(os_index_t pgindex)
 {
-        const struct virtmem_area *tmp =
-                virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        const struct vmem_area *tmp =
+                vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 
         return pgindex - tmp->pgindex;
 }

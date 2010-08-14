@@ -54,7 +54,7 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
 
         struct page_directory *pd;
         int err;
-        enum virtmem_area_name name;
+        enum vmem_area_name name;
 
         /*
          * allocate and init page directory for kernel task 
@@ -102,10 +102,10 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
 
         for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name)
         {
-                const struct virtmem_area *area;
+                const struct vmem_area *area;
                 unsigned long ptindex, ptcount;
 
-                area = virtmem_area_get_by_name(name);
+                area = vmem_area_get_by_name(name);
 
                 if (!(area->flags & VIRTMEM_AREA_FLAG_PAGETABLES))
                 {
@@ -136,9 +136,9 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
 
         for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name)
         {
-                const struct virtmem_area *area;
+                const struct vmem_area *area;
 
-                area = virtmem_area_get_by_name(name);
+                area = vmem_area_get_by_name(name);
 
                 if (!(area->flags & VIRTMEM_AREA_FLAG_POLUTE))
                 {
@@ -208,12 +208,12 @@ vmem_helper_flat_copy_areas(const struct vmem *src_as,
                                      struct vmem *dst_as,
                                      unsigned long pteflags)
 {
-        enum virtmem_area_name name;
+        enum vmem_area_name name;
 
         for (name = 0; name < LAST_VIRTMEM_AREA; ++name)
         {
-                const struct virtmem_area *area =
-                        virtmem_area_get_by_name(name);
+                const struct vmem_area *area =
+                        vmem_area_get_by_name(name);
 
                 if (area->flags & pteflags)
                 {

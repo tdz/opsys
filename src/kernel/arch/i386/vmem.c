@@ -48,10 +48,10 @@
 static struct page_table *
 vmem_get_page_table_tmp(void)
 {
-        const struct virtmem_area *low, *tmp;
+        const struct vmem_area *low, *tmp;
 
-        low = virtmem_area_get_by_name(VIRTMEM_AREA_LOW);
-        tmp = virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        low = vmem_area_get_by_name(VIRTMEM_AREA_LOW);
+        tmp = vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 
         return page_address(low->pgindex + low->npages - (tmp->npages >> 10));
 }
@@ -63,7 +63,7 @@ vmem_install_tmp(struct vmem *as)
         struct page_table *pt;
         int err;
         os_index_t ptpfindex, index;
-        const struct virtmem_area *tmp;
+        const struct vmem_area *tmp;
 
         pd = as->tlps;
 
@@ -76,7 +76,7 @@ vmem_install_tmp(struct vmem *as)
 
         ptpfindex = page_index(pt);
 
-        tmp = virtmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        tmp = vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
 
         index = pagetable_index(page_address(tmp->pgindex));
 

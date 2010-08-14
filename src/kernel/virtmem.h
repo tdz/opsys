@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum virtmem_area_name;
+enum vmem_area_name;
 struct vmem;
 
 int
@@ -39,7 +39,7 @@ virtmem_alloc_pages_within(struct vmem *as, os_index_t pg_index_min,
 
 os_index_t
 virtmem_alloc_pages_in_area(struct vmem *as,
-                            enum virtmem_area_name areaname,
+                            enum vmem_area_name areaname,
                             size_t pgcount,
                             unsigned int flags);
 
@@ -56,7 +56,7 @@ virtmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
 
 os_index_t
 virtmem_map_pages_in_area(struct vmem *dst_as,
-                          enum virtmem_area_name dst_areaname,
+                          enum vmem_area_name dst_areaname,
                           struct vmem *src_as,
                           os_index_t src_pgindex,
                           size_t pgcount,

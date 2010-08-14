@@ -132,7 +132,7 @@ memzone_find_unused(struct memzone *mz, size_t nchunks)
 
         if ((chunk = memzone_search_unused(mz, nchunks)) < 0)
         {
-                const struct virtmem_area *area;
+                const struct vmem_area *area;
                 size_t pgcount;
                 ssize_t pgindex;
                 size_t pgnchunks;
@@ -157,7 +157,7 @@ memzone_find_unused(struct memzone *mz, size_t nchunks)
                         goto err_memzone_search_unused;
                 }
 
-                area = virtmem_area_get_by_name(mz->areaname);
+                area = vmem_area_get_by_name(mz->areaname);
 
                 chunk = page_memory(pgindex - area->pgindex) / mz->chunksize;
 
@@ -179,14 +179,14 @@ err_memzone_search_unused:
 
 int
 memzone_init(struct memzone *mz,
-             struct vmem *as, enum virtmem_area_name areaname)
+             struct vmem *as, enum vmem_area_name areaname)
 {
-        const struct virtmem_area *area;
+        const struct vmem_area *area;
         int err;
         ssize_t pgindex;
         size_t memsz;           /* size of memory */
 
-        area = virtmem_area_get_by_name(areaname);
+        area = vmem_area_get_by_name(areaname);
 
         memsz = page_memory(area->npages);
 
@@ -274,8 +274,8 @@ memzone_free(struct memzone *mz, os_index_t mzoff, size_t nchunks)
 void *
 memzone_address(struct memzone *mz, os_index_t chunk)
 {
-        const struct virtmem_area *area =
-                virtmem_area_get_by_name(mz->areaname);
+        const struct vmem_area *area =
+                vmem_area_get_by_name(mz->areaname);
 
         return ((unsigned char *)page_address(area->pgindex)) +
                 chunk * mz->chunksize;

@@ -137,12 +137,12 @@ err_vmem_find_empty_pages:
 
 os_index_t
 virtmem_alloc_pages_in_area(struct vmem * as,
-                            enum virtmem_area_name areaname,
+                            enum vmem_area_name areaname,
                             size_t npages, unsigned int pteflags)
 {
-        const struct virtmem_area *area;
+        const struct vmem_area *area;
 
-        area = virtmem_area_get_by_name(areaname);
+        area = vmem_area_get_by_name(areaname);
 
         return virtmem_alloc_pages_within(as, area->pgindex,
                                           area->pgindex+area->npages, npages,
@@ -245,14 +245,14 @@ err_vmem_find_empty_pages:
 
 os_index_t
 virtmem_map_pages_in_area(struct vmem * dst_as,
-                          enum virtmem_area_name dst_areaname,
+                          enum vmem_area_name dst_areaname,
                           struct vmem * src_as,
                           os_index_t src_pgindex,
                           size_t pgcount, unsigned long dst_pteflags)
 {
-        const struct virtmem_area *dst_area;
+        const struct vmem_area *dst_area;
 
-        dst_area = virtmem_area_get_by_name(dst_areaname);
+        dst_area = vmem_area_get_by_name(dst_areaname);
 
         return virtmem_map_pages_within(dst_as, dst_area->pgindex,
                                         dst_area->pgindex+dst_area->npages,

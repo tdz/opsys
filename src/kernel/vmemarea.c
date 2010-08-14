@@ -21,7 +21,7 @@
 
 #include "vmemarea.h"
 
-static const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
+static const struct vmem_area g_vmem_area[LAST_VIRTMEM_AREA] = {
         {                       /* system: <4 KiB */
          .pgindex = 0,
          .npages = 1,
@@ -49,24 +49,23 @@ static const struct virtmem_area g_virtmem_area[LAST_VIRTMEM_AREA] = {
          VIRTMEM_AREA_FLAG_PAGETABLES | VIRTMEM_AREA_FLAG_GLOBAL}
 };
 
-const struct virtmem_area *
-virtmem_area_get_by_name(enum virtmem_area_name name)
+const struct vmem_area *
+vmem_area_get_by_name(enum vmem_area_name name)
 {
-        return g_virtmem_area + name;
+        return g_vmem_area + name;
 }
 
-const struct virtmem_area *
-virtmem_area_get_by_page(os_index_t pgindex)
+const struct vmem_area *
+vmem_area_get_by_page(os_index_t pgindex)
 {
-        const struct virtmem_area *beg, *end;
+        const struct vmem_area *beg, *end;
 
-        beg = g_virtmem_area;
-        end = g_virtmem_area +
-                sizeof(g_virtmem_area) / sizeof(g_virtmem_area[0]);
+        beg = g_vmem_area;
+        end = g_vmem_area + sizeof(g_vmem_area) / sizeof(g_vmem_area[0]);
 
         while (beg < end)
         {
-                if (virtmem_area_contains_page(beg, pgindex))
+                if (vmem_area_contains_page(beg, pgindex))
                 {
                         return beg;
                 }
@@ -77,7 +76,7 @@ virtmem_area_get_by_page(os_index_t pgindex)
 }
 
 int
-virtmem_area_contains_page(const struct virtmem_area *area,
+vmem_area_contains_page(const struct vmem_area *area,
                            os_index_t pgindex)
 {
         return (area->pgindex <= pgindex)

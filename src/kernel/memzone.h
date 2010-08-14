@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum virtmem_area_name;
+enum vmem_area_name;
 struct vmem;
 
 struct memzone
@@ -26,12 +26,12 @@ struct memzone
         size_t                 chunksize;
         size_t                 nchunks;
         struct vmem  *as;
-        enum virtmem_area_name areaname;
+        enum vmem_area_name areaname;
 };
 
 int
 memzone_init(struct memzone *mz,
-             struct vmem *as, enum virtmem_area_name areaname);
+             struct vmem *as, enum vmem_area_name areaname);
 
 size_t
 memzone_get_nchunks(struct memzone *mz, size_t nbytes);

@@ -25,7 +25,7 @@
 #include <page.h>
 #include <pte.h>
 #include "vmemarea.h"
-#include <addrspace.h>
+#include <vmem.h>
 #include "virtmem.h"
 
 #include "list.h"

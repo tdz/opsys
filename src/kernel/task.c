@@ -32,7 +32,7 @@ enum
 static unsigned char g_taskid[MAXTASK >> 3];
 
 int
-task_init(struct task *task, struct address_space *as)
+task_init(struct task *task, struct vmem *as)
 {
         int err;
         ssize_t taskid;

@@ -29,7 +29,7 @@
 /* virtual memory */
 #include <page.h>
 #include <pte.h>
-#include <addrspace.h>
+#include <vmem.h>
 #include "virtmem.h"
 
 #include "elf.h"
@@ -39,19 +39,19 @@
  */
 
 static int
-elf_loader_construct_phdr_null(const struct address_space *as,
+elf_loader_construct_phdr_null(const struct vmem *as,
                                const Elf32_Phdr * elf_phdr,
                                const unsigned char *img,
-                               struct address_space *dst_as)
+                               struct vmem *dst_as)
 {
         return 0;
 }
 
 static int
-elf_loader_construct_phdr_load(const struct address_space *as,
+elf_loader_construct_phdr_load(const struct vmem *as,
                                const Elf32_Phdr * elf_phdr,
                                const unsigned char *img,
-                               struct address_space *dst_as)
+                               struct vmem *dst_as)
 {
         int err;
 
@@ -86,15 +86,15 @@ err_virtmem_alloc_pageframes:
 }
 
 static int
-elf_loader_construct_phdr(const struct address_space *as,
+elf_loader_construct_phdr(const struct vmem *as,
                           const Elf32_Phdr * elf_phdr,
                           const unsigned char *img,
-                          struct address_space *dst_as)
+                          struct vmem *dst_as)
 {
-        static int (*const construct_phdr[]) (const struct address_space *,
+        static int (*const construct_phdr[]) (const struct vmem *,
                                               const Elf32_Phdr *,
                                               const unsigned char *,
-                                              struct address_space *) =
+                                              struct vmem *) =
         {
         elf_loader_construct_phdr_null, elf_loader_construct_phdr_load};
 
@@ -114,9 +114,9 @@ elf_loader_construct_phdr(const struct address_space *as,
 }
 
 int
-elf_loader_exec(const struct address_space *as,
+elf_loader_exec(const struct vmem *as,
                 const unsigned char *img,
-                void **ip, struct address_space *dst_as)
+                void **ip, struct vmem *dst_as)
 {
         const Elf32_Ehdr *elf_ehdr;
         size_t i;

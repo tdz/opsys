@@ -28,8 +28,8 @@
 #include <page.h>
 #include <pte.h>
 #include "vmemarea.h"
-#include <addrspace.h>
-#include <addrspacehlp.h>
+#include <vmem.h>
+#include <vmemhlp.h>
 #include "virtmem.h"
 
 #include "alloc.h"
@@ -38,8 +38,7 @@
 #include "taskhlp.h"
 
 int
-task_helper_init_kernel_task(struct address_space *kernel_as,
-                             struct task **tsk)
+task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
 {
         int err;
         os_index_t pgindex;
@@ -48,17 +47,17 @@ task_helper_init_kernel_task(struct address_space *kernel_as,
          * init page directory and address space for kernel task 
          */
 
-        err = address_space_helper_init_kernel_address_space(kernel_as);
+        err = vmem_helper_init_kernel_vmem(kernel_as);
 
         if (err < 0)
         {
-                goto err_address_space_helper_init_kernel_address_space;
+                goto err_vmem_helper_init_kernel_vmem;
         }
 
         /*
          * enable paging 
          */
-        address_space_enable(kernel_as);
+        vmem_enable(kernel_as);
 
         /*
          * create kernel task 
@@ -91,7 +90,7 @@ err_virtmem_alloc_pages_in_area_tsk:
         /*
          * TODO: uninit kernel address space 
          */
-err_address_space_helper_init_kernel_address_space:
+err_vmem_helper_init_kernel_vmem:
         return err;
 }
 
@@ -134,17 +133,17 @@ int
 task_helper_init_task_from_parent(const struct task *parent, struct task *tsk)
 {
         int err;
-        struct address_space *as;
+        struct vmem *as;
 
         /*
          * create address space from parent 
          */
 
-        err = address_space_helper_allocate_address_space_from_parent
+        err = vmem_helper_allocate_vmem_from_parent
                 (parent->as, &as);
         if (err < 0)
         {
-                goto err_address_space_helper_allocate_address_space_from_parent;
+                goto err_vmem_helper_allocate_vmem_from_parent;
         }
 
         /*
@@ -162,6 +161,6 @@ err_task_init:
         /*
          * TODO: free address space 
          */
-err_address_space_helper_allocate_address_space_from_parent:
+err_vmem_helper_allocate_vmem_from_parent:
         return err;
 }

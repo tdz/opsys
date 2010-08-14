@@ -34,7 +34,7 @@
 
 /* virtual memory */
 #include "page.h"
-#include "addrspace.h"
+#include "vmem.h"
 #include <virtmem.h>
 
 #include <task.h>

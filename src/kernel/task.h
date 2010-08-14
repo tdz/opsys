@@ -16,18 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct address_space;
+struct vmem;
 
 struct task
 {
-        struct address_space *as;
+        struct vmem *as;
         unsigned int  id;
         unsigned char nthreads;
         unsigned char threadid[8];
 };
 
 int
-task_init(struct task *task, struct address_space *as);
+task_init(struct task *task, struct vmem *as);
 
 void
 task_uninit(struct task *task);

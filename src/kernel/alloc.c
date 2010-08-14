@@ -29,7 +29,7 @@
 static struct memzone g_memzone_kernel;
 
 int
-allocator_init(struct address_space *as)
+allocator_init(struct vmem *as)
 {
         return memzone_init(&g_memzone_kernel, as, VIRTMEM_AREA_KERNEL);
 }

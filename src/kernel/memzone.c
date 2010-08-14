@@ -179,7 +179,7 @@ err_memzone_search_unused:
 
 int
 memzone_init(struct memzone *mz,
-             struct address_space *as, enum virtmem_area_name areaname)
+             struct vmem *as, enum virtmem_area_name areaname)
 {
         const struct virtmem_area *area;
         int err;

@@ -16,13 +16,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct address_space;
+struct vmem;
 
 int
-elf_loader_exec(const struct address_space *as,
-                const unsigned char *img,
-                      void **ip,
-                      struct address_space *dst_as);
+elf_loader_exec(const struct vmem *as, const unsigned char *img, void **ip,
+                      struct vmem *dst_as);
 
 int
 elf_loader_is_elf(const unsigned char *img);

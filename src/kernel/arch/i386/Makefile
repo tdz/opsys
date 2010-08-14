@@ -16,9 +16,7 @@ ASMSOURCES = idt.S \
              multiboot.S \
              tcbregs.S
 
-CSOURCES = addrspace.c \
-           addrspacehlp.c \
-           debug.c \
+CSOURCES = debug.c \
            gdt.c \
            idt.c \
            idtentry.c \
@@ -32,7 +30,11 @@ CSOURCES = addrspace.c \
            pic.c \
            pte.c \
            tcb.c \
-           tcbregs.c
+           tcbregs.c \
+           vmem.c \
+           vmem_32.c \
+           vmem_pae.c \
+           vmemhlp.c
 
 CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel
 

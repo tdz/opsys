@@ -16,16 +16,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct address_space;
+struct vmem;
 
 int
-address_space_helper_init_kernel_address_space(struct address_space *as);
+vmem_helper_init_kernel_vmem(struct vmem *as);
 
 int
-address_space_helper_init_address_space_from_parent(struct address_space *parent,
-                                                    struct address_space *as);
+vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as);
 
 int
-address_space_helper_allocate_address_space_from_parent(struct address_space *parent,
-                                                        struct address_space **as);
+vmem_helper_allocate_vmem_from_parent(struct vmem *parent, struct vmem **as);
 

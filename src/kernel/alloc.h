@@ -16,10 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct address_space;
+struct vmem;
 
 int
-allocator_init(struct address_space *as);
+allocator_init(struct vmem *as);
 
 void *
 kmalloc(size_t nbytes);

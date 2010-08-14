@@ -30,7 +30,7 @@
 #include "semaphore.h"
 
 /* virtual memory */
-#include <addrspace.h>
+#include <vmem.h>
 #include "virtmem.h"
 #include "alloc.h"
 
@@ -73,7 +73,7 @@ main_invalop_handler(void *ip)
 int
 general_init(struct task **tsk, void *stack)
 {
-        static struct address_space g_kernel_as;
+        static struct vmem g_kernel_as;
 
         int err;
         struct tcb *tcb;

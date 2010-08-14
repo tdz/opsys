@@ -33,31 +33,30 @@ static unsigned char *g_physmap = NULL;
 static unsigned long g_physmap_nframes = 0;
 
 static int
-physmem_set_flags_self(void)
+pmem_set_flags_self(void)
 {
         /*
          * add global variables of physmem 
          */
-        physmem_set_flags(pageframe_index(&g_physmap),
-                          pageframe_count(sizeof(g_physmap)),
-                          PHYSMEM_FLAG_RESERVED);
-        physmem_set_flags(pageframe_index(&g_physmap_nframes),
-                          pageframe_count(sizeof(g_physmap_nframes)),
-                          PHYSMEM_FLAG_RESERVED);
+        pmem_set_flags(pageframe_index(&g_physmap),
+                       pageframe_count(sizeof(g_physmap)),
+                       PMEM_FLAG_RESERVED);
+        pmem_set_flags(pageframe_index(&g_physmap_nframes),
+                       pageframe_count(sizeof(g_physmap_nframes)),
+                       PMEM_FLAG_RESERVED);
 
         /*
          * add physmap 
          */
-        physmem_set_flags(pageframe_index(g_physmap),
-                          pageframe_count(g_physmap_nframes *
-                                          sizeof(g_physmap[0])),
-                          PHYSMEM_FLAG_RESERVED);
+        pmem_set_flags(pageframe_index(g_physmap),
+                       pageframe_count(g_physmap_nframes*sizeof(g_physmap[0])),
+                       PMEM_FLAG_RESERVED);
 
         return 0;
 }
 
 int
-physmem_init(unsigned long physmap, unsigned long nframes)
+pmem_init(unsigned long physmap, unsigned long nframes)
 {
         int err;
 
@@ -71,22 +70,22 @@ physmem_init(unsigned long physmap, unsigned long nframes)
         memset(g_physmap, 0, nframes * sizeof(g_physmap[0]));
         g_physmap_nframes = nframes;
 
-        if ((err = physmem_set_flags_self()) < 0)
+        if ((err = pmem_set_flags_self()) < 0)
         {
-                goto err_physmem_set_flags_self;
+                goto err_pmem_set_flags_self;
         }
 
         return 0;
 
-err_physmem_set_flags_self:
+err_pmem_set_flags_self:
         semaphore_uninit(&g_physmap_sem);
 err_semaphore_init:
         return err;
 }
 
 int
-physmem_set_flags(unsigned long pfindex,
-                  unsigned long nframes, unsigned char flags)
+pmem_set_flags(unsigned long pfindex, unsigned long nframes,
+               unsigned char flags)
 {
         unsigned char *beg;
         const unsigned char *end;
@@ -98,7 +97,7 @@ physmem_set_flags(unsigned long pfindex,
 
         while ((beg < end) && (beg < g_physmap + g_physmap_nframes))
         {
-                *beg |= (flags & PHYSMEM_ALL_FLAGS) << 7;
+                *beg |= (flags & PMEM_ALL_FLAGS) << 7;
                 ++beg;
         }
 
@@ -108,7 +107,7 @@ physmem_set_flags(unsigned long pfindex,
 }
 
 unsigned long
-physmem_alloc_frames(unsigned long nframes)
+pmem_alloc_frames(unsigned long nframes)
 {
         unsigned long pfindex;
         unsigned char *beg;
@@ -122,7 +121,6 @@ physmem_alloc_frames(unsigned long nframes)
 
         while (!pfindex && (beg < end))
         {
-
                 /*
                  * find next useable page 
                  */
@@ -169,7 +167,7 @@ physmem_alloc_frames(unsigned long nframes)
                          */
                         for (beg2 = beg; beg2 < end2; ++beg2)
                         {
-                                *beg2 = (PHYSMEM_FLAG_RESERVED << 7) + 1;
+                                *beg2 = (PMEM_FLAG_RESERVED << 7) + 1;
                         }
 
                         pfindex = beg - g_physmap;
@@ -182,7 +180,7 @@ physmem_alloc_frames(unsigned long nframes)
 }
 
 unsigned long
-physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
+pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 {
         unsigned char *beg;
         const unsigned char *end;
@@ -215,7 +213,7 @@ physmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 
         for (beg = g_physmap + pfindex; beg < end; ++beg)
         {
-                *beg = (PHYSMEM_FLAG_RESERVED << 7) + 1;
+                *beg = (PMEM_FLAG_RESERVED << 7) + 1;
         }
 
         semaphore_leave(&g_physmap_sem);
@@ -228,7 +226,7 @@ err_beg_lt_end:
 }
 
 int
-physmem_ref_frames(unsigned long pfindex, unsigned long nframes)
+pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
 {
         unsigned long i;
         unsigned char *physmap;
@@ -256,9 +254,7 @@ physmem_ref_frames(unsigned long pfindex, unsigned long nframes)
          */
         for (i = 0; i < nframes; ++i)
         {
-                *physmap =
-                        (PHYSMEM_FLAG_RESERVED << 7) + ((*physmap) & 0x7f) +
-                        1;
+                *physmap = (PMEM_FLAG_RESERVED << 7) + ((*physmap) & 0x7f) + 1;
                 ++physmap;
         }
 
@@ -268,7 +264,7 @@ physmem_ref_frames(unsigned long pfindex, unsigned long nframes)
 }
 
 void
-physmem_unref_frames(unsigned long pfindex, unsigned long nframes)
+pmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 {
         unsigned char *physmap;
 
@@ -278,13 +274,13 @@ physmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 
         while (nframes--)
         {
-                if ((*physmap) == ((PHYSMEM_FLAG_RESERVED << 7) | 1))
+                if ((*physmap) == ((PMEM_FLAG_RESERVED << 7) | 1))
                 {
-                        *physmap = PHYSMEM_FLAG_USEABLE << 7;
+                        *physmap = PMEM_FLAG_USEABLE << 7;
                 }
                 else
                 {
-                        *physmap = (PHYSMEM_FLAG_RESERVED << 7) +
+                        *physmap = (PMEM_FLAG_RESERVED << 7) +
                                 ((*physmap) & 0x7f) - 1;
                 }
                 ++physmap;
@@ -294,13 +290,14 @@ physmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 }
 
 size_t
-physmem_get_nframes()
+pmem_get_nframes()
 {
         return g_physmap_nframes;
 }
 
 size_t
-physmem_get_size()
+pmem_get_size()
 {
-        return physmem_get_nframes() * PAGEFRAME_SIZE;
+        return pmem_get_nframes() * PAGEFRAME_SIZE;
 }
+

@@ -50,9 +50,9 @@ page_directory_install_page_table(struct page_directory *pd,
          * ref new page table's page frame 
          */
 
-        if ((err = physmem_ref_frames(pfindex, 1)) < 0)
+        if ((err = pmem_ref_frames(pfindex, 1)) < 0)
         {
-                goto err_physmem_ref_frames;
+                goto err_pmem_ref_frames;
         }
 
         /*
@@ -61,8 +61,7 @@ page_directory_install_page_table(struct page_directory *pd,
 
         if (pde_get_pageframe_index(pd->entry[index]))
         {
-                physmem_unref_frames(pde_get_pageframe_index
-                                     (pd->entry[index]), 1);
+                pmem_unref_frames(pde_get_pageframe_index(pd->entry[index]), 1);
         }
 
         /*
@@ -72,7 +71,7 @@ page_directory_install_page_table(struct page_directory *pd,
 
         return 0;
 
-err_physmem_ref_frames:
+err_pmem_ref_frames:
         return err;
 }
 
@@ -104,8 +103,7 @@ page_directory_uninstall_page_table(struct page_directory *pd,
 
         if (pde_get_pageframe_index(pd->entry[index]))
         {
-                physmem_unref_frames(pde_get_pageframe_index
-                                     (pd->entry[index]), 1);
+                pmem_unref_frames(pde_get_pageframe_index(pd->entry[index]), 1);
         }
 
         /*

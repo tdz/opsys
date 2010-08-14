@@ -70,11 +70,11 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
          * pd = pageframe_address(pfindex);
          */
 
-        err = physmem_ref_frames(pageframe_index(&kernel_pd),
-                                 pageframe_count(sizeof(*pd)));
+        err = pmem_ref_frames(pageframe_index(&kernel_pd),
+                              pageframe_count(sizeof(*pd)));
         if (err)
         {
-                goto err_physmem_ref_page_frames;
+                goto err_pmem_ref_page_frames;
         }
 
         pd = &kernel_pd;
@@ -156,9 +156,9 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
                 else
                 {
                         os_index_t pfindex =
-                                physmem_alloc_frames(
-                                        pageframe_count(page_memory(area->npages)));
-
+                                pmem_alloc_frames(
+                                        pageframe_count(
+                                                page_memory(area->npages)));
                         if (!pfindex)
                         {
                                 err = -1;
@@ -196,9 +196,8 @@ err_vmem_alloc_page_tables_nopg:
 err_vmem_init:
         page_directory_uninit(pd);
 err_page_directory_init:
-        physmem_unref_frames(pageframe_index(pd),
-                             pageframe_count(sizeof(*pd)));
-err_physmem_ref_page_frames:
+        pmem_unref_frames(pageframe_index(pd), pageframe_count(sizeof(*pd)));
+err_pmem_ref_page_frames:
         return err;
 }
 

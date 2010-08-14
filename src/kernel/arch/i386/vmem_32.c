@@ -116,7 +116,7 @@ vmem_32_install_page_frame_tmp(os_index_t pfindex)
          * establish mapping to page frame 
          */
 
-        physmem_ref_frames(pfindex, 1);
+        pmem_ref_frames(pfindex, 1);
 
         *pte = pte_create(pfindex, PTE_FLAG_PRESENT | PTE_FLAG_WRITEABLE);
 
@@ -219,14 +219,12 @@ vmem_32_alloc_page_table_nopg(void *tlps, os_index_t ptindex, unsigned int flags
                 return 0;       /* page table already exists */
         }
 
-        pfindex =
-                physmem_alloc_frames(pageframe_count
-                                     (sizeof(struct page_table)));
+        pfindex = pmem_alloc_frames(pageframe_count(sizeof(struct page_table)));
 
         if (!pfindex)
         {
                 err = -ENOMEM;
-                goto err_physmem_alloc_frames;
+                goto err_pmem_alloc_frames;
         }
 
         if ((err = page_table_init(pageframe_address(pfindex))) < 0)
@@ -237,9 +235,8 @@ vmem_32_alloc_page_table_nopg(void *tlps, os_index_t ptindex, unsigned int flags
         return page_directory_install_page_table(pd, pfindex, ptindex, flags);
 
 err_page_table_init:
-        physmem_unref_frames(pfindex,
-                             pageframe_count(sizeof(struct page_table)));
-err_physmem_alloc_frames:
+        pmem_unref_frames(pfindex, pageframe_count(sizeof(struct page_table)));
+err_pmem_alloc_frames:
         return err;
 }
 
@@ -358,9 +355,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex,
                          */
 
                         ptpfindex =
-                                physmem_alloc_frames(pageframe_count
-                                                     (sizeof
-                                                      (struct page_table)));
+                                pmem_alloc_frames(pageframe_count(sizeof(struct page_table)));
 
                         if (!ptpfindex)
                         {
@@ -390,8 +385,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex,
                         err = page_directory_install_page_table(pd,
                                                                 ptpfindex,
                                                                 ptindex + i,
-                                                                PDE_FLAG_PRESENT
-                                                                |
+                                                                PDE_FLAG_PRESENT|
                                                                 PDE_FLAG_WRITEABLE);
                         if (err < 0)
                         {
@@ -428,8 +422,8 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex,
                      && (j < sizeof(pt->entry) / sizeof(pt->entry[0]))
                      && !(err < 0); --pgcount, ++j, ++pgindex, ++pfindex)
                 {
-                        err = page_table_map_page_frame(pt,
-                                                        pfindex, j, pteflags);
+                        err = page_table_map_page_frame(pt, pfindex,
+                                                        j, pteflags);
                         if (err < 0)
                         {
                                 break;
@@ -516,8 +510,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex,
         pd = tlps;
 
         ptindex = pagetable_index(page_address(pgindex));
-        ptcount =
-                pagetable_count(page_address(pgindex), page_memory(pgcount));
+        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
 
         err = 0;
 
@@ -539,10 +532,9 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex,
                          */
 
                         ptpfindex =
-                                physmem_alloc_frames(pageframe_count
-                                                     (sizeof
-                                                      (struct page_table)));
-
+                                pmem_alloc_frames(
+                                        pageframe_count(
+                                                sizeof(struct page_table)));
                         if (!ptpfindex)
                         {
                                 err = -ENOMEM;
@@ -609,7 +601,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex,
                      && (j < sizeof(pt->entry) / sizeof(pt->entry[0]))
                      && !(err < 0); --pgcount, ++j, ++pgindex)
                 {
-                        os_index_t pfindex = physmem_alloc_frames(1);
+                        os_index_t pfindex = pmem_alloc_frames(1);
 
                         if (!pfindex)
                         {
@@ -675,10 +667,9 @@ vmem_32_map_pages(void *dst_tlps,
                          */
 
                         ptpfindex =
-                                physmem_alloc_frames(pageframe_count
-                                                     (sizeof
-                                                      (struct page_table)));
-
+                                pmem_alloc_frames(
+                                        pageframe_count(
+                                                sizeof(struct page_table)));
                         if (!ptpfindex)
                         {
                                 err = -ENOMEM;

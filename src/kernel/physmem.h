@@ -16,37 +16,36 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum {
-        PHYSMEM_FLAG_USEABLE  = 0,    /* available for use */
-        PHYSMEM_FLAG_RESERVED = 1<<0, /* reserved by system */
-        PHYSMEM_ALL_FLAGS     = PHYSMEM_FLAG_USEABLE|
-                                PHYSMEM_FLAG_RESERVED
+enum
+{
+        PMEM_FLAG_USEABLE  = 0,    /**< available for use */
+        PMEM_FLAG_RESERVED = 1<<0, /**< reserved by system */
+        PMEM_ALL_FLAGS     = PMEM_FLAG_USEABLE|
+                             PMEM_FLAG_RESERVED
 };
 
 int
-physmem_init(unsigned long physmap, unsigned long nframes);
+pmem_init(unsigned long physmap, unsigned long nframes);
 
 int
-physmem_set_flags(unsigned long pfindex,
-                  unsigned long pfcount,
-                  unsigned char flags);
+pmem_set_flags(unsigned long pfindex, unsigned long pfcount,
+               unsigned char flags);
 
 unsigned long
-physmem_alloc_frames(unsigned long nframes);
+pmem_alloc_frames(unsigned long nframes);
 
 unsigned long
-physmem_alloc_frames_at(unsigned long pfindex,
-                        unsigned long nframes);
+pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes);
 
 int
-physmem_ref_frames(unsigned long pfindex, unsigned long nframes);
+pmem_ref_frames(unsigned long pfindex, unsigned long nframes);
 
 void
-physmem_unref_frames(unsigned long pfindex, unsigned long nframes);
+pmem_unref_frames(unsigned long pfindex, unsigned long nframes);
 
 size_t
-physmem_get_nframes(void);
+pmem_get_nframes(void);
 
 size_t
-physmem_get_size(void);
+pmem_get_size(void);
 

@@ -51,9 +51,9 @@ page_table_map_page_frame(struct page_table *pt,
          * ref new page frame 
          */
 
-        if ((err = physmem_ref_frames(pfindex, 1)) < 0)
+        if ((err = pmem_ref_frames(pfindex, 1)) < 0)
         {
-                goto err_physmem_ref_frames;
+                goto err_pmem_ref_frames;
         }
 
         /*
@@ -62,8 +62,7 @@ page_table_map_page_frame(struct page_table *pt,
 
         if (pte_get_pageframe_index(pt->entry[index]))
         {
-                physmem_unref_frames(pte_get_pageframe_index
-                                     (pt->entry[index]), 1);
+                pmem_unref_frames(pte_get_pageframe_index(pt->entry[index]), 1);
         }
 
         /*
@@ -73,7 +72,7 @@ page_table_map_page_frame(struct page_table *pt,
 
         return 0;
 
-err_physmem_ref_frames:
+err_pmem_ref_frames:
         return err;
 }
 
@@ -101,8 +100,7 @@ page_table_unmap_page_frame(struct page_table *pt, os_index_t index)
 
         if (pte_get_pageframe_index(pt->entry[index]))
         {
-                physmem_unref_frames(pte_get_pageframe_index
-                                     (pt->entry[index]), 1);
+                pmem_unref_frames(pte_get_pageframe_index(pt->entry[index]), 1);
         }
 
         /*

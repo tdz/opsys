@@ -191,7 +191,7 @@ multiboot_init_physmem(const struct multiboot_header *mb_header,
 
         console_printf("found physmap area at %x\n", (unsigned long)pfindex);
 
-        return physmem_init(pfindex, pfcount);
+        return pmem_init(pfindex, pfcount);
 
 err_multiboot_info_flag_mem:
         return err;
@@ -200,11 +200,11 @@ err_multiboot_info_flag_mem:
 static int
 multiboot_init_physmem_kernel(const struct multiboot_header *mb_header)
 {
-        return physmem_set_flags(pageframe_index
-                                 ((void *)mb_header->load_addr),
-                                 pageframe_count(mb_header->bss_end_addr -
-                                                 mb_header->load_addr),
-                                 PHYSMEM_FLAG_RESERVED);
+        return pmem_set_flags(pageframe_index
+                              ((void *)mb_header->load_addr),
+                              pageframe_count(mb_header->bss_end_addr -
+                                              mb_header->load_addr),
+                              PMEM_FLAG_RESERVED);
 }
 
 static int
@@ -231,10 +231,10 @@ multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
                 pfindex = pageframe_index(mmap_base_addr(mmap));
                 nframes = pageframe_count(mmap_length(mmap));
 
-                physmem_set_flags(pfindex,
-                                  nframes,
-                                  mmap->type == 1 ? PHYSMEM_FLAG_USEABLE
-                                  : PHYSMEM_FLAG_RESERVED);
+                pmem_set_flags(pfindex,
+                               nframes,
+                               mmap->type == 1 ? PMEM_FLAG_USEABLE
+                                               : PMEM_FLAG_RESERVED);
 
                 mmap_addr += mmap->size + 4;
                 i += mmap->size + 4;
@@ -246,10 +246,10 @@ multiboot_init_physmem_mmap(const struct multiboot_info *mb_info)
 static int
 multiboot_init_physmem_module(const struct multiboot_module *mod)
 {
-        return physmem_set_flags(pageframe_index((void *)mod->mod_start),
-                                 pageframe_count(mod->mod_end -
-                                                 mod->mod_start),
-                                 PHYSMEM_FLAG_RESERVED);
+        return pmem_set_flags(pageframe_index((void *)mod->mod_start),
+                              pageframe_count(mod->mod_end -
+                                              mod->mod_start),
+                              PMEM_FLAG_RESERVED);
 }
 
 static int
@@ -404,7 +404,7 @@ multiboot_init(const struct multiboot_header *mb_header,
                 return;
         }
 
-        physmem_set_flags(0, 1024, PHYSMEM_FLAG_RESERVED);
+        pmem_set_flags(0, 1024, PMEM_FLAG_RESERVED);
 
         if ((err = multiboot_init_physmem_kernel(mb_header)) < 0)
         {

@@ -33,7 +33,7 @@ _start:
 exit:
         /* when we jump here, the exit status should already be on the stack */
         movl $0x1, %eax /* receiver (0:1) */
-        movl $0, %ebx /* command exit */
+        movl $0x10000000, %ebx /* op: send_and_wait, cmd: exit */
         movl 4(%esp), %ecx /* exit status */
         xor %edx, %edx /* clear %edx */
         int $0x80      /* this never returns */

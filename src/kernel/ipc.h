@@ -16,13 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+int
+ipc_send(struct ipc_msg *msg, struct tcb *rcv);
 
 int
 ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv);
 
 int
-ipc_reply(struct ipc_msg *msg, struct tcb *rcv);
+ipc_recv(struct ipc_msg *msg, struct tcb *rcv);
 
 int
-ipc_recv(struct ipc_msg **msg, struct tcb *rcv);
+ipc_reply_and_recv(struct ipc_msg *msg, struct tcb *rcv);
+
+int
+ipc_reply(struct ipc_msg *msg, struct tcb *rcv);
 

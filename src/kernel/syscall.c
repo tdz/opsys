@@ -42,17 +42,40 @@
 
 #define R0_THREADID(x_)         ((threadid_type)((x_)&0xffffffff))
 
+static enum syscall_op
+syscall_get_op(unsigned long flags)
+{
+        return flags >> 28;
+}
+
 void
 syscall_entry_handler(unsigned long *tid,
                       unsigned long *flags,
                       unsigned long *msg0,
                       unsigned long *msg1)
 {
+        static int (* const opfunc[])(struct ipc_msg*, struct tcb*) =
+        {
+                [SYSCALL_OP_SEND]           = ipc_send,
+                [SYSCALL_OP_SEND_AND_WAIT]  = ipc_send_and_wait,
+                [SYSCALL_OP_RECV]           = ipc_recv,
+                [SYSCALL_OP_REPLY_AND_RECV] = ipc_reply_and_recv
+        };
+
         int err;
         struct tcb *snd, *rcv;
+        enum syscall_op op;
 
         console_printf("%s:%x: tid=%x flags=%x msg0=%x msg1=%x.\n", __FILE__,
                        __LINE__, *tid, *flags, *msg0, *msg1);
+
+        op = syscall_get_op(*flags);
+
+        if (!(op < sizeof(opfunc)/sizeof(opfunc[0])) || !opfunc[op])
+        {
+                err = -ENOSYS;
+                goto err_syscall_op;
+        }
 
         /*
          * get current thread 
@@ -80,14 +103,14 @@ syscall_entry_handler(unsigned long *tid,
          * send message to receiver 
          */
 
-        if ((err = ipc_msg_init(&snd->msg, snd, *flags, *msg0, *msg1)) < 0)
+        if ((err = ipc_msg_init(&snd->msg, snd, *flags&~IPC_MSG_FLAGS_RESERVED, *msg0, *msg1)) < 0)
         {
                 goto err_ipc_msg_init;
         }
 
-        if ((err = ipc_send_and_wait(&snd->msg, rcv)) < 0)
+        if ((err = opfunc[op](&snd->msg, rcv)) < 0)
         {
-                goto err_ipc_send_and_wait;
+                goto err_opfunc;
         }
 
         /*
@@ -112,10 +135,12 @@ syscall_entry_handler(unsigned long *tid,
         return;
 
 err_ipc_msg_flags_is_errno:
-err_ipc_send_and_wait:
+err_opfunc:
 err_ipc_msg_init:
 err_sched_search_thread:
 err_sched_get_current_thread:
+err_syscall_op:
         *flags = IPC_MSG_FLAG_IS_ERRNO;
         *msg0 = err;
 }
+

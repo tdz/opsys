@@ -25,8 +25,8 @@ int
 ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
              unsigned long flags, unsigned long msg0, unsigned long msg1)
 {
-        msg->snd = snd;
-        msg->flags = flags;
+        msg->snd= snd;
+        msg->flags = flags&IPC_MSG_FLAGS_RESERVED;
         msg->msg0 = msg0;
         msg->msg1 = msg1;
 

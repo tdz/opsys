@@ -16,16 +16,21 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum ipc_timeout {
+enum ipc_timeout
+{
         IPC_TIMEOUT_NOW   = 0,
         IPC_TIMEOUT_NEVER = 0x7fffffff
 };
 
-enum ipc_msg_flags {
-        IPC_MSG_FLAG_IS_ERRNO = 1<<0
+enum ipc_msg_flags
+{
+        IPC_MSG_FLAGS_RESERVED = 0xe0000000,
+        IPC_MSG_FLAGS_MMAP     = 1<<17,
+        IPC_MSG_FLAG_IS_ERRNO  = 1<<16
 };
 
-struct ipc_msg {
+struct ipc_msg
+{
         struct tcb   *snd;
         unsigned long flags;
         unsigned long msg0;
@@ -33,7 +38,7 @@ struct ipc_msg {
 };
 
 int
-ipc_msg_init(struct ipc_msg *msg, struct tcb   *snd,
+ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
                                   unsigned long flags,
                                   unsigned long msg0,
                                   unsigned long msg1);

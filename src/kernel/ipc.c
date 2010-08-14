@@ -18,6 +18,7 @@
 
 #include <errno.h>
 #include <stddef.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include <cpu.h>
@@ -33,6 +34,12 @@
 #include <tcb.h>
 
 #include "sched.h"
+
+int
+ipc_send(struct ipc_msg *msg, struct tcb *rcv)
+{
+        return -ENOSYS;
+}
 
 int
 ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
@@ -135,9 +142,10 @@ err_tcb_get_state:
 }
 
 int
-ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
+ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
 {
         int err;
+        const struct ipc *msgin;
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
@@ -163,14 +171,16 @@ ipc_recv(struct ipc_msg **msg, struct tcb *rcv)
          * deque first IPC message 
          */
 
-        *msg = list_data(rcv->ipcin);
+        msgin = list_data(rcv->ipcin);
         rcv->ipcin = list_next(rcv->ipcin);
 
-        if (!*msg)
+        if (!msgin)
         {
                 err = -EAGAIN;
                 goto err_msg;
         }
+
+        memcpy(msg, msgin, sizeof(*msg));
 
         spinlock_unlock(&rcv->lock);
 
@@ -181,3 +191,10 @@ err_rcv_ipcin:
         spinlock_unlock(&rcv->lock);
         return err;
 }
+
+int
+ipc_reply_and_recv(struct ipc_msg *msg, struct tcb *rcv)
+{
+        return -ENOSYS;
+}
+

@@ -17,37 +17,41 @@
  */
 
 #include <stddef.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "vmemarea.h"
 
-static const struct vmem_area g_vmem_area[LAST_VIRTMEM_AREA] = {
-        {                       /* system: <4 KiB */
-         .pgindex = 0,
-         .npages = 1,
-         .flags = 0},
-        {                       /* low kernel virtual memory: <4 MiB */
-         .pgindex = 1,
-         .npages = 1023,
-         .flags = VIRTMEM_AREA_FLAG_KERNEL |
-         VIRTMEM_AREA_FLAG_IDENTITY |
-         VIRTMEM_AREA_FLAG_POLUTE |
-         VIRTMEM_AREA_FLAG_PAGETABLES | VIRTMEM_AREA_FLAG_GLOBAL},
-        {                       /* user virtual memory: 4 MiB - 3 GiB */
-         .pgindex = 1024,
-         .npages = 785408,
-         .flags = VIRTMEM_AREA_FLAG_USER},
-        {                       /* high kernel temporary virtual memory: >3 GiB */
-         .pgindex = 786432,
-         .npages = 1024,
-         .flags = VIRTMEM_AREA_FLAG_KERNEL |
-         VIRTMEM_AREA_FLAG_PAGETABLES | VIRTMEM_AREA_FLAG_GLOBAL},
-        {                       /* high kernel virtual memory: >3 GiB */
-         .pgindex = 787456,
-         .npages = 261120,
-         .flags = VIRTMEM_AREA_FLAG_KERNEL |
-         VIRTMEM_AREA_FLAG_PAGETABLES | VIRTMEM_AREA_FLAG_GLOBAL}
+/* INDENT-OFF */
+
+static const struct vmem_area g_vmem_area[LAST_VMEM_AREA] =
+{
+        /* < 4 KiB */
+        [VMEM_AREA_SYSTEM]     = { .pgindex = 0, .npages = 1,
+                                   .flags = VMEM_AREA_FLAG_EMPTY},
+        /* < 4 MiB */
+        [VMEM_AREA_KERNEL_LOW] = { .pgindex = 1, .npages = 1023,
+                                   .flags = VMEM_AREA_FLAG_KERNEL |
+                                            VMEM_AREA_FLAG_IDENTITY |
+                                            VMEM_AREA_FLAG_POLUTE |
+                                            VMEM_AREA_FLAG_PAGETABLES |
+                                            VMEM_AREA_FLAG_GLOBAL},
+        /* 4 MiB - 3 GiB */
+        [VMEM_AREA_USER]       = { .pgindex = 1024, .npages = 785408,
+                                   .flags = VMEM_AREA_FLAG_USER},
+        /* > 3 GiB */
+        [VMEM_AREA_TMPMAP]     = { .pgindex = 786432, .npages = 1024,
+                                   .flags = VMEM_AREA_FLAG_KERNEL |
+                                            VMEM_AREA_FLAG_PAGETABLES |
+                                            VMEM_AREA_FLAG_GLOBAL},
+        /* > 3 GiB */
+        [VMEM_AREA_KERNEL]     = { .pgindex = 787456, .npages = 261120,
+                                   .flags = VMEM_AREA_FLAG_KERNEL |
+                                            VMEM_AREA_FLAG_PAGETABLES |
+                                            VMEM_AREA_FLAG_GLOBAL}
 };
+
+/* INDENT-ON */
 
 const struct vmem_area *
 vmem_area_get_by_name(enum vmem_area_name name)
@@ -61,7 +65,7 @@ vmem_area_get_by_page(os_index_t pgindex)
         const struct vmem_area *beg, *end;
 
         beg = g_vmem_area;
-        end = g_vmem_area + sizeof(g_vmem_area) / sizeof(g_vmem_area[0]);
+        end = g_vmem_area + ARRAY_NELEMS(g_vmem_area);
 
         while (beg < end)
         {

@@ -18,23 +18,23 @@
 
 enum vmem_area_name
 {
-        VIRTMEM_AREA_SYSTEM     = 0,
-        VIRTMEM_AREA_LOW        = 1,
-        VIRTMEM_AREA_USER       = 2,
-        VIRTMEM_AREA_KERNEL_TMP = 3,
-        VIRTMEM_AREA_KERNEL     = 4,
-        LAST_VIRTMEM_AREA       = 5
+        VMEM_AREA_SYSTEM     = 0, /**< the first page in the address space */
+        VMEM_AREA_KERNEL_LOW = 1, /**< low kernel virtual memory */
+        VMEM_AREA_USER       = 2, /**< user virtual memory */
+        VMEM_AREA_TMPMAP     = 3, /**< high kernel virtual memory for temporary mappings */
+        VMEM_AREA_KERNEL     = 4, /**< high kernel virtual memory */
+        LAST_VMEM_AREA       = 5 /**< the index of the last entry in vmem_area_name */
 };
 
 enum vmem_area_flags
 {
-        VIRTMEM_AREA_FLAG_EMPTY      = 0,
-        VIRTMEM_AREA_FLAG_KERNEL     = 1<<0,
-        VIRTMEM_AREA_FLAG_POLUTE     = 1<<1,
-        VIRTMEM_AREA_FLAG_IDENTITY   = 1<<2,
-        VIRTMEM_AREA_FLAG_PAGETABLES = 1<<3,
-        VIRTMEM_AREA_FLAG_GLOBAL     = 1<<4,
-        VIRTMEM_AREA_FLAG_USER       = 1<<5
+        VMEM_AREA_FLAG_EMPTY      = 0, /**< empty */
+        VMEM_AREA_FLAG_KERNEL     = 1<<0, /**< kernel-reserved memory */
+        VMEM_AREA_FLAG_POLUTE     = 1<<1, /**< map on startup */
+        VMEM_AREA_FLAG_IDENTITY   = 1<<2, /**< map directly into kernel virtual address space */
+        VMEM_AREA_FLAG_PAGETABLES = 1<<3, /**< memory for allocating page tables */
+        VMEM_AREA_FLAG_GLOBAL     = 1<<4, /**< mapped into all virtual address spaces */
+        VMEM_AREA_FLAG_USER       = 1<<5 /**< user memory */
 };
 
 struct vmem_area

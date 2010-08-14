@@ -99,14 +99,14 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
          * install page tables in all kernel areas 
          */
 
-        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name)
+        for (name = 0; (name < LAST_VMEM_AREA) && !(err < 0); ++name)
         {
                 const struct vmem_area *area;
                 unsigned long ptindex, ptcount;
 
                 area = vmem_area_get_by_name(name);
 
-                if (!(area->flags & VIRTMEM_AREA_FLAG_PAGETABLES))
+                if (!(area->flags & VMEM_AREA_FLAG_PAGETABLES))
                 {
                         continue;
                 }
@@ -133,18 +133,18 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
          * create identity mapping for all identity areas 
          */
 
-        for (name = 0; (name < LAST_VIRTMEM_AREA) && !(err < 0); ++name)
+        for (name = 0; (name < LAST_VMEM_AREA) && !(err < 0); ++name)
         {
                 const struct vmem_area *area;
 
                 area = vmem_area_get_by_name(name);
 
-                if (!(area->flags & VIRTMEM_AREA_FLAG_POLUTE))
+                if (!(area->flags & VMEM_AREA_FLAG_POLUTE))
                 {
                         continue;
                 }
 
-                if (area->flags & VIRTMEM_AREA_FLAG_IDENTITY)
+                if (area->flags & VMEM_AREA_FLAG_IDENTITY)
                 {
                         err = vmem_map_pageframes_nopg(as,
                                                        area->pgindex,
@@ -208,15 +208,14 @@ vmem_helper_flat_copy_areas(const struct vmem *src_as,
 {
         enum vmem_area_name name;
 
-        for (name = 0; name < LAST_VIRTMEM_AREA; ++name)
+        for (name = 0; name < LAST_VMEM_AREA; ++name)
         {
-                const struct vmem_area *area =
-                        vmem_area_get_by_name(name);
+                const struct vmem_area *area = vmem_area_get_by_name(name);
 
                 if (area->flags & pteflags)
                 {
                         __vmem_share_2nd_lvl_ps(dst_as, src_as,
-                                              area->pgindex, area->npages);
+                                                area->pgindex, area->npages);
                 }
         }
 
@@ -235,10 +234,10 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
          */
 
         pgindex = vmem_helper_alloc_pages_in_area(parent,
-                                              VIRTMEM_AREA_KERNEL,
-                                              page_count(0, sizeof(*pd)),
-                                              PTE_FLAG_PRESENT |
-                                              PTE_FLAG_WRITEABLE);
+                                                  VMEM_AREA_KERNEL,
+                                                  page_count(0, sizeof(*pd)),
+                                                  PTE_FLAG_PRESENT|
+                                                  PTE_FLAG_WRITEABLE);
         if (pgindex < 0)
         {
                 err = pgindex;
@@ -265,7 +264,7 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
          * flat-copy page directory from parent 
          */
 
-        err = vmem_helper_flat_copy_areas(parent, as, VIRTMEM_AREA_FLAG_GLOBAL);
+        err = vmem_helper_flat_copy_areas(parent, as, VMEM_AREA_FLAG_GLOBAL);
 
         if (err < 0)
         {
@@ -322,10 +321,9 @@ vmem_helper_alloc_pages_in_area(struct vmem * as,
         area = vmem_area_get_by_name(areaname);
 
         return vmem_alloc_pages_within(as, area->pgindex,
-                                          area->pgindex+area->npages, npages,
-                                          pteflags);
+                                           area->pgindex+area->npages, npages,
+                                           pteflags);
 }
-
 
 os_index_t
 vmem_helper_map_pages_in_area(struct vmem * dst_as,
@@ -339,8 +337,8 @@ vmem_helper_map_pages_in_area(struct vmem * dst_as,
         dst_area = vmem_area_get_by_name(dst_areaname);
 
         return vmem_map_pages_within(dst_as, dst_area->pgindex,
-                                        dst_area->pgindex+dst_area->npages,
-                                        src_as, src_pgindex, pgcount,
-                                        dst_pteflags);
+                                     dst_area->pgindex+dst_area->npages,
+                                     src_as, src_pgindex, pgcount,
+                                     dst_pteflags);
 }
 

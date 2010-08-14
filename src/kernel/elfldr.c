@@ -100,9 +100,7 @@ elf_loader_construct_phdr(const struct vmem *as,
          * some sanity checks 
          */
 
-        if (!
-            (elf_phdr->p_type <
-             sizeof(construct_phdr) / sizeof(construct_phdr[0]))
+        if (!(elf_phdr->p_type < ARRAY_NELEMS(construct_phdr))
             || !construct_phdr[elf_phdr->p_type])
         {
                 return 0;
@@ -178,5 +176,5 @@ elf_loader_is_elf(const unsigned char *img)
 {
         static const char ident[4] = { ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3 };
 
-        return !memcmp(img, ident, sizeof(ident) / sizeof(ident[0]));
+        return !memcmp(img, ident, ARRAY_NELEMS(ident));
 }

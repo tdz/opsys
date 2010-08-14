@@ -50,8 +50,8 @@ vmem_get_page_table_tmp(void)
 {
         const struct vmem_area *low, *tmp;
 
-        low = vmem_area_get_by_name(VIRTMEM_AREA_LOW);
-        tmp = vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        low = vmem_area_get_by_name(VMEM_AREA_KERNEL_LOW);
+        tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
 
         return page_address(low->pgindex + low->npages - (tmp->npages >> 10));
 }
@@ -76,14 +76,14 @@ vmem_install_tmp(struct vmem *as)
 
         ptpfindex = page_index(pt);
 
-        tmp = vmem_area_get_by_name(VIRTMEM_AREA_KERNEL_TMP);
+        tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
 
         index = pagetable_index(page_address(tmp->pgindex));
 
         err = page_directory_install_page_table(pd,
                                                 ptpfindex,
                                                 index,
-                                                PTE_FLAG_PRESENT |
+                                                PTE_FLAG_PRESENT|
                                                 PTE_FLAG_WRITEABLE);
         if (err < 0)
         {
@@ -97,10 +97,10 @@ err_page_table_init:
 }
 
 static int
-__vmem_map_pageframe_nopg(struct vmem *as,
-                                 os_index_t pfindex,
-                                 os_index_t pgindex, unsigned int flags)
+__vmem_map_pageframe_nopg(struct vmem *as, os_index_t pfindex,
+                          os_index_t pgindex, unsigned int flags)
 {
+        /* INDENT-OFF */
         static int (* const map_pageframe_nopg[])(void *,
                                                   os_index_t,
                                                   os_index_t, unsigned int) =
@@ -108,16 +108,15 @@ __vmem_map_pageframe_nopg(struct vmem *as,
                 vmem_32_map_pageframe_nopg,
                 vmem_pae_map_pageframe_nopg
         };
+        /* INDENT-ON */
 
         return map_pageframe_nopg[as->pgmode] (as->tlps,
                                                pgindex, pgindex, flags);
 }
 
 int
-vmem_map_pageframes_nopg(struct vmem *as,
-                                  os_index_t pfindex,
-                                  os_index_t pgindex,
-                                  size_t count, unsigned int flags)
+vmem_map_pageframes_nopg(struct vmem *as, os_index_t pfindex,
+                         os_index_t pgindex, size_t count, unsigned int flags)
 {
         int err = 0;
 
@@ -133,23 +132,24 @@ vmem_map_pageframes_nopg(struct vmem *as,
 }
 
 static int
-__vmem_alloc_page_table_nopg(struct vmem *as,
-                                    os_index_t ptindex, unsigned int flags)
+__vmem_alloc_page_table_nopg(struct vmem *as, os_index_t ptindex,
+                             unsigned int flags)
 {
+        /* INDENT-OFF */
         static int (*const alloc_page_table_pg[]) (void *,
                                                    os_index_t, unsigned int) =
         {
                 vmem_32_alloc_page_table_nopg,
                 vmem_pae_alloc_page_table_nopg
         };
+        /* INDENT-ON */
 
         return alloc_page_table_pg[as->pgmode] (as->tlps, ptindex, flags);
 }
 
 int
-vmem_alloc_page_tables_nopg(struct vmem *as,
-                                     os_index_t ptindex,
-                                     size_t ptcount, unsigned int flags)
+vmem_alloc_page_tables_nopg(struct vmem *as, os_index_t ptindex,
+                            size_t ptcount, unsigned int flags)
 {
         int err;
 
@@ -203,9 +203,8 @@ vmem_enable(const struct vmem *as)
 }
 
 int
-vmem_alloc_frames(struct vmem *as, os_index_t pfindex,
-                     os_index_t pgindex, size_t pgcount,
-                     unsigned int pteflags)
+vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
+                  size_t pgcount, unsigned int pteflags)
 {
         int err;
 
@@ -292,8 +291,8 @@ find_empty_pages(const struct vmem * as, size_t npages,
 }
 
 os_index_t
-vmem_alloc_pages_at(struct vmem * as, os_index_t pgindex,
-                       size_t pgcount, unsigned int pteflags)
+vmem_alloc_pages_at(struct vmem *as, os_index_t pgindex, size_t pgcount,
+                    unsigned int pteflags)
 {
         int err;
 
@@ -317,8 +316,8 @@ err_vmem_alloc_pages:
 
 os_index_t
 vmem_alloc_pages_within(struct vmem *as, os_index_t pgindex_min,
-                           os_index_t pgindex_max, size_t npages,
-                           unsigned int pteflags)
+                        os_index_t pgindex_max, size_t npages,
+                        unsigned int pteflags)
 {
         int err;
         os_index_t pgindex;
@@ -450,8 +449,9 @@ err_vmem_find_empty_pages:
 
 int
 __vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
-                  size_t pgcount, unsigned int pteflags)
+                    size_t pgcount, unsigned int pteflags)
 {
+        /* INDENT-OFF */
         static int (*const alloc_frames[])(void *,
                                                os_index_t,
                                                os_index_t,
@@ -460,6 +460,7 @@ __vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
                 vmem_32_alloc_frames,
                 vmem_pae_alloc_frames
         };
+        /* INDENT-ON */
 
         return alloc_frames[as->pgmode](as->tlps, pfindex, pgindex, pgcount,
                                         pteflags);
@@ -468,37 +469,39 @@ __vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
 os_index_t
 __vmem_lookup_frame(const struct vmem * as, os_index_t pgindex)
 {
+        /* INDENT-OFF */
         static os_index_t (*const lookup_frame[])(const void *, os_index_t) =
         {
                 vmem_32_lookup_frame,
                 vmem_pae_lookup_frame
         };
+        /* INDENT-ON */
 
         return lookup_frame[as->pgmode](as->tlps, pgindex);
 }
 
 int
-__vmem_alloc_pages(struct vmem *as,
-                          os_index_t pgindex,
-                          size_t pgcount, unsigned int pteflags)
+__vmem_alloc_pages(struct vmem *as, os_index_t pgindex, size_t pgcount,
+                   unsigned int pteflags)
 {
+        /* INDENT-OFF */
         static int (*const alloc_pages[]) (void *,
                                            os_index_t, size_t, unsigned int) =
         {
                 vmem_32_alloc_pages,
                 vmem_pae_alloc_pages
         };
+        /* INDENT-ON */
 
         return alloc_pages[as->pgmode](as->tlps, pgindex, pgcount, pteflags);
 }
 
 int
-__vmem_map_pages(struct vmem *dst_as,
-                        os_index_t dst_pgindex,
-                        const struct vmem *src_as,
-                        os_index_t src_pgindex,
-                        size_t pgcount, unsigned long pteflags)
+__vmem_map_pages(struct vmem *dst_as, os_index_t dst_pgindex,
+                 const struct vmem *src_as, os_index_t src_pgindex,
+                 size_t pgcount, unsigned long pteflags)
 {
+        /* INDENT-OFF */
         static int (*const map_pages[]) (void *,
                                          os_index_t,
                                          const struct vmem *,
@@ -507,6 +510,7 @@ __vmem_map_pages(struct vmem *dst_as,
                 vmem_32_map_pages,
                 vmem_pae_map_pages
         };
+        /* INDENT-ON */
 
         return map_pages[dst_as->pgmode](dst_as->tlps, dst_pgindex, src_as,
                                          src_pgindex, pgcount, pteflags);
@@ -516,6 +520,7 @@ int
 __vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
                         os_index_t pgindex, size_t pgcount)
 {
+        /* INDENT-OFF */
         static int (*const share_2nd_lvl_ps[]) (void *,
                                                 const void *, os_index_t,
                                                 size_t) =
@@ -523,6 +528,7 @@ __vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
                 vmem_32_share_2nd_lvl_ps,
                 vmem_pae_share_2nd_lvl_ps
         };
+        /* INDENT-ON */
 
         return share_2nd_lvl_ps[dst_as->pgmode](dst_as->tlps, src_as->tlps,
                                                 pgindex, pgcount);

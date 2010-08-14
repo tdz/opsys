@@ -85,9 +85,8 @@ page_directory_install_page_tables(struct page_directory *pd,
 
         for (err = 0; count && !(err < 0); --count, ++index, ++pfindex)
         {
-                err = page_directory_install_page_table(pd,
-                                                        pfindex,
-                                                        index, flags);
+                err = page_directory_install_page_table(pd, pfindex, index,
+                                                        flags);
         }
 
         return err;

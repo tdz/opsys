@@ -18,6 +18,7 @@
 
 #include <errno.h>
 #include <stddef.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include <cpu.h>
@@ -71,7 +72,7 @@ syscall_entry_handler(unsigned long *tid,
 
         op = syscall_get_op(*flags);
 
-        if (!(op < sizeof(opfunc)/sizeof(opfunc[0])) || !opfunc[op])
+        if (!(op < ARRAY_NELEMS(opfunc)) || !opfunc[op])
         {
                 err = -ENOSYS;
                 goto err_syscall_op;

@@ -21,6 +21,12 @@
 
 #include <sys/types.h>
 
+/*
+ * \brief computes the number of elements in an array
+ */
+#define ARRAY_NELEMS(x)  \
+        ( sizeof(x)/sizeof((x)[0]) )
+
 int
 memcmp(const void *s1, const void *s2, size_t n);
 

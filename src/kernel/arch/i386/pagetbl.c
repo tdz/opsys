@@ -41,8 +41,7 @@ page_table_uninit(struct page_table *pt)
 }
 
 int
-page_table_map_page_frame(struct page_table *pt,
-                          os_index_t pfindex,
+page_table_map_page_frame(struct page_table *pt, os_index_t pfindex,
                           os_index_t index, unsigned int flags)
 {
         int err;

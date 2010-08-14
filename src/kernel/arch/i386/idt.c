@@ -17,6 +17,7 @@
  */
 
 #include <stddef.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "syscall.h"
@@ -76,7 +77,7 @@ idt_init()
 
         size_t i;
 
-        for (i = 0; i < sizeof(g_idt) / sizeof(g_idt[0]); ++i)
+        for (i = 0; i < ARRAY_NELEMS(g_idt); ++i)
         {
                 IDT_ENTRY_INIT(i, isr_drop_interupt);
         }
@@ -200,7 +201,7 @@ idt_install_pagefault_handler(void (*hdlr) (void *, void *, unsigned long))
 int
 idt_install_irq_handler(unsigned char irqno, void (*hdlr) (unsigned char))
 {
-        if (irqno < sizeof(irq_table) / sizeof(irq_table[0]))
+        if (irqno < ARRAY_NELEMS(irq_table))
         {
                 const int ints = int_enabled();
 

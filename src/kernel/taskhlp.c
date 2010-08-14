@@ -63,10 +63,10 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
          */
 
         pgindex = vmem_helper_alloc_pages_in_area(kernel_as,
-                                              VIRTMEM_AREA_KERNEL,
-                                              page_count(0, sizeof(**tsk)),
-                                              PTE_FLAG_PRESENT |
-                                              PTE_FLAG_WRITEABLE);
+                                                  VMEM_AREA_KERNEL,
+                                                  page_count(0, sizeof(**tsk)),
+                                                  PTE_FLAG_PRESENT|
+                                                  PTE_FLAG_WRITEABLE);
         if (pgindex < 0)
         {
                 err = pgindex;

@@ -23,6 +23,7 @@ CSOURCES = alloc.c \
            memzone.c \
            pit.c \
            pmem.c \
+           pmemarea.c \
            sched.c \
            semaphore.c \
            spinlock.c \

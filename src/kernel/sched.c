@@ -38,6 +38,7 @@
 
 #include <errno.h>
 #include <stddef.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include <cpu.h>
@@ -78,7 +79,7 @@ static struct list *g_current_thread[SCHED_NCPUS];
 int
 sched_init(unsigned int cpu, struct tcb *idle)
 {
-        assert(cpu < sizeof(g_current_thread)/sizeof(g_current_thread[0]));
+        assert(cpu < ARRAY_NELEMS(g_current_thread));
         assert(idle);
 
         g_current_thread[cpu] = &idle->sched;
@@ -119,7 +120,7 @@ sched_add_thread(struct tcb *tcb, prio_class_type prio)
 struct tcb *
 sched_get_current_thread(unsigned int cpu)
 {
-        assert(cpu < sizeof(g_current_thread)/sizeof(g_current_thread[0]));
+        assert(cpu < ARRAY_NELEMS(g_current_thread));
 
         return sched_get_thread(g_current_thread[cpu]);
 }
@@ -160,7 +161,7 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
         tcb = NULL;
 
         cur_prio = g_thread;
-        end_prio = cur_prio + sizeof(g_thread)/sizeof(g_thread[0]);
+        end_prio = cur_prio + ARRAY_NELEMS(g_thread);
 
         while (cur_prio < end_prio)
         {
@@ -201,7 +202,7 @@ sched_switch_to(unsigned int cpu, struct tcb *next)
         int err;
         struct tcb *tcb;
 
-        assert(cpu < sizeof(g_current_thread)/sizeof(g_current_thread[0]));
+        assert(cpu < ARRAY_NELEMS(g_current_thread));
         assert(next && tcb_is_runnable(next));
 
         tcb = list_data(g_current_thread[cpu]);
@@ -234,7 +235,7 @@ sched_select_thread(void)
         struct list **cur_prio;
 
         end_prio = g_thread;
-        cur_prio = end_prio + sizeof(g_thread)/sizeof(g_thread[0]);
+        cur_prio = end_prio + ARRAY_NELEMS(g_thread);
 
         while (cur_prio > end_prio)
         {

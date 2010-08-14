@@ -231,6 +231,8 @@ multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
                 pfindex = pageframe_index(mmap_base_addr(mmap));
                 nframes = pageframe_count(mmap_length(mmap));
 
+                console_printf("pfindex=%x nframes=%x type=%x\n",pfindex, nframes, mmap->type);
+
                 pmem_set_flags(pfindex,
                                nframes,
                                mmap->type == 1 ? PMEM_FLAG_USEABLE

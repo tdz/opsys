@@ -81,14 +81,13 @@ strerror(int errnum)
 {
         static char strerr[32];
 
-        return strerror_l(errnum, strerr, sizeof(strerr) / sizeof(strerr[0]));
+        return strerror_l(errnum, strerr, ARRAY_NELEMS(strerr));
 }
 
 char *
 strerror_l(int errnum, char *strerrbuf, size_t buflen)
 {
-        if ((errnum < 1)
-            || (errnum >= sizeof(sys_errlist) / sizeof(sys_errlist[0])))
+        if ((errnum < 1) || (errnum >= ARRAY_NELEMS(sys_errlist)))
         {
                 errnum = 0;
         }

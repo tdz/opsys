@@ -34,6 +34,14 @@ struct vmem
         void            *tlps; /**< address of top-level paging structure */
 };
 
+int
+vmem_map_pageframes_nopg(struct vmem *as, os_index_t pfindex,
+                         os_index_t pgindex, size_t count, unsigned int flags);
+
+int
+vmem_alloc_page_tables_nopg(struct vmem *as, os_index_t ptindex,
+                            size_t ptcount, unsigned int flags);
+
 /**
  * \brief init vmem structure
  * \param[in] as address of vmem structure
@@ -61,14 +69,6 @@ vmem_install_tmp(struct vmem *as);
 
 void
 vmem_enable(const struct vmem *as);
-
-int
-vmem_map_pageframes_nopg(struct vmem *as, os_index_t pfindex,
-                         os_index_t pgindex, size_t count, unsigned int flags);
-
-int
-vmem_alloc_page_tables_nopg(struct vmem *as, os_index_t ptindex,
-                            size_t ptcount, unsigned int flags);
 
 os_index_t
 vmem_find_empty_pages(const struct vmem *as, size_t npages,

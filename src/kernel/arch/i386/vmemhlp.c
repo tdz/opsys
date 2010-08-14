@@ -121,7 +121,7 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
                  */
 
                 err = vmem_alloc_page_tables_nopg(as, ptindex, ptcount,
-                                                  PDE_FLAG_PRESENT |
+                                                  PDE_FLAG_PRESENT|
                                                   PDE_FLAG_WRITEABLE);
         }
 
@@ -267,9 +267,8 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
          * flat-copy page directory from parent 
          */
 
-        err = vmem_helper_flat_copy_areas(parent,
-                                                   as,
-                                                   VIRTMEM_AREA_FLAG_GLOBAL);
+        err = vmem_helper_flat_copy_areas(parent, as, VIRTMEM_AREA_FLAG_GLOBAL);
+
         if (err < 0)
         {
                 goto err_vmem_helper_flat_copy_areas;
@@ -290,10 +289,7 @@ err_virtmem_alloc_pages_in_area:
 }
 
 int
-vmem_helper_allocate_vmem_from_parent(struct vmem
-                                                        *parent,
-                                                        struct vmem
-                                                        **as)
+vmem_helper_allocate_vmem_from_parent(struct vmem *parent, struct vmem **as)
 {
         int err;
 
@@ -303,8 +299,7 @@ vmem_helper_allocate_vmem_from_parent(struct vmem
                 goto err_kmalloc_as;
         }
 
-        err = vmem_helper_init_vmem_from_parent(parent,
-                                                                  *as);
+        err = vmem_helper_init_vmem_from_parent(parent, *as);
 
         if (err < 0)
         {

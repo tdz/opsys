@@ -96,44 +96,6 @@ err_page_table_init:
         return err;
 }
 
-int
-vmem_init(struct vmem *as,
-                   enum paging_mode pgmode, void *tlps)
-{
-        int err;
-
-        if ((err = semaphore_init(&as->sem, 1)) < 0)
-        {
-                goto err_semaphore_init;
-        }
-
-        as->pgmode = pgmode;
-        as->tlps = tlps;
-
-        return 0;
-
-err_semaphore_init:
-        return err;
-}
-
-void
-vmem_uninit(struct vmem *as)
-{
-        semaphore_uninit(&as->sem);
-}
-
-void
-vmem_enable(const struct vmem *as)
-{
-        static void (* const enable[])(const void *tlps) =
-        {
-                vmem_32_enable,
-                vmem_pae_enable
-        };
-
-        enable[as->pgmode](as->tlps);
-}
-
 static int
 vmem_map_pageframe_nopg(struct vmem *as,
                                  os_index_t pfindex,
@@ -198,6 +160,43 @@ vmem_alloc_page_tables_nopg(struct vmem *as,
         }
 
         return err;
+}
+
+int
+vmem_init(struct vmem *as, enum paging_mode pgmode, void *tlps)
+{
+        int err;
+
+        if ((err = semaphore_init(&as->sem, 1)) < 0)
+        {
+                goto err_semaphore_init;
+        }
+
+        as->pgmode = pgmode;
+        as->tlps = tlps;
+
+        return 0;
+
+err_semaphore_init:
+        return err;
+}
+
+void
+vmem_uninit(struct vmem *as)
+{
+        semaphore_uninit(&as->sem);
+}
+
+void
+vmem_enable(const struct vmem *as)
+{
+        static void (* const enable[])(const void *tlps) =
+        {
+                vmem_32_enable,
+                vmem_pae_enable
+        };
+
+        enable[as->pgmode](as->tlps);
 }
 
 int

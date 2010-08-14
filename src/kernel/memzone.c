@@ -26,7 +26,7 @@
 #include <page.h>
 #include <pte.h>
 #include <vmemarea.h>
-#include "virtmem.h"
+#include <vmemhlp.h>
 
 #include "memzone.h"
 
@@ -146,7 +146,7 @@ memzone_find_unused(struct memzone *mz, size_t nchunks)
 
                 pgcount = page_count(0, nchunks * mz->chunksize);
 
-                pgindex = virtmem_alloc_pages_in_area(mz->as,
+                pgindex = vmem_helper_alloc_pages_in_area(mz->as,
                                                       mz->areaname,
                                                       pgcount,
                                                       PTE_FLAG_PRESENT |
@@ -190,13 +190,13 @@ memzone_init(struct memzone *mz,
 
         memsz = page_memory(area->npages);
 
-        pgindex = virtmem_alloc_pages_in_area(as, areaname, 1024,       /* one largepage */
+        pgindex = vmem_helper_alloc_pages_in_area(as, areaname, 1024,       /* one largepage */
                                               PTE_FLAG_PRESENT |
                                               PTE_FLAG_WRITEABLE);
         if (pgindex < 0)
         {
                 err = pgindex;
-                goto err_virtmem_alloc_page_in_area;
+                goto err_vmem_helper_alloc_page_in_area;
         }
 
         mz->flagslen = 1024 * PAGE_SIZE;
@@ -214,7 +214,7 @@ memzone_init(struct memzone *mz,
 
         return 0;
 
-err_virtmem_alloc_page_in_area:
+err_vmem_helper_alloc_page_in_area:
         return err;
 }
 

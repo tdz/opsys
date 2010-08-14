@@ -35,7 +35,6 @@
 #include "vmemarea.h"
 
 #include "vmem.h"
-#include <virtmem.h>
 #include <alloc.h>
 
 #include "vmemhlp.h"
@@ -236,7 +235,7 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
          * create page directory (has to be at page boundary) 
          */
 
-        pgindex = virtmem_alloc_pages_in_area(parent,
+        pgindex = vmem_helper_alloc_pages_in_area(parent,
                                               VIRTMEM_AREA_KERNEL,
                                               page_count(0, sizeof(*pd)),
                                               PTE_FLAG_PRESENT |
@@ -244,7 +243,7 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
         if (pgindex < 0)
         {
                 err = pgindex;
-                goto err_virtmem_alloc_pages_in_area;
+                goto err_vmem_helper_alloc_pages_in_area;
         }
 
         pd = page_address(pgindex);
@@ -284,7 +283,7 @@ err_page_directory_init:
         /*
          * TODO: unmap page-directory pages 
          */
-err_virtmem_alloc_pages_in_area:
+err_vmem_helper_alloc_pages_in_area:
         return err;
 }
 
@@ -313,3 +312,36 @@ err_vmem_helper_init_vmem_from_parent:
 err_kmalloc_as:
         return err;
 }
+
+os_index_t
+vmem_helper_alloc_pages_in_area(struct vmem * as,
+                            enum vmem_area_name areaname,
+                            size_t npages, unsigned int pteflags)
+{
+        const struct vmem_area *area;
+
+        area = vmem_area_get_by_name(areaname);
+
+        return vmem_alloc_pages_within(as, area->pgindex,
+                                          area->pgindex+area->npages, npages,
+                                          pteflags);
+}
+
+
+os_index_t
+vmem_helper_map_pages_in_area(struct vmem * dst_as,
+                          enum vmem_area_name dst_areaname,
+                          struct vmem * src_as,
+                          os_index_t src_pgindex,
+                          size_t pgcount, unsigned long dst_pteflags)
+{
+        const struct vmem_area *dst_area;
+
+        dst_area = vmem_area_get_by_name(dst_areaname);
+
+        return vmem_map_pages_within(dst_as, dst_area->pgindex,
+                                        dst_area->pgindex+dst_area->npages,
+                                        src_as, src_pgindex, pgcount,
+                                        dst_pteflags);
+}
+

@@ -26,7 +26,7 @@
 #include <pte.h>
 #include "vmemarea.h"
 #include <vmem.h>
-#include "virtmem.h"
+#include <vmemhlp.h>
 
 #include "list.h"
 #include "ipcmsg.h"
@@ -42,7 +42,7 @@ tcb_helper_allocate_tcb(struct task *tsk, void *stack, struct tcb **tcb)
         int err;
         long pgindex;
 
-        pgindex = virtmem_alloc_pages_in_area(tsk->as,
+        pgindex = vmem_helper_alloc_pages_in_area(tsk->as,
                                               VIRTMEM_AREA_KERNEL,
                                               page_count(0, sizeof(*tcb)),
                                               PTE_FLAG_PRESENT |
@@ -50,7 +50,7 @@ tcb_helper_allocate_tcb(struct task *tsk, void *stack, struct tcb **tcb)
         if (pgindex < 0)
         {
                 err = pgindex;
-                goto err_virtmem_alloc_pages_in_area;
+                goto err_vmem_helper_alloc_pages_in_area;
         }
 
         *tcb = page_address(pgindex);
@@ -66,7 +66,7 @@ err_tcb_init:
         /*
          * TODO: free pages 
          */
-err_virtmem_alloc_pages_in_area:
+err_vmem_helper_alloc_pages_in_area:
         return err;
 }
 
@@ -78,7 +78,7 @@ tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
         int err;
         void *stack;
 
-        pgindex = virtmem_alloc_pages_in_area(tsk->as,
+        pgindex = vmem_helper_alloc_pages_in_area(tsk->as,
                                               VIRTMEM_AREA_USER,
                                               stackpages,
                                               PTE_FLAG_PRESENT |
@@ -86,7 +86,7 @@ tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
         if (pgindex < 0)
         {
                 err = pgindex;
-                goto err_virtmem_alloc_pages_in_area;
+                goto err_vmem_helper_alloc_pages_in_area;
         }
 
         stack = page_address(pgindex + stackpages);
@@ -102,7 +102,7 @@ err_tcb_helper_allocate_tcb:
         /*
          * TODO: free stack 
          */
-err_virtmem_alloc_pages_in_area:
+err_vmem_helper_alloc_pages_in_area:
         return err;
 }
 
@@ -124,7 +124,7 @@ tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip)
         int err;
         os_index_t stackpage;
 
-        stackpage = virtmem_map_pages_in_area(cur_tcb->task->as,
+        stackpage = vmem_helper_map_pages_in_area(cur_tcb->task->as,
                                               VIRTMEM_AREA_KERNEL,
                                               usr_tcb->task->as,
                                               page_index(usr_tcb->stack -
@@ -134,7 +134,7 @@ tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip)
         if (stackpage < 0)
         {
                 err = stackpage;
-                goto err_virtmem_map_pages_in_area;
+                goto err_vmem_helper_map_pages_in_area;
         }
 
         /*
@@ -153,6 +153,6 @@ tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip)
 
         return 0;
 
-err_virtmem_map_pages_in_area:
+err_vmem_helper_map_pages_in_area:
         return err;
 }

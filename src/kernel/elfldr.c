@@ -30,7 +30,6 @@
 #include <page.h>
 #include <pte.h>
 #include <vmem.h>
-#include "virtmem.h"
 
 #include "elf.h"
 #include "elfldr.h"
@@ -64,7 +63,7 @@ elf_loader_construct_phdr_load(const struct vmem *as,
                                    PTE_FLAG_USERMODE);
         if (err < 0)
         {
-                goto err_virtmem_alloc_pageframes;
+                goto err_vmem_alloc_pageframes;
         }
 
         /*
@@ -80,7 +79,7 @@ elf_loader_construct_phdr_load(const struct vmem *as,
 
         return 0;
 
-err_virtmem_alloc_pageframes:
+err_vmem_alloc_pageframes:
         return err;
 }
 

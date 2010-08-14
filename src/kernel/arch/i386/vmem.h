@@ -127,3 +127,13 @@ int
 __vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
                       os_index_t pgindex, size_t pgcount);
 
+/*
+ * fault handlers
+ */
+
+void
+vmem_segfault_handler(void *ip);
+
+void
+vmem_pagefault_handler(void *ip, void *addr, unsigned long errcode);
+

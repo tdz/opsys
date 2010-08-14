@@ -30,7 +30,6 @@
 #include "vmemarea.h"
 #include <vmem.h>
 #include <vmemhlp.h>
-#include "virtmem.h"
 
 #include "alloc.h"
 
@@ -63,7 +62,7 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
          * create kernel task 
          */
 
-        pgindex = virtmem_alloc_pages_in_area(kernel_as,
+        pgindex = vmem_helper_alloc_pages_in_area(kernel_as,
                                               VIRTMEM_AREA_KERNEL,
                                               page_count(0, sizeof(**tsk)),
                                               PTE_FLAG_PRESENT |
@@ -71,7 +70,7 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
         if (pgindex < 0)
         {
                 err = pgindex;
-                goto err_virtmem_alloc_pages_in_area_tsk;
+                goto err_vmem_helper_alloc_pages_in_area_tsk;
         }
 
         *tsk = page_address(pgindex);
@@ -86,7 +85,7 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
 err_task_init:
 /*        physmem_unref_frames(pageframe_index(*tsk),
                              pageframe_count(sizeof(**tsk)));*/
-err_virtmem_alloc_pages_in_area_tsk:
+err_vmem_helper_alloc_pages_in_area_tsk:
         /*
          * TODO: uninit kernel address space 
          */

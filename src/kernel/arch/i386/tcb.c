@@ -35,7 +35,6 @@
 /* virtual memory */
 #include "page.h"
 #include "vmem.h"
-#include <virtmem.h>
 
 #include <task.h>
 #include <ipcmsg.h>
@@ -87,10 +86,11 @@ tcb_init_with_id(struct tcb *tcb,
         if (pfindex < 0)
         {
                 err = pfindex;
-                goto err_virtmem_lookup_pageframe;
+                goto err_vmem_lookup_pageframe;
         }
 
         err = tcb_regs_init(&tcb->regs, stack, pageframe_address(pfindex));
+
         if (err < 0)
         {
                 goto err_tcb_regs_init;
@@ -99,7 +99,7 @@ tcb_init_with_id(struct tcb *tcb,
         return 0;
 
 err_tcb_regs_init:
-err_virtmem_lookup_pageframe:
+err_vmem_lookup_pageframe:
         spinlock_uninit(&tcb->lock);
         bitset_unset(task->threadid, id);
 err_bitset_isset:

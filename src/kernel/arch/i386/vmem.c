@@ -527,3 +527,29 @@ __vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
         return share_2nd_lvl_ps[dst_as->pgmode](dst_as->tlps, src_as->tlps,
                                                 pgindex, pgcount);
 }
+
+/*
+ * fault handlers
+ */
+
+#include "console.h"
+
+void
+vmem_segfault_handler(void *ip)
+{
+        console_printf("segmentation fault: ip=%x.\n", (unsigned long)ip);
+}
+
+void
+vmem_pagefault_handler(void *ip, void *addr, unsigned long errcode)
+{
+        console_printf("page fault: ip=%x, addr=%x, errcode=%x.\n",
+                       (unsigned long)ip,
+                       (unsigned long)addr, (unsigned long)errcode);
+
+        while (1)
+        {
+                hlt();
+        }
+}
+

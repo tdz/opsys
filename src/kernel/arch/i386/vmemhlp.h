@@ -27,3 +27,17 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as);
 int
 vmem_helper_allocate_vmem_from_parent(struct vmem *parent, struct vmem **as);
 
+os_index_t
+vmem_helper_alloc_pages_in_area(struct vmem *as,
+                            enum vmem_area_name areaname,
+                            size_t pgcount,
+                            unsigned int flags);
+
+os_index_t
+vmem_helper_map_pages_in_area(struct vmem *dst_as,
+                          enum vmem_area_name dst_areaname,
+                          struct vmem *src_as,
+                          os_index_t src_pgindex,
+                          size_t pgcount,
+                          unsigned long dst_pteflags);
+

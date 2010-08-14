@@ -31,7 +31,6 @@
 
 /* virtual memory */
 #include <vmem.h>
-#include "virtmem.h"
 #include "alloc.h"
 
 #include "kbd.h"
@@ -121,8 +120,8 @@ general_init(struct task **tsk, void *stack)
          * build initial task and address space
          */
 
-        idt_install_segfault_handler(virtmem_segfault_handler);
-        idt_install_pagefault_handler(virtmem_pagefault_handler);
+        idt_install_segfault_handler(vmem_segfault_handler);
+        idt_install_pagefault_handler(vmem_pagefault_handler);
 
         if ((err = task_helper_init_kernel_task(&g_kernel_as, tsk)) < 0)
         {

@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum virtmem_area_name {
+enum virtmem_area_name
+{
         VIRTMEM_AREA_SYSTEM     = 0,
         VIRTMEM_AREA_LOW        = 1,
         VIRTMEM_AREA_USER       = 2,
@@ -25,7 +26,8 @@ enum virtmem_area_name {
         LAST_VIRTMEM_AREA       = 5
 };
 
-enum virtmem_area_flags {
+enum virtmem_area_flags
+{
         VIRTMEM_AREA_FLAG_EMPTY      = 0,
         VIRTMEM_AREA_FLAG_KERNEL     = 1<<0,
         VIRTMEM_AREA_FLAG_POLUTE     = 1<<1,

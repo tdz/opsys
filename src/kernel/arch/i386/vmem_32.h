@@ -27,14 +27,16 @@ vmem_32_alloc_page_table_nopg(void *tlps, os_index_t ptindex,
 void
 vmem_32_enable(const void *tlps);
 
+int
+vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
+                     size_t pgcount, unsigned int pteflags);
+
+os_index_t
+vmem_32_lookup_frame(const void *tlps, os_index_t pgindex);
+
 size_t
 vmem_32_check_empty_pages(const void *tlps, os_index_t pgindex,
                           size_t pgcount);
-
-int
-vmem_32_alloc_pageframes(void *tlps, os_index_t pfindex,
-                                     os_index_t pgindex,
-                                     size_t pgcount, unsigned int pteflags);
 
 int
 vmem_32_alloc_pages(void *tlps, os_index_t pgindex,
@@ -45,9 +47,6 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                                   const struct vmem *src_as,
                                   os_index_t src_pgindex,
                                   size_t pgcount, unsigned long pteflags);
-
-os_index_t
-vmem_32_lookup_pageframe(const void *tlps, os_index_t pgindex);
 
 int
 vmem_32_share_2nd_lvl_ps(void *dst_tlps, const void *src_tlps,

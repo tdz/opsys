@@ -82,8 +82,8 @@ tcb_init_with_id(struct tcb *tcb,
 
         spinlock_init(&tcb->lock);
 
-        pfindex = virtmem_lookup_pageframe(task->as,
-                                           page_index(task->as->tlps));
+        pfindex = virtmem_lookup_frame(task->as, page_index(task->as->tlps));
+
         if (pfindex < 0)
         {
                 err = pfindex;

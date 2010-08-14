@@ -67,25 +67,28 @@ vmem_pae_enable(const void *tlps)
 }
 
 size_t
-vmem_pae_check_empty_pages(const void *tlps,
-                                    os_index_t pgindex, size_t pgcount)
+vmem_pae_check_empty_pages(const void *tlps, os_index_t pgindex,
+                           size_t pgcount)
 {
         return -ENOSYS;
 }
 
 int
-vmem_pae_alloc_pageframes(void *tlps,
-                                   os_index_t pfindex,
-                                   os_index_t pgindex,
-                                   size_t pgcount, unsigned int pteflags)
+vmem_pae_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
+                      size_t pgcount, unsigned int pteflags)
+{
+        return -ENOSYS;
+}
+
+os_index_t
+vmem_pae_lookup_frame(const void *tlps, os_index_t pgindex)
 {
         return -ENOSYS;
 }
 
 int
-vmem_pae_alloc_pages(void *tlps,
-                              os_index_t pgindex,
-                              size_t pgcount, unsigned int pteflags)
+vmem_pae_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
+                     unsigned int pteflags)
 {
         return -ENOSYS;
 }
@@ -96,12 +99,6 @@ vmem_pae_map_pages(void *dst_tlps,
                             const struct vmem *src_as,
                             os_index_t src_pgindex,
                             size_t pgcount, unsigned long dst_pteflags)
-{
-        return -ENOSYS;
-}
-
-os_index_t
-vmem_pae_lookup_pageframe(const void *tlps, os_index_t pgindex)
 {
         return -ENOSYS;
 }

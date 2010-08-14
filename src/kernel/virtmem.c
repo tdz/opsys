@@ -29,17 +29,16 @@
 #include "virtmem.h"
 
 int
-virtmem_alloc_pageframes(struct vmem *as, os_index_t pfindex,
-                         os_index_t pgindex,
-                         size_t pgcount, unsigned int pteflags)
+virtmem_alloc_frames(struct vmem *as, os_index_t pfindex,
+                     os_index_t pgindex, size_t pgcount,
+                     unsigned int pteflags)
 {
         int err;
 
         semaphore_enter(&as->sem);
 
-        err = vmem_alloc_pageframes(as,
-                                             pfindex,
-                                             pgindex, pgcount, pteflags);
+        err = vmem_alloc_frames(as, pfindex, pgindex, pgcount, pteflags);
+
         if (err < 0)
         {
                 goto err_vmem_alloc_pageframes;
@@ -55,13 +54,13 @@ err_vmem_alloc_pageframes:
 }
 
 os_index_t
-virtmem_lookup_pageframe(struct vmem * as, os_index_t pgindex)
+virtmem_lookup_frame(struct vmem * as, os_index_t pgindex)
 {
         os_index_t pfindex;
 
         semaphore_enter(&as->sem);
 
-        pfindex = vmem_lookup_pageframe(as, pgindex);
+        pfindex = vmem_lookup_frame(as, pgindex);
 
         if (pfindex < 0)
         {
@@ -78,8 +77,8 @@ err_vmem_lookup_pageframe:
 }
 
 os_index_t
-virtmem_alloc_pages(struct vmem * as, os_index_t pgindex,
-                    size_t pgcount, unsigned int pteflags)
+virtmem_alloc_pages_at(struct vmem * as, os_index_t pgindex,
+                       size_t pgcount, unsigned int pteflags)
 {
         int err;
 
@@ -102,21 +101,17 @@ err_vmem_alloc_pages:
 }
 
 os_index_t
-virtmem_alloc_pages_in_area(struct vmem * as,
-                            enum virtmem_area_name areaname,
-                            size_t npages, unsigned int pteflags)
+virtmem_alloc_pages_within(struct vmem *as, os_index_t pgindex_min,
+                           os_index_t pgindex_max, size_t npages,
+                           unsigned int pteflags)
 {
         int err;
         os_index_t pgindex;
-        const struct virtmem_area *area;
-
-        area = virtmem_area_get_by_name(areaname);
 
         semaphore_enter(&as->sem);
 
-        pgindex = vmem_find_empty_pages(as, npages, area->pgindex,
-                                                 area->pgindex +
-                                                 area->npages);
+        pgindex = vmem_find_empty_pages(as, npages, pgindex_min, pgindex_max);
+
         if (pgindex < 0)
         {
                 err = pgindex;
@@ -138,6 +133,20 @@ err_vmem_alloc_pages:
 err_vmem_find_empty_pages:
         semaphore_leave(&as->sem);
         return err;
+}
+
+os_index_t
+virtmem_alloc_pages_in_area(struct vmem * as,
+                            enum virtmem_area_name areaname,
+                            size_t npages, unsigned int pteflags)
+{
+        const struct virtmem_area *area;
+
+        area = virtmem_area_get_by_name(areaname);
+
+        return virtmem_alloc_pages_within(as, area->pgindex,
+                                          area->pgindex+area->npages, npages,
+                                          pteflags);
 }
 
 static void
@@ -174,19 +183,16 @@ semaphore_leave_ordered(struct semaphore *sem1, struct semaphore *sem2)
 }
 
 int
-virtmem_map_pages(struct vmem *dst_as,
-                  os_index_t dst_pgindex,
-                  struct vmem *src_as,
-                  os_index_t src_pgindex,
-                  size_t pgcount, unsigned long pteflags)
+virtmem_map_pages_at(struct vmem *dst_as, os_index_t dst_pgindex,
+                     struct vmem *src_as, os_index_t src_pgindex,
+                     size_t pgcount, unsigned long pteflags)
 {
         int err;
 
         semaphore_enter_ordered(&dst_as->sem, &src_as->sem);
 
-        err = vmem_map_pages(dst_as,
-                                      dst_pgindex,
-                                      src_as, src_pgindex, pgcount, pteflags);
+        err = vmem_map_pages(dst_as, dst_pgindex,
+                             src_as, src_pgindex, pgcount, pteflags);
         if (err < 0)
         {
                 goto err_vmem_map_pages;
@@ -202,35 +208,26 @@ err_vmem_map_pages:
 }
 
 os_index_t
-virtmem_map_pages_in_area(struct vmem * dst_as,
-                          enum virtmem_area_name dst_areaname,
-                          struct vmem * src_as,
-                          os_index_t src_pgindex,
-                          size_t pgcount, unsigned long dst_pteflags)
+virtmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
+                         os_index_t pg_index_max, struct vmem *src_as,
+                         os_index_t src_pgindex, size_t pgcount,
+                         unsigned long dst_pteflags)
 {
         int err;
         os_index_t dst_pgindex;
-        const struct virtmem_area *dst_area;
-
-        dst_area = virtmem_area_get_by_name(dst_areaname);
 
         semaphore_enter_ordered(&dst_as->sem, &src_as->sem);
 
-        dst_pgindex = vmem_find_empty_pages(dst_as,
-                                                     pgcount,
-                                                     dst_area->pgindex,
-                                                     dst_area->pgindex +
-                                                     dst_area->npages);
+        dst_pgindex = vmem_find_empty_pages(dst_as, pgcount, pg_index_min,
+                                            pg_index_max);
         if (dst_pgindex < 0)
         {
                 err = dst_pgindex;
                 goto err_vmem_find_empty_pages;
         }
 
-        err = vmem_map_pages(dst_as,
-                                      dst_pgindex,
-                                      src_as,
-                                      src_pgindex, pgcount, dst_pteflags);
+        err = vmem_map_pages(dst_as, dst_pgindex,
+                             src_as, src_pgindex, pgcount, dst_pteflags);
         if (err < 0)
         {
                 goto err_vmem_map_pages;
@@ -244,6 +241,23 @@ err_vmem_map_pages:
 err_vmem_find_empty_pages:
         semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
         return err;
+}
+
+os_index_t
+virtmem_map_pages_in_area(struct vmem * dst_as,
+                          enum virtmem_area_name dst_areaname,
+                          struct vmem * src_as,
+                          os_index_t src_pgindex,
+                          size_t pgcount, unsigned long dst_pteflags)
+{
+        const struct virtmem_area *dst_area;
+
+        dst_area = virtmem_area_get_by_name(dst_areaname);
+
+        return virtmem_map_pages_within(dst_as, dst_area->pgindex,
+                                        dst_area->pgindex+dst_area->npages,
+                                        src_as, src_pgindex, pgcount,
+                                        dst_pteflags);
 }
 
 #include "console.h"

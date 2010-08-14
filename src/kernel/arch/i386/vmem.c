@@ -97,7 +97,7 @@ err_page_table_init:
 }
 
 static int
-vmem_map_pageframe_nopg(struct vmem *as,
+__vmem_map_pageframe_nopg(struct vmem *as,
                                  os_index_t pfindex,
                                  os_index_t pgindex, unsigned int flags)
 {
@@ -123,8 +123,7 @@ vmem_map_pageframes_nopg(struct vmem *as,
 
         while (count && !(err < 0))
         {
-                err = vmem_map_pageframe_nopg(as, pfindex,
-                                                       pgindex, flags);
+                err = __vmem_map_pageframe_nopg(as, pfindex, pgindex, flags);
                 ++pgindex;
                 ++pfindex;
                 --count;
@@ -134,7 +133,7 @@ vmem_map_pageframes_nopg(struct vmem *as,
 }
 
 static int
-vmem_alloc_page_table_nopg(struct vmem *as,
+__vmem_alloc_page_table_nopg(struct vmem *as,
                                     os_index_t ptindex, unsigned int flags)
 {
         static int (*const alloc_page_table_pg[]) (void *,
@@ -156,11 +155,15 @@ vmem_alloc_page_tables_nopg(struct vmem *as,
 
         for (err = 0; ptcount && !(err < 0); ++ptindex, --ptcount)
         {
-                err = vmem_alloc_page_table_nopg(as, ptindex, flags);
+                err = __vmem_alloc_page_table_nopg(as, ptindex, flags);
         }
 
         return err;
 }
+
+/*
+ * public functions
+ */
 
 int
 vmem_init(struct vmem *as, enum paging_mode pgmode, void *tlps)
@@ -200,51 +203,68 @@ vmem_enable(const struct vmem *as)
 }
 
 int
-vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
-                  size_t pgcount, unsigned int pteflags)
+vmem_alloc_frames(struct vmem *as, os_index_t pfindex,
+                     os_index_t pgindex, size_t pgcount,
+                     unsigned int pteflags)
 {
-        static int (*const alloc_frames[])(void *,
-                                               os_index_t,
-                                               os_index_t,
-                                               size_t, unsigned int) =
-        {
-                vmem_32_alloc_frames,
-                vmem_pae_alloc_frames
-        };
+        int err;
 
-        return alloc_frames[as->pgmode](as->tlps, pfindex,
-                                        pgindex, pgcount, pteflags);
+        semaphore_enter(&as->sem);
+
+        err = __vmem_alloc_frames(as, pfindex, pgindex, pgcount, pteflags);
+
+        if (err < 0)
+        {
+                goto err_vmem_alloc_pageframes;
+        }
+
+        semaphore_leave(&as->sem);
+
+        return 0;
+
+err_vmem_alloc_pageframes:
+        semaphore_leave(&as->sem);
+        return err;
 }
 
 os_index_t
-vmem_lookup_frame(const struct vmem * as, os_index_t pgindex)
+vmem_lookup_frame(struct vmem * as, os_index_t pgindex)
 {
-        static os_index_t (*const lookup_frame[])(const void *, os_index_t) =
-        {
-                vmem_32_lookup_frame,
-                vmem_pae_lookup_frame
-        };
+        os_index_t pfindex;
 
-        return lookup_frame[as->pgmode] (as->tlps, pgindex);
+        semaphore_enter(&as->sem);
+
+        pfindex = __vmem_lookup_frame(as, pgindex);
+
+        if (pfindex < 0)
+        {
+                goto err_vmem_lookup_pageframe;
+        }
+
+        semaphore_leave(&as->sem);
+
+        return pfindex;
+
+err_vmem_lookup_pageframe:
+        semaphore_leave(&as->sem);
+        return pfindex;
 }
 
-size_t
-vmem_check_empty_pages(const struct vmem * as,
-                                os_index_t pgindex, size_t pgcount)
+static size_t
+check_pages_empty(const struct vmem *vmem, os_index_t pgindex, size_t pgcount)
 {
-        static size_t(*const check_empty[]) (const void *,
-                                             os_index_t, size_t) =
+        static size_t(*const check_empty[])(const void*, os_index_t, size_t) =
         {
                 vmem_32_check_empty_pages,
                 vmem_pae_check_empty_pages
         };
 
-        return check_empty[as->pgmode](as->tlps, pgindex, pgcount);
+        return check_empty[vmem->pgmode](vmem->tlps, pgindex, pgcount);
 }
 
-os_index_t
-vmem_find_empty_pages(const struct vmem * as, size_t npages,
-                      os_index_t pgindex_beg, os_index_t pgindex_end)
+static os_index_t
+find_empty_pages(const struct vmem * as, size_t npages,
+                 os_index_t pgindex_beg, os_index_t pgindex_end)
 {
         /*
          * find continuous area in virtual memory 
@@ -255,7 +275,7 @@ vmem_find_empty_pages(const struct vmem * as, size_t npages,
         {
                 size_t nempty;
 
-                nempty = vmem_check_empty_pages(as, pgindex_beg, npages);
+                nempty = check_pages_empty(as, pgindex_beg, npages);
 
                 if (nempty == npages)
                 {
@@ -271,8 +291,194 @@ vmem_find_empty_pages(const struct vmem * as, size_t npages,
         return -ENOMEM;
 }
 
+os_index_t
+vmem_alloc_pages_at(struct vmem * as, os_index_t pgindex,
+                       size_t pgcount, unsigned int pteflags)
+{
+        int err;
+
+        semaphore_enter(&as->sem);
+
+        err = __vmem_alloc_pages(as, pgindex, pgcount, pteflags);
+
+        if (err < 0)
+        {
+                goto err_vmem_alloc_pages;
+        }
+
+        semaphore_leave(&as->sem);
+
+        return 0;
+
+err_vmem_alloc_pages:
+        semaphore_leave(&as->sem);
+        return err;
+}
+
+os_index_t
+vmem_alloc_pages_within(struct vmem *as, os_index_t pgindex_min,
+                           os_index_t pgindex_max, size_t npages,
+                           unsigned int pteflags)
+{
+        int err;
+        os_index_t pgindex;
+
+        semaphore_enter(&as->sem);
+
+        pgindex = find_empty_pages(as, npages, pgindex_min, pgindex_max);
+
+        if (pgindex < 0)
+        {
+                err = pgindex;
+                goto err_vmem_find_empty_pages;
+        }
+
+        err = __vmem_alloc_pages(as, pgindex, npages, pteflags);
+
+        if (err < 0)
+        {
+                goto err_vmem_alloc_pages;
+        }
+
+        semaphore_leave(&as->sem);
+
+        return pgindex;
+
+err_vmem_alloc_pages:
+err_vmem_find_empty_pages:
+        semaphore_leave(&as->sem);
+        return err;
+}
+
+static void
+semaphore_enter_ordered(struct semaphore *sem1, struct semaphore *sem2)
+{
+        if (sem1 < sem2)
+        {
+                semaphore_enter(sem1);
+                semaphore_enter(sem2);
+        }
+        else if (sem1 > sem2)
+        {
+                semaphore_enter(sem2);
+                semaphore_enter(sem1);
+        }
+        else                    /* sem1 == sem2 */
+        {
+                semaphore_enter(sem1);
+        }
+}
+
+static void
+semaphore_leave_ordered(struct semaphore *sem1, struct semaphore *sem2)
+{
+        if (sem1 != sem2)
+        {
+                semaphore_leave(sem1);
+                semaphore_leave(sem2);
+        }
+        else                    /* sem1 == sem2 */
+        {
+                semaphore_leave(sem1);
+        }
+}
+
 int
-vmem_alloc_pages(struct vmem *as,
+vmem_map_pages_at(struct vmem *dst_as, os_index_t dst_pgindex,
+                  struct vmem *src_as, os_index_t src_pgindex,
+                  size_t pgcount, unsigned long pteflags)
+{
+        int err;
+
+        semaphore_enter_ordered(&dst_as->sem, &src_as->sem);
+
+        err = __vmem_map_pages(dst_as, dst_pgindex, src_as, src_pgindex,
+                               pgcount, pteflags);
+        if (err < 0)
+        {
+                goto err_vmem_map_pages;
+        }
+
+        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
+
+        return 0;
+
+err_vmem_map_pages:
+        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
+        return err;
+}
+
+os_index_t
+vmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
+                      os_index_t pg_index_max, struct vmem *src_as,
+                      os_index_t src_pgindex, size_t pgcount,
+                      unsigned long dst_pteflags)
+{
+        int err;
+        os_index_t dst_pgindex;
+
+        semaphore_enter_ordered(&dst_as->sem, &src_as->sem);
+
+        dst_pgindex = find_empty_pages(dst_as, pgcount, pg_index_min,
+                                       pg_index_max);
+        if (dst_pgindex < 0)
+        {
+                err = dst_pgindex;
+                goto err_vmem_find_empty_pages;
+        }
+
+        err = __vmem_map_pages(dst_as, dst_pgindex,
+                             src_as, src_pgindex, pgcount, dst_pteflags);
+        if (err < 0)
+        {
+                goto err_vmem_map_pages;
+        }
+
+        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
+
+        return dst_pgindex;
+
+err_vmem_map_pages:
+err_vmem_find_empty_pages:
+        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
+        return err;
+}
+
+/*
+ * internal functions
+ */
+
+int
+__vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
+                  size_t pgcount, unsigned int pteflags)
+{
+        static int (*const alloc_frames[])(void *,
+                                               os_index_t,
+                                               os_index_t,
+                                               size_t, unsigned int) =
+        {
+                vmem_32_alloc_frames,
+                vmem_pae_alloc_frames
+        };
+
+        return alloc_frames[as->pgmode](as->tlps, pfindex, pgindex, pgcount,
+                                        pteflags);
+}
+
+os_index_t
+__vmem_lookup_frame(const struct vmem * as, os_index_t pgindex)
+{
+        static os_index_t (*const lookup_frame[])(const void *, os_index_t) =
+        {
+                vmem_32_lookup_frame,
+                vmem_pae_lookup_frame
+        };
+
+        return lookup_frame[as->pgmode](as->tlps, pgindex);
+}
+
+int
+__vmem_alloc_pages(struct vmem *as,
                           os_index_t pgindex,
                           size_t pgcount, unsigned int pteflags)
 {
@@ -283,11 +489,11 @@ vmem_alloc_pages(struct vmem *as,
                 vmem_pae_alloc_pages
         };
 
-        return alloc_pages[as->pgmode] (as->tlps, pgindex, pgcount, pteflags);
+        return alloc_pages[as->pgmode](as->tlps, pgindex, pgcount, pteflags);
 }
 
 int
-vmem_map_pages(struct vmem *dst_as,
+__vmem_map_pages(struct vmem *dst_as,
                         os_index_t dst_pgindex,
                         const struct vmem *src_as,
                         os_index_t src_pgindex,
@@ -302,16 +508,13 @@ vmem_map_pages(struct vmem *dst_as,
                 vmem_pae_map_pages
         };
 
-        return map_pages[dst_as->pgmode] (dst_as->tlps,
-                                          dst_pgindex,
-                                          src_as,
-                                          src_pgindex, pgcount, pteflags);
+        return map_pages[dst_as->pgmode](dst_as->tlps, dst_pgindex, src_as,
+                                         src_pgindex, pgcount, pteflags);
 }
 
 int
-vmem_share_2nd_lvl_ps(struct vmem *dst_as,
-                               const struct vmem *src_as,
-                               os_index_t pgindex, size_t pgcount)
+__vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
+                        os_index_t pgindex, size_t pgcount)
 {
         static int (*const share_2nd_lvl_ps[]) (void *,
                                                 const void *, os_index_t,
@@ -321,7 +524,6 @@ vmem_share_2nd_lvl_ps(struct vmem *dst_as,
                 vmem_pae_share_2nd_lvl_ps
         };
 
-        return share_2nd_lvl_ps[dst_as->pgmode] (dst_as->tlps,
-                                                 src_as->tlps,
-                                                 pgindex, pgcount);
+        return share_2nd_lvl_ps[dst_as->pgmode](dst_as->tlps, src_as->tlps,
+                                                pgindex, pgcount);
 }

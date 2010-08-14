@@ -55,7 +55,7 @@ elf_loader_construct_phdr_load(const struct vmem *as,
 {
         int err;
 
-        err = virtmem_alloc_frames(dst_as,
+        err = vmem_alloc_frames(dst_as,
                                    pageframe_index(elf_phdr->p_offset + img),
                                    page_index((void *)elf_phdr->p_vaddr),
                                    page_count((void *)elf_phdr->p_vaddr,

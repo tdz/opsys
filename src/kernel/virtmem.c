@@ -28,113 +28,6 @@
 #include <vmem.h>
 #include "virtmem.h"
 
-int
-virtmem_alloc_frames(struct vmem *as, os_index_t pfindex,
-                     os_index_t pgindex, size_t pgcount,
-                     unsigned int pteflags)
-{
-        int err;
-
-        semaphore_enter(&as->sem);
-
-        err = vmem_alloc_frames(as, pfindex, pgindex, pgcount, pteflags);
-
-        if (err < 0)
-        {
-                goto err_vmem_alloc_pageframes;
-        }
-
-        semaphore_leave(&as->sem);
-
-        return 0;
-
-err_vmem_alloc_pageframes:
-        semaphore_leave(&as->sem);
-        return err;
-}
-
-os_index_t
-virtmem_lookup_frame(struct vmem * as, os_index_t pgindex)
-{
-        os_index_t pfindex;
-
-        semaphore_enter(&as->sem);
-
-        pfindex = vmem_lookup_frame(as, pgindex);
-
-        if (pfindex < 0)
-        {
-                goto err_vmem_lookup_pageframe;
-        }
-
-        semaphore_leave(&as->sem);
-
-        return pfindex;
-
-err_vmem_lookup_pageframe:
-        semaphore_leave(&as->sem);
-        return pfindex;
-}
-
-os_index_t
-virtmem_alloc_pages_at(struct vmem * as, os_index_t pgindex,
-                       size_t pgcount, unsigned int pteflags)
-{
-        int err;
-
-        semaphore_enter(&as->sem);
-
-        err = vmem_alloc_pages(as, pgindex, pgcount, pteflags);
-
-        if (err < 0)
-        {
-                goto err_vmem_alloc_pages;
-        }
-
-        semaphore_leave(&as->sem);
-
-        return 0;
-
-err_vmem_alloc_pages:
-        semaphore_leave(&as->sem);
-        return err;
-}
-
-os_index_t
-virtmem_alloc_pages_within(struct vmem *as, os_index_t pgindex_min,
-                           os_index_t pgindex_max, size_t npages,
-                           unsigned int pteflags)
-{
-        int err;
-        os_index_t pgindex;
-
-        semaphore_enter(&as->sem);
-
-        pgindex = vmem_find_empty_pages(as, npages, pgindex_min, pgindex_max);
-
-        if (pgindex < 0)
-        {
-                err = pgindex;
-                goto err_vmem_find_empty_pages;
-        }
-
-        err = vmem_alloc_pages(as, pgindex, npages, pteflags);
-
-        if (err < 0)
-        {
-                goto err_vmem_alloc_pages;
-        }
-
-        semaphore_leave(&as->sem);
-
-        return pgindex;
-
-err_vmem_alloc_pages:
-err_vmem_find_empty_pages:
-        semaphore_leave(&as->sem);
-        return err;
-}
-
 os_index_t
 virtmem_alloc_pages_in_area(struct vmem * as,
                             enum vmem_area_name areaname,
@@ -144,104 +37,11 @@ virtmem_alloc_pages_in_area(struct vmem * as,
 
         area = vmem_area_get_by_name(areaname);
 
-        return virtmem_alloc_pages_within(as, area->pgindex,
+        return vmem_alloc_pages_within(as, area->pgindex,
                                           area->pgindex+area->npages, npages,
                                           pteflags);
 }
 
-static void
-semaphore_enter_ordered(struct semaphore *sem1, struct semaphore *sem2)
-{
-        if (sem1 < sem2)
-        {
-                semaphore_enter(sem1);
-                semaphore_enter(sem2);
-        }
-        else if (sem1 > sem2)
-        {
-                semaphore_enter(sem2);
-                semaphore_enter(sem1);
-        }
-        else                    /* sem1 == sem2 */
-        {
-                semaphore_enter(sem1);
-        }
-}
-
-static void
-semaphore_leave_ordered(struct semaphore *sem1, struct semaphore *sem2)
-{
-        if (sem1 != sem2)
-        {
-                semaphore_leave(sem1);
-                semaphore_leave(sem2);
-        }
-        else                    /* sem1 == sem2 */
-        {
-                semaphore_leave(sem1);
-        }
-}
-
-int
-virtmem_map_pages_at(struct vmem *dst_as, os_index_t dst_pgindex,
-                     struct vmem *src_as, os_index_t src_pgindex,
-                     size_t pgcount, unsigned long pteflags)
-{
-        int err;
-
-        semaphore_enter_ordered(&dst_as->sem, &src_as->sem);
-
-        err = vmem_map_pages(dst_as, dst_pgindex,
-                             src_as, src_pgindex, pgcount, pteflags);
-        if (err < 0)
-        {
-                goto err_vmem_map_pages;
-        }
-
-        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
-
-        return 0;
-
-err_vmem_map_pages:
-        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
-        return err;
-}
-
-os_index_t
-virtmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
-                         os_index_t pg_index_max, struct vmem *src_as,
-                         os_index_t src_pgindex, size_t pgcount,
-                         unsigned long dst_pteflags)
-{
-        int err;
-        os_index_t dst_pgindex;
-
-        semaphore_enter_ordered(&dst_as->sem, &src_as->sem);
-
-        dst_pgindex = vmem_find_empty_pages(dst_as, pgcount, pg_index_min,
-                                            pg_index_max);
-        if (dst_pgindex < 0)
-        {
-                err = dst_pgindex;
-                goto err_vmem_find_empty_pages;
-        }
-
-        err = vmem_map_pages(dst_as, dst_pgindex,
-                             src_as, src_pgindex, pgcount, dst_pteflags);
-        if (err < 0)
-        {
-                goto err_vmem_map_pages;
-        }
-
-        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
-
-        return dst_pgindex;
-
-err_vmem_map_pages:
-err_vmem_find_empty_pages:
-        semaphore_leave_ordered(&dst_as->sem, &src_as->sem);
-        return err;
-}
 
 os_index_t
 virtmem_map_pages_in_area(struct vmem * dst_as,
@@ -254,7 +54,7 @@ virtmem_map_pages_in_area(struct vmem * dst_as,
 
         dst_area = vmem_area_get_by_name(dst_areaname);
 
-        return virtmem_map_pages_within(dst_as, dst_area->pgindex,
+        return vmem_map_pages_within(dst_as, dst_area->pgindex,
                                         dst_area->pgindex+dst_area->npages,
                                         src_as, src_pgindex, pgcount,
                                         dst_pteflags);

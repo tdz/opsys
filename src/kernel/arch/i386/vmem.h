@@ -42,6 +42,10 @@ int
 vmem_alloc_page_tables_nopg(struct vmem *as, os_index_t ptindex,
                             size_t ptcount, unsigned int flags);
 
+/*
+ * public functions
+ */
+
 /**
  * \brief init vmem structure
  * \param[in] as address of vmem structure
@@ -70,31 +74,56 @@ vmem_install_tmp(struct vmem *as);
 void
 vmem_enable(const struct vmem *as);
 
-os_index_t
-vmem_find_empty_pages(const struct vmem *as, size_t npages,
-                      os_index_t pgindex_beg, os_index_t pgindex_end);
+int
+vmem_alloc_frames(struct vmem *as, os_index_t pfindex,
+                                                   os_index_t pgindex,
+                                                   size_t pgcount,
+                                                   unsigned int flags);
 
-size_t
-vmem_check_empty_pages(const struct vmem *as, os_index_t pgindex,
-                       size_t pgcount);
+os_index_t
+vmem_lookup_frame(struct vmem *as, os_index_t pgindex);
+
+os_index_t
+vmem_alloc_pages_at(struct vmem *as, os_index_t pg_index, size_t pg_count,
+                    unsigned int flags);
+
+os_index_t
+vmem_alloc_pages_within(struct vmem *as, os_index_t pg_index_min,
+                        os_index_t pg_index_max, size_t pg_count,
+                        unsigned int flags);
 
 int
-vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
+vmem_map_pages_at(struct vmem *dst_as, os_index_t dst_pgindex,
+                  struct vmem *src_as, os_index_t src_pgindex,
+                  size_t pgcount, unsigned long pteflags);
+
+os_index_t
+vmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
+                      os_index_t pg_index_max, struct vmem *src_as,
+                      os_index_t src_pgindex, size_t pgcount,
+                      unsigned long dst_pteflags);
+
+/*
+ * internal functions
+ */
+
+int
+__vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
                   size_t pgcount, unsigned int flags);
 
 os_index_t
-vmem_lookup_frame(const struct vmem *as, os_index_t pgindex);
+__vmem_lookup_frame(const struct vmem *as, os_index_t pgindex);
 
 int
-vmem_alloc_pages(struct vmem *as, os_index_t pgindex, size_t pgcount,
+__vmem_alloc_pages(struct vmem *as, os_index_t pgindex, size_t pgcount,
                  unsigned int flags);
 
 int
-vmem_map_pages(struct vmem *dst_as, os_index_t dst_pgindex,
+__vmem_map_pages(struct vmem *dst_as, os_index_t dst_pgindex,
                const struct vmem *src_as, os_index_t src_pgindex,
                size_t pgcount, unsigned long flags);
 
 int
-vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
+__vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
                       os_index_t pgindex, size_t pgcount);
 

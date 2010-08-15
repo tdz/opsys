@@ -18,8 +18,8 @@
 
 #include <errno.h>
 #include <sys/types.h>
-#include <opsys/tid.h>
-#include <opsys/syscall.h>
+#include <generic/tid.h>
+#include <syscall.h>
 #include <crt.h>
 
 enum syscall_op

@@ -21,10 +21,12 @@
 
 #include <crt/crt.h>
 
+static const char __attribute__((aligned(4096))) str[] = "Hello world";
+
 int
 main(int argc, char **argv)
 {
-        crt_write("Hello world", 11, 0);
+        crt_write(str, 11, 0);
 
         exit(EXIT_SUCCESS);
 }

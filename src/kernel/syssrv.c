@@ -30,6 +30,13 @@
 #include <tcb.h>
 
 #include "sched.h"
+
+#include <semaphore.h>
+#include <vmem.h>
+#include <vmemarea.h>
+#include <vmemhlp.h>
+
+#include <task.h>
 #include "tid.h"
 #include "syssrv.h"
 
@@ -40,13 +47,28 @@ system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
 {
         console_printf("%s:%x.\n", __FILE__, __LINE__);
 
-        switch (msg->msg0)
+        switch (msg->flags&0xffff)
         {
                 case 0:        /* thread quit */
                         /*
                          * mark sender thread for removal 
                          */
+                        console_printf("%s:%x.\n", __FILE__, __LINE__);
                         tcb_set_state(msg->snd, THREAD_STATE_ZOMBIE);
+                        break;
+                case 1:        /* write to console */
+                        /*
+                         * mark sender thread for removal 
+                         */
+                        console_printf("%s:%x\n", __FILE__, __LINE__);
+                        console_printf("received msg: %s\n", (msg->msg0)<<12);
+
+                                struct tcb *rcv = msg->snd;
+                                ipc_msg_init(msg, self,
+                                             IPC_MSG_FLAG_IS_ERRNO,
+                                             ENOSYS, 0);
+                                ipc_reply(msg, rcv);
+
                         break;
                 default:
                         /*
@@ -72,6 +94,12 @@ system_srv_start(struct tcb *self)
         {
                 int err;
                 struct ipc_msg msg;
+
+                msg.flags = IPC_MSG_FLAGS_MMAP;
+                msg.msg1 = 1;
+                msg.msg0 = vmem_helper_empty_pages_in_area(self->task->as,
+                                                           VMEM_AREA_KERNEL,
+                                                           msg.msg1);
 
                 console_printf("%s:%x syssrv=%x.\n", __FILE__, __LINE__,
                                self);

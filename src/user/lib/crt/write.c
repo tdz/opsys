@@ -18,18 +18,31 @@
 
 #include <errno.h>
 #include <sys/types.h>
+#include <opsys/tid.h>
 #include <opsys/syscall.h>
 #include <crt.h>
+
+enum syscall_op
+{
+        SYSCALL_OP_SEND, /**< send message to another thread */
+        SYSCALL_OP_SEND_AND_WAIT, /**< send message to another thread and wait for its answer */
+        SYSCALL_OP_RECV, /**< receive from any thread */
+        SYSCALL_OP_REPLY_AND_RECV /**< replay to thread and receive from any thread */
+};
+
+enum ipc_msg_flags
+{
+        IPC_MSG_FLAGS_RESERVED = 0xe0000000,
+        IPC_MSG_FLAGS_MMAP     = 1<<17,
+        IPC_MSG_FLAG_IS_ERRNO  = 1<<16
+};
 
 int
 crt_write(const char *buf, size_t buflen, unsigned char attr)
 {
-#if 0
-        return syscall0((unsigned long)IPC_CRT_WRITE,
-                        (unsigned long)buf,
-                        (unsigned long)buflen, (unsigned long)attr);
-#else
-        return -ENOSYS;
-#endif
+        return syscall0(threadid_create(0, 1),
+                        (unsigned long)((SYSCALL_OP_SEND_AND_WAIT<<28)|IPC_MSG_FLAGS_MMAP|1),
+                        ((unsigned long)buf)>>12,
+                        (unsigned long)(buflen>>12)+1);
 }
 

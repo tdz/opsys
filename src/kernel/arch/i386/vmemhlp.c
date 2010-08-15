@@ -342,3 +342,16 @@ vmem_helper_map_pages_in_area(struct vmem * dst_as,
                                      dst_pteflags);
 }
 
+os_index_t
+vmem_helper_empty_pages_in_area(struct vmem *vmem,
+                                enum vmem_area_name areaname, size_t pgcount)
+{
+        const struct vmem_area *area;
+
+        area = vmem_area_get_by_name(areaname);
+
+        return vmem_empty_pages_within(vmem, area->pgindex,
+                                             area->pgindex+area->npages,
+                                             pgcount);
+}
+

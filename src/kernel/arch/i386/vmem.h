@@ -103,6 +103,10 @@ vmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
                       os_index_t src_pgindex, size_t pgcount,
                       unsigned long dst_pteflags);
 
+os_index_t
+vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
+                        os_index_t pg_index_max, size_t pgcount);
+
 /*
  * internal functions
  */

@@ -33,6 +33,11 @@
 #include <tcbregs.h>
 #include <tcb.h>
 
+#include <task.h>
+
+#include <semaphore.h>
+#include <vmem.h>
+
 #include "sched.h"
 
 int
@@ -140,12 +145,13 @@ err_tcb_get_state:
         spinlock_unlock(&rcv->lock);
         return err;
 }
-
+#include <pde.h>
+#include <console.h>
 int
 ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
 {
         int err;
-        const struct ipc *msgin;
+        const struct ipc_msg *msgin;
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
@@ -180,12 +186,52 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
                 goto err_msg;
         }
 
-        memcpy(msg, msgin, sizeof(*msg));
+        console_printf("%s:%x msg->flags=%x msgin->flags=%x<\n", __FILE__,
+                       __LINE__, msg->flags, msgin->flags);
+
+        if (msg->flags&msgin->flags&IPC_MSG_FLAGS_MMAP)
+        {
+                /* both threads in mmap mode */
+
+                if (msg->msg1 < msgin->msg1)
+                {
+                        err = -EAGAIN;
+                        goto err_mmap_count;
+                }
+
+/*                console_printf("%s:%x: %x\n", __FILE__, __LINE__, msg);
+                console_printf("%s:%x: %x\n", __FILE__, __LINE__, msg->snd);
+                console_printf("%s:%x: %x\n", __FILE__, __LINE__, msg->snd->task);
+                console_printf("%s:%x: %x\n", __FILE__, __LINE__, msg->snd->task->as);*/
+
+                vmem_map_pages_at(rcv->task->as, msg->msg0,
+                           msgin->snd->task->as, msgin->msg0,
+                                  msgin->msg1, PDE_FLAG_PRESENT |
+                                                                PDE_FLAG_WRITEABLE);
+
+                msg->snd = msgin->snd;
+                msg->flags = msgin->flags&~IPC_MSG_FLAGS_RESERVED;
+                msg->msg1 = msgin->msg1;
+        }
+        else if (!((msg->flags|msgin->flags)&IPC_MSG_FLAGS_MMAP))
+        {
+                /* both thread in register mode */
+                memcpy(msg, msgin, sizeof(*msg));
+        }
+        else
+        {
+                /* distinct modes */
+
+                err = -EINVAL;
+                goto err_mode;
+        }
 
         spinlock_unlock(&rcv->lock);
 
         return 0;
 
+err_mmap_count:
+err_mode:
 err_msg:
 err_rcv_ipcin:
         spinlock_unlock(&rcv->lock);

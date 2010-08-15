@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-enum {
+enum
+{
         PDE_FLAG_PRESENT   = 1<<0,
         PDE_FLAG_WRITEABLE = 1<<1,
         PDE_FLAG_USERMODE  = 1<<2,
@@ -31,7 +32,8 @@ enum {
                              PDE_FLAG_LARGEPAGE
 };
 
-enum {
+enum
+{
         PDE_STATE_ACCESSED = 1<<5
 };
 

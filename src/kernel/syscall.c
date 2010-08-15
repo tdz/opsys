@@ -67,7 +67,7 @@ syscall_entry_handler(unsigned long *tid,
         struct tcb *snd, *rcv;
         enum syscall_op op;
 
-        console_printf("%s:%x: tid=%x flags=%x msg0=%x msg1=%x.\n", __FILE__,
+        console_printf("%s:%x: tid=%x flags=%x msg0=%x msg1=%x<\n", __FILE__,
                        __LINE__, *tid, *flags, *msg0, *msg1);
 
         op = syscall_get_op(*flags);
@@ -104,7 +104,7 @@ syscall_entry_handler(unsigned long *tid,
          * send message to receiver 
          */
 
-        if ((err = ipc_msg_init(&snd->msg, snd, *flags&~IPC_MSG_FLAGS_RESERVED, *msg0, *msg1)) < 0)
+        if ((err = ipc_msg_init(&snd->msg, snd, (*flags)&~IPC_MSG_FLAGS_RESERVED, *msg0, *msg1)) < 0)
         {
                 goto err_ipc_msg_init;
         }

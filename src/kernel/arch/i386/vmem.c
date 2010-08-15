@@ -443,6 +443,32 @@ err_vmem_find_empty_pages:
         return err;
 }
 
+os_index_t
+vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
+                        os_index_t pg_index_max, size_t pgcount)
+{
+        int err;
+        os_index_t pgindex;
+
+        semaphore_enter(&vmem->sem);
+
+        pgindex = find_empty_pages(vmem, pgcount, pg_index_min, pg_index_max);
+
+        if (pgindex < 0)
+        {
+                err = pgindex;
+                goto err_vmem_find_empty_pages;
+        }
+
+        semaphore_leave(&vmem->sem);
+
+        return pgindex;
+
+err_vmem_find_empty_pages:
+        semaphore_leave(&vmem->sem);
+        return err;
+}
+
 /*
  * internal functions
  */

@@ -41,3 +41,7 @@ vmem_helper_map_pages_in_area(struct vmem *dst_as,
                           size_t pgcount,
                           unsigned long dst_pteflags);
 
+os_index_t
+vmem_helper_empty_pages_in_area(struct vmem *vmem,
+                                enum vmem_area_name areaname, size_t pgcount);
+

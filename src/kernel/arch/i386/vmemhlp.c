@@ -182,14 +182,14 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
          * prepare temporary mappings 
          */
 
-        if ((err = vmem_install_tmp(as)) < 0)
+        if ((err = vmem_install_tmp_nopg(as)) < 0)
         {
-                goto err_vmem_install_tmp;
+                goto err_vmem_install_tmp_nopg;
         }
 
         return 0;
 
-err_vmem_install_tmp:
+err_vmem_install_tmp_nopg:
 err_vmem_map_pageframes_nopg:
 err_vmem_alloc_page_tables_nopg:
         vmem_uninit(as);

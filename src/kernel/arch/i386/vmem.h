@@ -35,12 +35,24 @@ struct vmem
 };
 
 int
-vmem_map_pageframes_nopg(struct vmem *as, os_index_t pfindex,
+vmem_map_pageframes_nopg(struct vmem *vmem, os_index_t pfindex,
                          os_index_t pgindex, size_t count, unsigned int flags);
 
 int
-vmem_alloc_page_tables_nopg(struct vmem *as, os_index_t ptindex,
+vmem_alloc_page_tables_nopg(struct vmem *vmem, os_index_t ptindex,
                             size_t ptcount, unsigned int flags);
+
+/**
+ * \brief Install temporary-mappings hack
+ * \param[in] as Address of vmem structure
+ * \return 0 if successful; a negative error code otherwise
+ *
+ * The lowest page table in kernel memory resides in highest page frame of
+ * identity-mapped low memory. This allows for temporary mappings by writing
+ * to low-area page.
+ */
+int
+vmem_install_tmp_nopg(struct vmem *vmem);
 
 /*
  * public functions
@@ -54,41 +66,29 @@ vmem_alloc_page_tables_nopg(struct vmem *as, os_index_t ptindex,
  * \return 0 if successful, or a negative error code otherwise
  */
 int
-vmem_init(struct vmem *as, enum paging_mode pgmode, void *tlps);
+vmem_init(struct vmem *vmem, enum paging_mode pgmode, void *tlps);
 
 void
-vmem_uninit(struct vmem *as);
-
-/**
- * \brief Install temporary-mappings hack
- * \param[in] as Address of vmem structure
- * \return 0 if successful; a negative error code otherwise
- *
- * The lowest page table in kernel memory resides in highest page frame of
- * identity-mapped low memory. This allows for temporary mappings by writing
- * to low-area page.
- */
-int
-vmem_install_tmp(struct vmem *as);
+vmem_uninit(struct vmem *vmem);
 
 void
-vmem_enable(const struct vmem *as);
+vmem_enable(const struct vmem *vmem);
 
 int
-vmem_alloc_frames(struct vmem *as, os_index_t pfindex,
+vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex,
                                                    os_index_t pgindex,
                                                    size_t pgcount,
                                                    unsigned int flags);
 
 os_index_t
-vmem_lookup_frame(struct vmem *as, os_index_t pgindex);
+vmem_lookup_frame(struct vmem *vmem, os_index_t pgindex);
 
 os_index_t
-vmem_alloc_pages_at(struct vmem *as, os_index_t pg_index, size_t pg_count,
+vmem_alloc_pages_at(struct vmem *vmem, os_index_t pg_index, size_t pg_count,
                     unsigned int flags);
 
 os_index_t
-vmem_alloc_pages_within(struct vmem *as, os_index_t pg_index_min,
+vmem_alloc_pages_within(struct vmem *vmem, os_index_t pg_index_min,
                         os_index_t pg_index_max, size_t pg_count,
                         unsigned int flags);
 
@@ -112,14 +112,14 @@ vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
  */
 
 int
-__vmem_alloc_frames(struct vmem *as, os_index_t pfindex, os_index_t pgindex,
+__vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex, os_index_t pgindex,
                   size_t pgcount, unsigned int flags);
 
 os_index_t
-__vmem_lookup_frame(const struct vmem *as, os_index_t pgindex);
+__vmem_lookup_frame(const struct vmem *vmem, os_index_t pgindex);
 
 int
-__vmem_alloc_pages(struct vmem *as, os_index_t pgindex, size_t pgcount,
+__vmem_alloc_pages(struct vmem *vmem, os_index_t pgindex, size_t pgcount,
                  unsigned int flags);
 
 int

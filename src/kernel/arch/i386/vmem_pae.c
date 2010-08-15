@@ -45,17 +45,21 @@
 #include "vmem_pae.h"
 
 int
-vmem_pae_map_pageframe_nopg(void *tlps,
-                                     os_index_t pfindex,
-                                     os_index_t pgindex, unsigned int flags)
+vmem_pae_map_pageframe_nopg(void *tlps, os_index_t pfindex,
+                            os_index_t pgindex, unsigned int flags)
 {
         return -ENOSYS;
 }
 
 int
-vmem_pae_alloc_page_table_nopg(void *tlps,
-                                        os_index_t ptindex,
-                                        unsigned int flags)
+vmem_pae_alloc_page_table_nopg(void *tlps, os_index_t ptindex,
+                               unsigned int flags)
+{
+        return -ENOSYS;
+}
+
+int
+vmem_pae_install_tmp_nopg(void *tlps)
 {
         return -ENOSYS;
 }
@@ -94,19 +98,16 @@ vmem_pae_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
 }
 
 int
-vmem_pae_map_pages(void *dst_tlps,
-                            os_index_t dst_pgindex,
-                            const struct vmem *src_as,
-                            os_index_t src_pgindex,
-                            size_t pgcount, unsigned long dst_pteflags)
+vmem_pae_map_pages(void *dst_tlps, os_index_t dst_pgindex,
+                   const struct vmem *src_as, os_index_t src_pgindex,
+                   size_t pgcount, unsigned long dst_pteflags)
 {
         return -ENOSYS;
 }
 
 int
-vmem_pae_share_2nd_lvl_ps(void *dst_tlps,
-                                   const void *src_tlps,
-                                   os_index_t pgindex, size_t pgcount)
+vmem_pae_share_2nd_lvl_ps(void *dst_tlps, const void *src_tlps,
+                          os_index_t pgindex, size_t pgcount)
 {
         return -ENOSYS;
 }

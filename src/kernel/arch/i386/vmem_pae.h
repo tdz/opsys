@@ -26,6 +26,9 @@ vmem_pae_alloc_page_table_nopg(void *tlps,
                                         os_index_t ptindex,
                                         unsigned int flags);
 
+int
+vmem_pae_install_tmp_nopg(void *tlps);
+
 void
 vmem_pae_enable(const void *tlps);
 

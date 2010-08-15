@@ -24,6 +24,9 @@ int
 vmem_32_alloc_page_table_nopg(void *tlps, os_index_t ptindex,
                               unsigned int flags);
 
+int
+vmem_32_install_tmp_nopg(void *tlps);
+
 void
 vmem_32_enable(const void *tlps);
 

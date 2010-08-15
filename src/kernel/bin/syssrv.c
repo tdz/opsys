@@ -37,7 +37,7 @@
 #include <vmemhlp.h>
 
 #include <task.h>
-#include "tid.h"
+#include <generic/tid.h>
 #include "syssrv.h"
 
 #include "console.h"

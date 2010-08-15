@@ -3,7 +3,7 @@ topdir = ..
 include ../variables.mk
 include ../flags.mk
 
-SUBDIRS = kernel libc helloworld
+SUBDIRS = lib bin
 
 include ../rules.mk
 

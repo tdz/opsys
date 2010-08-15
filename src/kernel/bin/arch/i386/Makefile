@@ -1,7 +1,9 @@
 
-topdir = ../../../..
-include ../../../../variables.mk
-include ../../../../flags.mk
+topdir = ../../../../..
+include ../../../../../variables.mk
+include ../../../../../flags.mk
+-include ../../../../variables.mk
+-include ../../../../flags.mk
 -include ../../../variables.mk
 -include ../../../flags.mk
 -include ../../variables.mk
@@ -36,15 +38,15 @@ CSOURCES = debug.c \
            vmem_pae.c \
            vmemhlp.c
 
-CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel
+CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel/bin -I$(includedir)/opsys/arch/$(target_cpu) -I$(includedir)/opsys
 
-LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel -L$(srcdir)/shared/lib/opsysshared -L$(srcdir)/shared/lib/cshared -e_start
+LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel/bin -L$(srcdir)/kernel/lib -e_start
 
-LDADD := -lkernel -lopsysshared -lcshared $(LDADD)
+LDADD := -lkernel -lopsys $(LDADD)
 
 PROGRAMS = oskernel
 
-include ../../../../rules.mk
+include ../../../../../rules.mk
 
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)

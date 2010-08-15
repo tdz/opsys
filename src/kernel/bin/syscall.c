@@ -31,7 +31,7 @@
 #include "ipcmsg.h"
 #include "ipc.h"
 
-#include "tid.h"
+#include <generic/tid.h>
 #include "task.h"
 #include <tcbregs.h>
 #include <tcb.h>

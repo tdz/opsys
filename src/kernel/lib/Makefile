@@ -7,7 +7,13 @@ include ../../../flags.mk
 -include ../variables.mk
 -include ../flags.mk
 
-SUBDIRS = cshared opsysshared
+CSOURCES = errno.c \
+           string.c \
+           tid.c
+
+CPPFLAGS += -I$(includedir) -I$(includedir)/opsys
+
+LIBRARIES = libopsys.a
 
 include ../../../rules.mk
 

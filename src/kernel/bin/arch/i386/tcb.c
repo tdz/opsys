@@ -33,7 +33,7 @@
 #include "pageframe.h"
 
 /* virtual memory */
-#include "page.h"
+#include <arch/i386/page.h>
 #include "vmem.h"
 
 #include <task.h>

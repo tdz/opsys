@@ -36,9 +36,8 @@ CSOURCES = alloc.c \
            tcbhlp.c \
            vmemarea.c
 
-LDFLAGS += -Ttext=$(reloc_addr) -L$(archdir)/$(target_cpu)
-
-CPPFLAGS += -I$(archdir)/$(target_cpu) -I$(includedir) -I$(includedir)/opsys/$(archdir)/$(target_cpu) -I$(includedir)/opsys
+CPPFLAGS += -I$(archdir)/$(target_cpu)
+CPPFLAGS += -I$(includedir)/opsys/$(archdir)/$(target_cpu) -I$(includedir)/opsys -I$(includedir)
 
 LIBRARIES = libkernel.a
 

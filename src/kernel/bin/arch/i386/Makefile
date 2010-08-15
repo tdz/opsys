@@ -38,7 +38,7 @@ CSOURCES = debug.c \
            vmem_pae.c \
            vmemhlp.c
 
-CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel/bin -I$(includedir)/opsys/arch/$(target_cpu) -I$(includedir)/opsys
+CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel/bin -I$(includedir)/opsys
 
 LDFLAGS += -Ttext=$(reloc_addr) -L$(srcdir)/kernel/bin -L$(srcdir)/kernel/lib -e_start
 

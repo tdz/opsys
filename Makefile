@@ -3,7 +3,7 @@ topdir = .
 include ./variables.mk
 include ./flags.mk
 
-SUBDIRS = $(srcdir)
+SUBDIRS = $(includedir) $(srcdir)
 
 EXTRA_CLEAN = doxygen.log 
 

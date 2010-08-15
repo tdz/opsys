@@ -6,6 +6,7 @@ SUBDIRS =
 ASMSOURCES =
 CSOURCES =
 
+FILES =
 LIBRARIES =
 PROGRAMS =
 
@@ -40,6 +41,7 @@ CTAGSFLAGS =
 
 AR = ar
 CP = cp
+LN = ln
 MKDIR = mkdir
 RANLIB = ranlib
 RM = rm

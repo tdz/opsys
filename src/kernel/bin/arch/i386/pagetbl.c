@@ -22,7 +22,7 @@
 #include "pageframe.h"
 #include <pmem.h>
 
-#include "page.h"
+#include <arch/i386/page.h>
 #include "pte.h"
 #include "pagetbl.h"
 

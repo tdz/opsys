@@ -34,7 +34,7 @@
 #include <pmem.h>
 
 /* virtual memory */
-#include "page.h"
+#include <arch/i386/page.h>
 #include "pte.h"
 #include "pagetbl.h"
 #include "pde.h"

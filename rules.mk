@@ -3,7 +3,7 @@
 
 DEPSDIR = .deps
 
-.PHONY = all clean
+.PHONY = all clean ctags
 
 all : $(LIBRARIES) $(PROGRAMS)
 	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir all); done
@@ -11,6 +11,10 @@ all : $(LIBRARIES) $(PROGRAMS)
 clean :
 	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir clean); done
 	$(RM) -fr $(DEPSDIR) $(PROGRAMS) $(LIBRARIES) $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o) $(EXTRA_CLEAN)
+
+ctags :
+	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir ctags); done
+	$(CTAGS) -a $(CTAGSFLAGS) *
 
 %.a : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(AR) rcs $@ $^

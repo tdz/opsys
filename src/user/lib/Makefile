@@ -1,14 +1,16 @@
 
-LIBOPSYSDIR = opsys
-LIBCRTDIR = crt
+topdir = ../../..
+include ../../../variables.mk
+include ../../../flags.mk
+-include ../../variables.mk
+-include ../../flags.mk
+-include ../variables.mk
+-include ../flags.mk
 
-.PHONY = all clean
+SUBDIRS = opsys crt
 
-all:
-	$(MAKE) -C $(LIBOPSYSDIR) all
-	$(MAKE) -C $(LIBCRTDIR) all
+include ../../../rules.mk
 
-clean:
-	$(MAKE) -C $(LIBOPSYSDIR) clean
-	$(MAKE) -C $(LIBCRTDIR) clean
+# include dependency rules
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

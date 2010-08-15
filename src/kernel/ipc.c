@@ -58,11 +58,11 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
         }
 
         /*
-         * enque message 
+         * enqueue message 
          */
         /*
-         * TODO: enque at end, not at beginning; to prevent walk over list,
-         * first elemant could have prev pointer set to end of list 
+         * TODO: enqueue at end, not at beginning; to prevent walk over list,
+         * first element could have prev pointer set to end of list 
          */
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
@@ -168,7 +168,7 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
         }
 
         /*
-         * deque first IPC message 
+         * dequeue first IPC message 
          */
 
         msgin = list_data(rcv->ipcin);

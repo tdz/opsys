@@ -1,14 +1,16 @@
 
-HELLOWORLDDIR = helloworld
-MINESWEEPERDIR = minesweeper
+topdir = ../../..
+include ../../../variables.mk
+include ../../../flags.mk
+-include ../../variables.mk
+-include ../../flags.mk
+-include ../variables.mk
+-include ../flags.mk
 
-.PHONY = all clean
+SUBDIRS = helloworld minesweeper
 
-all:
-	$(MAKE) -C $(HELLOWORLDDIR) all
-	$(MAKE) -C $(MINESWEEPERDIR) all
+include ../../../rules.mk
 
-clean:
-	$(MAKE) -C $(HELLOWORLDDIR) clean
-	$(MAKE) -C $(MINESWEEPERDIR) clean
+# include dependency rules
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

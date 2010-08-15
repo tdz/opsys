@@ -1,14 +1,16 @@
 
-LIBCSHAREDDIR = cshared
-LIBOPSYSSHAREDDIR = opsysshared
+topdir = ../../..
+include ../../../variables.mk
+include ../../../flags.mk
+-include ../../variables.mk
+-include ../../flags.mk
+-include ../variables.mk
+-include ../flags.mk
 
-.PHONY = all clean
+SUBDIRS = cshared opsysshared
 
-all:
-	$(MAKE) -C $(LIBCSHAREDDIR) all
-	$(MAKE) -C $(LIBOPSYSSHAREDDIR) all
+include ../../../rules.mk
 
-clean:
-	$(MAKE) -C $(LIBCSHAREDDIR) clean
-	$(MAKE) -C $(LIBOPSYSSHAREDDIR) clean
+# include dependency rules
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

@@ -9,7 +9,7 @@ CSOURCES =
 LIBRARIES =
 PROGRAMS =
 
-EXTRA_CLEAN =
+EXTRA_CLEAN = tags TAGS
 
 # shell
 
@@ -30,6 +30,11 @@ ASFLAGS = --32 -march=$(target_cpu)
 
 LD = ld
 LDFLAGS = -nostdlib -static -melf_$(target_cpu)
+
+# ctags
+
+CTAGS = ctags
+CTAGSFLAGS = 
 
 # others
 

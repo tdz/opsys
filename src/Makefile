@@ -1,17 +1,12 @@
 
-KERNELDIR = kernel
-USERDIR = user
-SHAREDDIR = shared
+topdir = ..
+include ../variables.mk
+include ../flags.mk
 
-.PHONY = all clean
+SUBDIRS = shared kernel user 
 
-all:
-	$(MAKE) -C $(SHAREDDIR) all
-	$(MAKE) -C $(KERNELDIR) all
-	$(MAKE) -C $(USERDIR) all
+include ../rules.mk
 
-clean:
-	$(MAKE) -C $(SHAREDDIR) clean
-	$(MAKE) -C $(KERNELDIR) clean
-	$(MAKE) -C $(USERDIR) clean
+# include dependency rules
+-include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
 

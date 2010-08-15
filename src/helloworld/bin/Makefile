@@ -1,9 +1,7 @@
 
-topdir = ../../../..
-include ../../../../variables.mk
-include ../../../../flags.mk
--include ../../../variables.mk
--include ../../../flags.mk
+topdir = ../../..
+include ../../../variables.mk
+include ../../../flags.mk
 -include ../../variables.mk
 -include ../../flags.mk
 -include ../variables.mk
@@ -11,13 +9,15 @@ include ../../../../flags.mk
 
 CSOURCES = main.c
 
-LDFLAGS += -L$(libdir)/crt
+CPPFLAGS += -I$(includedir)/libc -I$(includedir)/opsys
 
-LDADD := -lcrt $(LDADD)
+LDFLAGS += -L$(srcdir)/libc/lib -L$(srcdir)/kernel/lib
+
+LDADD := -lc -lopsys $(LDADD)
 
 PROGRAMS = helloworld
 
-include ../../../../rules.mk
+include ../../../rules.mk
 
 helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)

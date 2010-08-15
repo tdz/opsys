@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include <crt/crt.h>
+#include <crt.h>
 
 static const char __attribute__((aligned(4096))) str[] = "Hello world";
 

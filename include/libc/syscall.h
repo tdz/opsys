@@ -52,15 +52,11 @@ enum
  * \param[out] reply_flags flags of the reply
  * \param[out] reply_msg0 first reply message word
  * \param[out] reply_msg1 second reply message word
- * \return 0 on success, or a non-zero error value
- *
- * 32 rcv task 16 | 15 rcv thread 0
- *
- * 32 timeout 12 | 11 system flags 4 | 3 user flags 0
- *
- * 32 first msg word 0
- *
- * 32 second msg word 0
+ * \return 0 on success, or a negative error value otherwise 
+ * \retval -EAGAIN resource is temporarily not available
+ * \retval -EINVAL the flags argument is invalid
+ * \retval -ESRCH the specified receiver thread does not exist
+ * \retval -ETIMEDOUT the receiver thread did not respond within the specified timeout
  *
  * This function executes a system call. System calls are implemented
  * as messages of inter-process communication (abbr. IPC). Each call
@@ -72,6 +68,40 @@ enum
  *
  * In case that a sender-specified timeout is reached without the
  * receiver handling the call, the function returns with -ETIMEDOUT.
+ * 
+ * The exact register layout of an IPC message is shown in the table below.
+ *
+ * <table>
+ *  <caption>IPC register layout</caption>
+ *  <tr>
+ *   <td>bits</td><td align=center>31</td><td align=center>30</td><td align=center>29</td><td align=center>28</td>
+ *                <td align=center>27</td><td align=center>26</td><td align=center>25</td><td align=center>24</td>
+ *                <td align=center>23</td><td align=center>22</td><td align=center>21</td><td align=center>20</td>
+ *                <td align=center>19</td><td align=center>18</td><td align=center>17</td><td align=center>16</td>
+ *                <td align=center>15</td><td align=center>14</td><td align=center>13</td><td align=center>12</td>
+ *                <td align=center>11</td><td align=center>10</td><td align=center> 9</td><td align=center> 8</td>
+ *                <td align=center> 7</td><td align=center> 6</td><td align=center> 5</td><td align=center> 4</td>
+ *                <td align=center> 3</td><td align=center> 2</td><td align=center> 1</td><td align=center> 0</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG0</td><td align=center colspan=16>receiver task id</td>
+ *                <td align=center colspan=16>receiver thread id</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG1</td><td align=center colspan=20>timeout</td>
+ *                <td align=center colspan=2>opcode</td>
+ *                <td align=center colspan=4 bgcolor=#c0c0c0>reserved</td>
+ *                <td align=center colspan=1>0</td>
+ *                <td align=center colspan=1>0</td>
+ *                <td align=center colspan=4>user flags</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG2</td><td align=center colspan=32>message word 0</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG3</td><td align=center colspan=32>message word 1</td>
+ *  </tr>
+ * </table>
  *
  * The IPC mechanism is also used to map memory pages among address
  * spaces. Therefore, the flags IPC_FLAG_MMAP has to be set. Msg0
@@ -81,15 +111,77 @@ enum
  * how map the pages. The sender can only grant right that it
  * has itself.
  * 
+ * The register layout for memory mappings is shown in the table below.
  *
+ * <table>
+ *  <caption>Mmap register layout</caption>
+ *  <tr>
+ *   <td>bits</td><td align=center>31</td><td align=center>30</td><td align=center>29</td><td align=center>28</td>
+ *                <td align=center>27</td><td align=center>26</td><td align=center>25</td><td align=center>24</td>
+ *                <td align=center>23</td><td align=center>22</td><td align=center>21</td><td align=center>20</td>
+ *                <td align=center>19</td><td align=center>18</td><td align=center>17</td><td align=center>16</td>
+ *                <td align=center>15</td><td align=center>14</td><td align=center>13</td><td align=center>12</td>
+ *                <td align=center>11</td><td align=center>10</td><td align=center> 9</td><td align=center> 8</td>
+ *                <td align=center> 7</td><td align=center> 6</td><td align=center> 5</td><td align=center> 4</td>
+ *                <td align=center> 3</td><td align=center> 2</td><td align=center> 1</td><td align=center> 0</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG0</td><td align=center colspan=16>receiver task id</td>
+ *                <td align=center colspan=16>receiver thread id</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG1</td><td align=center colspan=20>timeout</td>
+ *                <td align=center colspan=2>opcode</td>
+ *                <td align=center colspan=4 bgcolor=#c0c0c0>reserved</td>
+ *                <td align=center colspan=1>0</td>
+ *                <td align=center colspan=1>1</td>
+ *                <td align=center colspan=4>user flags</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG2</td><td align=center colspan=20>first page index</td>
+ *                <td align=center colspan=9 bgcolor=#c0c0c0>reserved</td>
+ *                <td align=center colspan=3>access flags</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG3</td><td align=center colspan=32>page count</td>
+ *  </tr>
+ * </table>
  *
- * \dot
- *  <table>
- *   <tcol>
- *    <tr>3</tr>
- *   </tcol>
- *  <table>
- * \enddot
+ * Another form of IPC messages is the error message. This is used to signal error states in a coherent
+ * way to a receiver thread. The message layout is shown below. The receiver can either be in IPC or in mmap
+ * mode.
+ *
+ * <table>
+ *  <caption>Error-message register layout</caption>
+ *  <tr>
+ *   <td>bits</td><td align=center>31</td><td align=center>30</td><td align=center>29</td><td align=center>28</td>
+ *                <td align=center>27</td><td align=center>26</td><td align=center>25</td><td align=center>24</td>
+ *                <td align=center>23</td><td align=center>22</td><td align=center>21</td><td align=center>20</td>
+ *                <td align=center>19</td><td align=center>18</td><td align=center>17</td><td align=center>16</td>
+ *                <td align=center>15</td><td align=center>14</td><td align=center>13</td><td align=center>12</td>
+ *                <td align=center>11</td><td align=center>10</td><td align=center> 9</td><td align=center> 8</td>
+ *                <td align=center> 7</td><td align=center> 6</td><td align=center> 5</td><td align=center> 4</td>
+ *                <td align=center> 3</td><td align=center> 2</td><td align=center> 1</td><td align=center> 0</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG0</td><td align=center colspan=16>receiver task id</td>
+ *                <td align=center colspan=16>receiver thread id</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG1</td><td align=center colspan=20>timeout</td>
+ *                <td align=center colspan=2>opcode</td>
+ *                <td align=center colspan=4 bgcolor=#c0c0c0>reserved</td>
+ *                <td align=center colspan=1>1</td>
+ *                <td align=center colspan=1>0/1</td>
+ *                <td align=center colspan=4>user flags</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG2</td><td align=center colspan=32>system-defined error value</td>
+ *  </tr>
+ *  <tr>
+ *   <td>REG3</td><td align=center colspan=32 bgcolor=#c0c0c0>reserved</td>
+ *  </tr>
+ * </table>
  */
 int
 syscall(unsigned long rcv,

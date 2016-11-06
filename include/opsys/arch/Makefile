@@ -8,10 +8,11 @@ include $(builddir)/flags.mk
 
 FILES = target
 
-include $(builddir)/targets.mk
-include $(builddir)/rules.mk
-
 target : FORCE
 	$(LN) -f -s $(target_cpu) $@
 
 FORCE :
+
+include $(builddir)/deps.mk
+include $(builddir)/rules.mk
+include $(builddir)/targets.mk

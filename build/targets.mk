@@ -1,8 +1,6 @@
 
 # targets that apply in every makefile
 
-DEPSDIR = .deps
-
 .PHONY = all clean ctags
 
 all : $(FILES) $(LIBRARIES) $(PROGRAMS)

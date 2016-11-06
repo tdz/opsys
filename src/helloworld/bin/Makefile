@@ -14,12 +14,9 @@ LDADD := -lc -lopsys $(LDADD)
 
 PROGRAMS = helloworld
 
-include $(builddir)/targets.mk
-include $(builddir)/rules.mk
-
 helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)
 
-# include dependency rules
--include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
-
+include $(builddir)/deps.mk
+include $(builddir)/rules.mk
+include $(builddir)/targets.mk

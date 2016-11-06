@@ -8,7 +8,4 @@ SUBDIRS = bin
 
 include $(builddir)/targets.mk
 include $(builddir)/rules.mk
-
-# include dependency rules
--include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
-
+include $(builddir)/deps.mk

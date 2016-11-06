@@ -6,9 +6,6 @@ include $(builddir)/flags.mk
 
 SUBDIRS = kernel libc helloworld minesweeper
 
-include $(builddir)/targets.mk
+include $(builddir)/deps.mk
 include $(builddir)/rules.mk
-
-# include dependency rules
--include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
-
+include $(builddir)/targets.mk

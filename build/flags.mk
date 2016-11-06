@@ -12,6 +12,8 @@ PROGRAMS =
 
 EXTRA_CLEAN = tags TAGS
 
+DEPSDIR = .deps
+
 # shell
 
 SHELL = /bin/bash
@@ -35,7 +37,7 @@ LDFLAGS = -nostdlib -static -melf_$(target_cpu)
 # ctags
 
 CTAGS = ctags
-CTAGSFLAGS = 
+CTAGSFLAGS =
 
 # others
 

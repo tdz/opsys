@@ -43,7 +43,7 @@ imgpath=`mktemp -td genimage.XXXXXXXXXX` || exit 1
 mount -oloop,offset=32256 $imgfile $imgpath || exit 1
 
 cp $basedir/menu.lst $imgpath/boot/grub/
-cp $srcdir/kernel/bin/arch/$arch/oskernel $imgpath/
+cp $srcdir/kernel/bin/oskernel $imgpath/
 cp $srcdir/helloworld/bin/helloworld $imgpath/
 
 umount $imgpath && rm -fr $imgpath

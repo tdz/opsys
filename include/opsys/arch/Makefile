@@ -1,18 +1,15 @@
 
-topdir = ../../..
-include ../../../variables.mk
-include ../../../flags.mk
--include ../../variables.mk
--include ../../flags.mk
--include ../variables.mk
--include ../flags.mk
+topdir := ../../..
+builddir := $(topdir)/build
+include $(builddir)/variables.mk
+include $(builddir)/flags.mk
 
 .PHONY = FORCE
 
 FILES = target
 
-include ../../../targets.mk
-include ../../../rules.mk
+include $(builddir)/targets.mk
+include $(builddir)/rules.mk
 
 target : FORCE
 	$(LN) -f -s $(target_cpu) $@

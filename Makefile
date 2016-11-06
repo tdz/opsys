@@ -1,14 +1,14 @@
 
-topdir = .
-include ./variables.mk
-include ./flags.mk
+topdir := .
+builddir := $(topdir)/build
+include $(builddir)/variables.mk
+include $(builddir)/flags.mk
+
+.DEFAULT_GOAL := all
 
 SUBDIRS = $(includedir) $(srcdir)
 
 EXTRA_CLEAN = doxygen.log
-
-include ./targets.mk
-include ./rules.mk
 
 IMAGES = opsyshdd.img
 
@@ -28,6 +28,5 @@ html:
 	$(CP) res/genimage/$@.base $@
 	sudo tools/genimage/genimage.sh -a $(target_cpu) -b res/genimage/ -s $(srcdir) -i $@
 
-# include dependency rules
--include $(CSOURCES:%.c= $(DEPSDIR)/%.d)
-
+include $(builddir)/rules.mk
+include $(builddir)/targets.mk

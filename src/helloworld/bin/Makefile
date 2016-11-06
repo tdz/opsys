@@ -1,11 +1,8 @@
 
-topdir = ../../..
-include ../../../variables.mk
-include ../../../flags.mk
--include ../../variables.mk
--include ../../flags.mk
--include ../variables.mk
--include ../flags.mk
+topdir := ../../..
+builddir := $(topdir)/build
+include $(builddir)/variables.mk
+include $(builddir)/flags.mk
 
 CSOURCES = main.c
 
@@ -17,8 +14,8 @@ LDADD := -lc -lopsys $(LDADD)
 
 PROGRAMS = helloworld
 
-include ../../../targets.mk
-include ../../../rules.mk
+include $(builddir)/targets.mk
+include $(builddir)/rules.mk
 
 helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)

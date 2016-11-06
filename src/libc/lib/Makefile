@@ -1,11 +1,8 @@
 
-topdir = ../../..
-include ../../../variables.mk
-include ../../../flags.mk
--include ../../variables.mk
--include ../../flags.mk
--include ../variables.mk
--include ../flags.mk
+topdir := ../../..
+builddir := $(topdir)/build
+include $(builddir)/variables.mk
+include $(builddir)/flags.mk
 
 ASMSOURCES = start.S
 
@@ -17,8 +14,8 @@ CPPFLAGS += -I$(includedir)/libc -I$(includedir)/opsys
 
 LIBRARIES = libc.a
 
-include ../../../targets.mk
-include ../../../rules.mk
+include $(builddir)/targets.mk
+include $(builddir)/rules.mk
 
 # include dependency rules
 -include $(CSOURCES:%.c= $(DEPSDIR)/%.d)

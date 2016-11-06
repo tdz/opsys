@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +24,7 @@ enum
         GDT_FLAG_LOWGRAN = 0x80,
         GDT_FLAG_32BITSEG = 0x40,
         /*
-         * flag bits 
+         * flag bits
          */
         GDT_FLAG_SEGINMEM = 0x80,
         GDT_FLAG_CODEDATA = 0x10,
@@ -79,9 +80,11 @@ struct gdt_register
         unsigned long base __attribute__ ((packed));
 };
 
-static const struct gdt_register gdtr __asm__("_gdtr") =
+static const struct gdt_register gdtr __asm__("_gdtr") __attribute__((unused)) =
 {
-.limit = sizeof(g_gdt),.base = (unsigned long)g_gdt,};
+    .limit = sizeof(g_gdt),
+    .base = (unsigned long)g_gdt,
+};
 
 void
 gdt_install()

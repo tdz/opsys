@@ -7,6 +7,7 @@ include ../../flags.mk
 
 SUBDIRS = arch
 
+include ../../targets.mk
 include ../../rules.mk
 
 # include dependency rules

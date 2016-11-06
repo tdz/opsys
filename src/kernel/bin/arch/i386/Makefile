@@ -46,6 +46,7 @@ LDADD := -lkernel -lopsys $(LDADD)
 
 PROGRAMS = oskernel
 
+include ../../../../../targets.mk
 include ../../../../../rules.mk
 
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)

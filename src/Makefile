@@ -5,6 +5,7 @@ include ../flags.mk
 
 SUBDIRS = kernel libc helloworld minesweeper
 
+include ../targets.mk
 include ../rules.mk
 
 # include dependency rules

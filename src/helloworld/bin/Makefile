@@ -17,6 +17,7 @@ LDADD := -lc -lopsys $(LDADD)
 
 PROGRAMS = helloworld
 
+include ../../../targets.mk
 include ../../../rules.mk
 
 helloworld : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)

@@ -7,6 +7,7 @@ include ../../../flags.mk
 -include ../variables.mk
 -include ../flags.mk
 
+include ../../../targets.mk
 include ../../../rules.mk
 
 # include dependency rules

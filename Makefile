@@ -5,8 +5,9 @@ include ./flags.mk
 
 SUBDIRS = $(includedir) $(srcdir)
 
-EXTRA_CLEAN = doxygen.log 
+EXTRA_CLEAN = doxygen.log
 
+include ./targets.mk
 include ./rules.mk
 
 IMAGES = opsyshdd.img

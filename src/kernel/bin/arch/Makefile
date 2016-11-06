@@ -11,6 +11,7 @@ include ../../../../flags.mk
 
 SUBDIRS = $(target_cpu)
 
+include ../../../../targets.mk
 include ../../../../rules.mk
 
 # include dependency rules

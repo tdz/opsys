@@ -51,6 +51,7 @@ PROGRAMS = oskernel
 oskernel : $(ASMSOURCES:.S=.S.o) $(CSOURCES:.c=.o)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDADD)
 
+include ../../../targets.mk
 include ../../../rules.mk
 
 # include dependency rules

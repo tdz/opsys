@@ -5,6 +5,7 @@ include ../flags.mk
 
 SUBDIRS = opsys
 
+include ../targets.mk
 include ../rules.mk
 
 # include dependency rules

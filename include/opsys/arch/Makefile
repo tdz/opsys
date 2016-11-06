@@ -11,6 +11,7 @@ include ../../../flags.mk
 
 FILES = target
 
+include ../../../targets.mk
 include ../../../rules.mk
 
 target : FORCE

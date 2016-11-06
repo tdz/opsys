@@ -17,6 +17,7 @@ CPPFLAGS += -I$(includedir)/libc -I$(includedir)/opsys
 
 LIBRARIES = libc.a
 
+include ../../../targets.mk
 include ../../../rules.mk
 
 # include dependency rules

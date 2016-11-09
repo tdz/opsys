@@ -3,6 +3,8 @@ archdir = arch/$(target_cpu)
 
 BINS += oskernel
 
+oskernel_MODULEDIR := kernel/bin
+
 oskernel_SRCS = alloc.c \
                 assert.c \
                 bitset.c \

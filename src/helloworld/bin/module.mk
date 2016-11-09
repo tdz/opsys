@@ -1,6 +1,8 @@
 
 BINS += helloworld
 
+helloworld_MODULEDIR := helloworld/bin
+
 helloworld_SRCS = main.c
 
 helloworld_INCLUDES += $(includedir)/libc $(includedir)/opsys

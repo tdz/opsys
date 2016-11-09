@@ -4,27 +4,55 @@
 #
 
 define VAR_tmpl =
-$1_C_SRCS += $$(filter %.c, $$($1_SRCS))
-$1_S_SRCS += $$(filter %.S, $$($1_SRCS))
 $1_CPPFLAGS += $$($1_INCLUDES:%=-I%)
 $1_LDFLAGS += $$($1_LD_SEARCH_PATHS:%=-L%)
-$1_C_OBJS += $$($1_C_SRCS:%.c=%.c.o)
-$1_S_OBJS += $$($1_S_SRCS:%.S=%.S.o)
-$1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
 endef
 
 $(foreach exe,$(LIBS) $(BINS),\
     $(eval $(call VAR_tmpl,$(exe))))
 
 #
+# Rules for objects that are created from C source files
+#
+
+define C_OBJ_tmpl =
+$2.o: $2
+	$$(CC) $$($1_CPPFLAGS) $$(CPPFLAGS) $$($1_CFLAGS) $$(CFLAGS) -c -o $$@ $2
+$1_C_SRCS += $2
+$1_C_OBJS += $2.o
+CLEAN_FILES += $2.o
+endef
+
+$(foreach exe,$(LIBS) $(BINS),\
+    $(foreach src,$(filter %.c,$($(exe)_SRCS)),\
+	    $(eval $(call C_OBJ_tmpl,$(exe),$(src)))))
+
+#
+# Rules for objects that are created from assembly source files
+#
+
+define S_OBJ_tmpl =
+$2.o: $2
+	$$(AS) $$($1_ASFLAGS) $$(ASFLAGS) -o $$@ $2
+$1_S_SRCS += $2
+$1_S_OBJS += $2.o
+CLEAN_FILES += $2.o
+endef
+
+$(foreach exe,$(LIBS) $(BINS),\
+    $(foreach src,$(filter %.S,$($(exe)_SRCS)),\
+	    $(eval $(call S_OBJ_tmpl,$(exe),$(src)))))
+
+#
 # Rules for libraries
 #
 
 define LIB_tmpl =
-CLEAN_FILES += $1
+$1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
 $1: $$($1_OBJS)
 	$$(AR) rcs $$@ $$($1_OBJS)
 	$$(RANLIB) $$@
+CLEAN_FILES += $1
 endef
 
 $(foreach lib,$(LIBS),\
@@ -35,41 +63,14 @@ $(foreach lib,$(LIBS),\
 #
 
 define BIN_tmpl =
-CLEAN_FILES += $1
+$1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
 $1: $$($1_OBJS)
 	$$(LD) $$($1_LDFLAGS) $$(LDFLAGS) -o $$@ $$($1_OBJS) $$($1_LDADD) $$(LDADD)
+CLEAN_FILES += $1
 endef
 
 $(foreach bin,$(BINS),\
     $(eval $(call BIN_tmpl,$(bin))))
-
-#
-# Rules for objects that are created from C source files
-#
-
-define C_OBJ_tmpl =
-CLEAN_FILES += $1
-$1: $$(basename $1)
-	$$(CC) $$($2_CPPFLAGS) $$(CPPFLAGS) $$($2_CFLAGS) $$(CFLAGS) -c -o $$@ $$<
-endef
-
-$(foreach exe,$(LIBS) $(BINS),\
-    $(foreach obj,$($(exe)_C_OBJS),\
-	    $(eval $(call C_OBJ_tmpl,$(obj),$(exe)))))
-
-#
-# Rules for objects that are created from assembly source files
-#
-
-define S_OBJ_tmpl =
-CLEAN_FILES += $1
-$1: $$(basename $1)
-	$$(AS) $$($2_ASFLAGS) $$(ASFLAGS) -o $$@ $$<
-endef
-
-$(foreach exe,$(LIBS) $(BINS),\
-    $(foreach obj,$($(exe)_S_OBJS),\
-	    $(eval $(call S_OBJ_tmpl,$(obj),$(exe)))))
 
 # targets that apply in every makefile
 

@@ -4,14 +4,13 @@ builddir := $(topdir)/build
 include $(builddir)/variables.mk
 include $(builddir)/flags.mk
 
-CSOURCES = errno.c \
-           string.c \
-           tid.c
+LIBS += libopsys.a
 
-CPPFLAGS += -I$(includedir) -I$(includedir)/opsys
+libopsys.a_CSOURCES = errno.c \
+                      string.c \
+                      tid.c
 
-LIBRARIES = libopsys.a
+libopsys.a_CPPFLAGS += -I$(includedir) -I$(includedir)/opsys
 
 include $(builddir)/targets.mk
-include $(builddir)/rules.mk
 include $(builddir)/deps.mk

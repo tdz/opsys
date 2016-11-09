@@ -1,11 +1,11 @@
 
-ASMSOURCES += $(addprefix $(archdir)/, \
+oskernel_ASMSOURCES += $(addprefix $(archdir)/, \
         idt.S \
         multiboot.S \
         tcbregs.S \
 	)
 
-CSOURCES += $(addprefix $(archdir)/, \
+oskernel_CSOURCES += $(addprefix $(archdir)/, \
         debug.c \
         gdt.c \
         idt.c \
@@ -30,4 +30,4 @@ CSOURCES += $(addprefix $(archdir)/, \
 # kernel resides at 1 MiB
 reloc_addr = 0x100000
 
-LDFLAGS += -Ttext=$(reloc_addr) -e_start
+oskernel_LDFLAGS += -Ttext=$(reloc_addr) -e_start

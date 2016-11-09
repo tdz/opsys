@@ -4,16 +4,15 @@ builddir := $(topdir)/build
 include $(builddir)/variables.mk
 include $(builddir)/flags.mk
 
-ASMSOURCES = start.S
+LIBS = libc.a
 
-CSOURCES = syscall.c \
-           syscall0.c \
-           write.c
+libc.a_ASMSOURCES = start.S
 
-CPPFLAGS += -I$(includedir)/libc -I$(includedir)/opsys
+libc.a_CSOURCES = syscall.c \
+                  syscall0.c \
+                  write.c
 
-LIBRARIES = libc.a
+libc.a_CPPFLAGS += -I$(includedir)/libc -I$(includedir)/opsys
 
 include $(builddir)/targets.mk
-include $(builddir)/rules.mk
 include $(builddir)/deps.mk

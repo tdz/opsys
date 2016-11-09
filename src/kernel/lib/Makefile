@@ -4,13 +4,7 @@ builddir := $(topdir)/build
 include $(builddir)/variables.mk
 include $(builddir)/flags.mk
 
-LIBS += libopsys.a
-
-libopsys.a_SRCS = errno.c \
-                  string.c \
-                  tid.c
-
-libopsys.a_INCLUDES += $(includedir) $(includedir)/opsys
+include module.mk
 
 include $(builddir)/targets.mk
 include $(builddir)/deps.mk

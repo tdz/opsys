@@ -5,5 +5,4 @@ include $(builddir)/variables.mk
 include $(builddir)/flags.mk
 
 include $(builddir)/targets.mk
-include $(builddir)/rules.mk
 include $(builddir)/deps.mk

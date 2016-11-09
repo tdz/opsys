@@ -7,5 +7,4 @@ include $(builddir)/flags.mk
 SUBDIRS = kernel libc helloworld minesweeper
 
 include $(builddir)/deps.mk
-include $(builddir)/rules.mk
 include $(builddir)/targets.mk

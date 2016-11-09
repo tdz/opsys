@@ -29,5 +29,4 @@ html:
 	sudo tools/genimage/genimage.sh -a $(target_cpu) -b res/genimage/ -s $(srcdir) -i $@
 
 include $(builddir)/deps.mk
-include $(builddir)/rules.mk
 include $(builddir)/targets.mk

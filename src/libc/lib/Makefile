@@ -6,11 +6,10 @@ include $(builddir)/flags.mk
 
 LIBS = libc.a
 
-libc.a_ASMSOURCES = start.S
-
-libc.a_CSOURCES = syscall.c \
-                  syscall0.c \
-                  write.c
+libc.a_SRCS = start.S \
+              syscall.c \
+              syscall0.c \
+              write.c
 
 libc.a_INCLUDES += $(includedir)/libc $(includedir)/opsys
 

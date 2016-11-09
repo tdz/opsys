@@ -4,10 +4,12 @@
 #
 
 define VAR_tmpl =
+$1_C_SRCS += $$(filter %.c, $$($1_SRCS))
+$1_S_SRCS += $$(filter %.S, $$($1_SRCS))
 $1_CPPFLAGS += $$($1_INCLUDES:%=-I%)
 $1_LDFLAGS += $$($1_LD_SEARCH_PATHS:%=-L%)
-$1_C_OBJS += $$($1_CSOURCES:%.c=%.c.o)
-$1_S_OBJS += $$($1_ASMSOURCES:%.S=%.S.o)
+$1_C_OBJS += $$($1_C_SRCS:%.c=%.c.o)
+$1_S_OBJS += $$($1_S_SRCS:%.S=%.S.o)
 $1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
 endef
 

@@ -6,7 +6,7 @@ include $(builddir)/flags.mk
 
 BINS += helloworld
 
-helloworld_CSOURCES = main.c
+helloworld_SRCS = main.c
 
 helloworld_INCLUDES += $(includedir)/libc $(includedir)/opsys
 

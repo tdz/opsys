@@ -3,9 +3,6 @@
 
 SUBDIRS =
 
-ASMSOURCES =
-CSOURCES =
-
 BINS =
 FILES =
 LIBS =

@@ -10,7 +10,7 @@ libopsys.a_CSOURCES = errno.c \
                       string.c \
                       tid.c
 
-libopsys.a_CPPFLAGS += -I$(includedir) -I$(includedir)/opsys
+libopsys.a_INCLUDES += $(includedir) $(includedir)/opsys
 
 include $(builddir)/targets.mk
 include $(builddir)/deps.mk

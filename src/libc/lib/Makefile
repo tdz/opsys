@@ -12,7 +12,7 @@ libc.a_CSOURCES = syscall.c \
                   syscall0.c \
                   write.c
 
-libc.a_CPPFLAGS += -I$(includedir)/libc -I$(includedir)/opsys
+libc.a_INCLUDES += $(includedir)/libc $(includedir)/opsys
 
 include $(builddir)/targets.mk
 include $(builddir)/deps.mk

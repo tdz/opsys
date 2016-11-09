@@ -8,9 +8,9 @@ BINS += helloworld
 
 helloworld_CSOURCES = main.c
 
-helloworld_CPPFLAGS += -I$(includedir)/libc -I$(includedir)/opsys
+helloworld_INCLUDES += $(includedir)/libc $(includedir)/opsys
 
-helloworld_LDFLAGS += -L$(srcdir)/libc/lib -L$(srcdir)/kernel/lib
+helloworld_LD_SEARCH_PATHS += $(srcdir)/libc/lib $(srcdir)/kernel/lib
 
 helloworld_LDADD := -lc -lopsys
 

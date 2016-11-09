@@ -1,12 +1,24 @@
 
 #
+# Per-executable variables
+#
+
+define VAR_tmpl =
+$1_CPPFLAGS += $$($1_INCLUDES:%=-I%)
+$1_LDFLAGS += $$($1_LD_SEARCH_PATHS:%=-L%)
+$1_C_OBJS += $$($1_CSOURCES:%.c=%.c.o)
+$1_S_OBJS += $$($1_ASMSOURCES:%.S=%.S.o)
+$1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
+endef
+
+$(foreach exe,$(LIBS) $(BINS),\
+    $(eval $(call VAR_tmpl,$(exe))))
+
+#
 # Rules for libraries
 #
 
 define LIB_tmpl =
-$1_C_OBJS := $$($1_CSOURCES:%.c=%.c.o)
-$1_S_OBJS := $$($1_ASMSOURCES:%.S=%.S.o)
-$1_OBJS := $$($1_C_OBJS) $$($1_S_OBJS)
 CLEAN_FILES += $1
 $1: $$($1_OBJS)
 	$$(AR) rcs $$@ $$($1_OBJS)
@@ -21,9 +33,6 @@ $(foreach lib,$(LIBS),\
 #
 
 define BIN_tmpl =
-$1_C_OBJS := $$($1_CSOURCES:%.c=%.c.o)
-$1_S_OBJS := $$($1_ASMSOURCES:%.S=%.S.o)
-$1_OBJS := $$($1_C_OBJS) $$($1_S_OBJS)
 CLEAN_FILES += $1
 $1: $$($1_OBJS)
 	$$(LD) $$($1_LDFLAGS) $$(LDFLAGS) -o $$@ $$($1_OBJS) $$($1_LDADD) $$(LDADD)

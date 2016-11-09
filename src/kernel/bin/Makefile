@@ -35,10 +35,10 @@ oskernel_CSOURCES = alloc.c \
                     tcbhlp.c \
                     vmemarea.c
 
-oskernel_CPPFLAGS += -I$(archdir)
-oskernel_CPPFLAGS += -I$(includedir)/opsys/$(archdir) -I$(includedir)/opsys -I$(includedir)
-oskernel_CPPFLAGS += -I$(srcdir)/kernel/include -I$(srcdir)/kernel/bin
-oskernel_LDFLAGS += -L$(srcdir)/kernel/bin -L$(srcdir)/kernel/lib
+oskernel_INCLUDES += $(archdir)
+oskernel_INCLUDES += $(includedir)/opsys/$(archdir) $(includedir)/opsys $(includedir)
+oskernel_INCLUDES += $(srcdir)/kernel/include $(srcdir)/kernel/bin
+oskernel_LD_SEARCH_PATHS += $(srcdir)/kernel/bin $(srcdir)/kernel/lib
 
 # include architecture-specific files
 include $(archdir)/arch.mk

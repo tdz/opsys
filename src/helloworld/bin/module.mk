@@ -9,5 +9,4 @@ helloworld_INCLUDES += libc/include kernel/include
 
 helloworld_LD_SEARCH_PATHS += libc/lib kernel/lib
 
-helloworld_LDADD := -lc -lopsys
-
+helloworld_LIBS += libc.a libopsys.a

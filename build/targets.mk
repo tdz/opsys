@@ -91,6 +91,7 @@ $1_BIN := $$($1_MODOUTDIR)/$1
 $1_DIR := $$(dir $$($1_BIN)).dir
 $1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
 $1_DIRS += $$($1_DIR) $$($1_C_DIRS) $$($1_S_DIRS)
+$1_LDADD += $$(patsubst lib%.a,-l%,$$($1_LIBS))
 $$($1_BIN): $$($1_DIR) $$($1_OBJS)
 	$$(LD) $$($1_LDFLAGS) $$(LDFLAGS) -o $$@ $$($1_OBJS) $$($1_LDADD) $$(LDADD)
 CLEAN_FILES += $$($1_BIN)

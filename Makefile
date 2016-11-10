@@ -10,11 +10,9 @@ include $(builddir)/flags.mk
 
 .DEFAULT_GOAL := all
 
-# Keep sorted until dependencies are tracked correctly
-include $(srcdir)/kernel/lib/module.mk
-include $(srcdir)/kernel/bin/module.mk
-include $(srcdir)/libc/lib/module.mk
-include $(srcdir)/helloworld/bin/module.mk
+# include all modules into build
+module := module.mk
+include $(shell find -P $(srcdir) -type f -name "$(module)")
 
 EXTRA_CLEAN = doxygen.log
 

@@ -150,14 +150,22 @@ $(foreach exe,$(LIBS) $(BINS),\
     $(foreach src,$(filter %.c,$($(exe)_SRCS)),\
 	    $(eval $(call C_DEP_tmpl,$(exe),$(src)))))
 
-# targets that apply in every makefile
+#
+# Feature-specific targets
+#
 
-.PHONY: all clean ctags
+$(foreach feature,$(features),\
+    $(eval include $(builddir)/targets-$(feature).mk))
+
+#
+# Common targets
+#
+
+.PHONY: all clean doc
 
 all: | $(FILES) $(all_symlinks) $(ALL_BINS)
 
 clean:
 	$(RM) -fr $(CLEAN_FILES) $(FILES) $(EXTRA_CLEAN)
 
-ctags:
-	$(CTAGS) -a $(CTAGSFLAGS) *
+doc:

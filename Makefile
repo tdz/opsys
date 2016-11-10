@@ -4,6 +4,8 @@ builddir := $(topdir)/build
 srcdir   := $(topdir)/src
 outdir   := $(topdir)/out
 
+FEATURES := ctags doxygen
+
 target_cpu ?= i386
 
 # set flags for the compiler toolchain
@@ -12,7 +14,7 @@ CFLAGS   := -g -m32 -Wall -Werror -ansi -march=$(target_cpu) -fno-stack-protecto
 ASFLAGS  := --32 -march=$(target_cpu)
 LDFLAGS  := -nostdlib -static -melf_$(target_cpu)
 
-include $(builddir)/flags.mk
+include $(builddir)/vars.mk
 
 .DEFAULT_GOAL := all
 
@@ -20,21 +22,14 @@ include $(builddir)/flags.mk
 module := module.mk
 include $(shell find -P $(srcdir) -type f -name "$(module)")
 
-EXTRA_CLEAN = doxygen.log
-
 IMAGES = opsyshdd.img
 
-.PHONY: image doc html
+.PHONY: image
 
 image: $(IMAGES)
 
 maintainer-clean: clean
 	$(RM) -fr doc/ $(IMAGES)
-
-doc: html
-
-html:
-	doxygen
 
 %.img : all
 	$(CP) res/genimage/$@.base $@

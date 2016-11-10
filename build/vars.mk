@@ -1,20 +1,15 @@
 
+features := $(sort $(FEATURES))
+
 # some default flags needed in all makefiles
 
 BINS =
 FILES =
 LIBS =
 
-EXTRA_CLEAN = tags TAGS
-
 # shell
 
 SHELL = /bin/bash
-
-# ctags
-
-CTAGS = ctags
-CTAGSFLAGS =
 
 # others
 
@@ -28,3 +23,7 @@ TOUCH := touch
 # compiler toolchain
 COMPILER ?= gcc
 include $(builddir)/compiler-$(COMPILER).mk
+
+# feature-specific variables
+$(foreach feature,$(features),\
+    $(eval include $(builddir)/vars-$(feature).mk))

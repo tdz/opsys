@@ -33,5 +33,4 @@ html:
 	$(CP) res/genimage/$@.base $@
 	sudo tools/genimage/genimage.sh -a $(target_cpu) -b res/genimage/ -s $(outdir) -i $@
 
-include $(builddir)/deps.mk
 include $(builddir)/targets.mk

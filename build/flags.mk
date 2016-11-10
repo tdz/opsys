@@ -7,8 +7,6 @@ LIBS =
 
 EXTRA_CLEAN = tags TAGS
 
-DEPSDIR = .deps
-
 # shell
 
 SHELL = /bin/bash

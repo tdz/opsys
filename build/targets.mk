@@ -131,6 +131,22 @@ $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
     $(foreach dir_,$(sort $($(exe)_DIRS)),\
         $(eval $(call DIR_tmpl,$(dir_)))))
 
+#
+# Dependencies
+#
+
+define C_DEP_tmpl =
+$1_$2_C_DEP := $$($1_MODOUTDIR)/$2.d
+$$($1_$2_C_DEP): $$($1_$2_C_DIR) $$($1_$2_C_SRC)
+	$$(CC) -M -MT '$$($1_$2_C_OBJ) $$@ ' $$($1_CPPFLAGS) $$(CPPFLAGS) $$($1_$2_C_SRC) > $$@;
+CLEAN_FILES += $$($1_$2_C_DEP)
+-include $$($1_$2_C_DEP)
+endef
+
+$(foreach exe,$(LIBS) $(BINS),\
+    $(foreach src,$(filter %.c,$($(exe)_SRCS)),\
+	    $(eval $(call C_DEP_tmpl,$(exe),$(src)))))
+
 # targets that apply in every makefile
 
 .PHONY: all clean ctags
@@ -138,7 +154,7 @@ $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
 all: | $(FILES) $(all_symlinks) $(ALL_LIBS) $(ALL_BINS)
 
 clean:
-	$(RM) -fr $(DEPSDIR) $(CLEAN_FILES) $(FILES) $(EXTRA_CLEAN)
+	$(RM) -fr $(CLEAN_FILES) $(FILES) $(EXTRA_CLEAN)
 
 ctags:
 	$(CTAGS) -a $(CTAGSFLAGS) *

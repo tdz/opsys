@@ -1,10 +1,9 @@
 
 .PHONY = FORCE
 
-FILES = target
+FILES = arch/target
 
-target : FORCE
+arch/target : FORCE
 	$(LN) -f -s $(target_cpu) $@
 
 FORCE :
-

@@ -6,7 +6,7 @@ include $(builddir)/flags.mk
 
 .DEFAULT_GOAL := all
 
-SUBDIRS = $(includedir) $(srcdir)
+SUBDIRS = $(srcdir)
 
 EXTRA_CLEAN = doxygen.log
 

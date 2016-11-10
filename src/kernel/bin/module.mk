@@ -30,9 +30,8 @@ oskernel_SRCS = alloc.c \
                 tcbhlp.c \
                 vmemarea.c
 
-oskernel_INCLUDES += $(archdir)
-oskernel_INCLUDES += $(includedir)/opsys/$(archdir) $(includedir)/opsys $(includedir)
-oskernel_INCLUDES += $(srcdir)/kernel/include $(srcdir)/kernel/bin
+oskernel_INCLUDES += kernel/bin/$(archdir) kernel/bin
+oskernel_INCLUDES += kernel/include/$(archdir) kernel/include
 oskernel_LD_SEARCH_PATHS += kernel/bin kernel/lib
 
 # include architecture-specific files

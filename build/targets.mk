@@ -5,7 +5,7 @@
 
 define VAR_tmpl =
 $1_MODOUTDIR ?= $$(outdir)/$$($1_MODULEDIR)
-$1_CPPFLAGS += $$($1_INCLUDES:%=-I%)
+$1_CPPFLAGS += $$($1_INCLUDES:%=-I$$(srcdir)/%)
 $1_LDFLAGS += $$($1_LD_SEARCH_PATHS:%=-L$$(outdir)/%)
 endef
 

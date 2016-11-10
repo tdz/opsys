@@ -1,7 +1,11 @@
 
-topdir := .
+topdir   := .
 builddir := $(topdir)/build
-include $(builddir)/variables.mk
+srcdir   := $(topdir)/src
+outdir   := $(topdir)/out
+
+target_cpu ?= i386
+
 include $(builddir)/flags.mk
 
 .DEFAULT_GOAL := all

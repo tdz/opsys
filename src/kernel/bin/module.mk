@@ -33,7 +33,7 @@ oskernel_SRCS = alloc.c \
 oskernel_INCLUDES += $(archdir)
 oskernel_INCLUDES += $(includedir)/opsys/$(archdir) $(includedir)/opsys $(includedir)
 oskernel_INCLUDES += $(srcdir)/kernel/include $(srcdir)/kernel/bin
-oskernel_LD_SEARCH_PATHS += $(srcdir)/kernel/bin $(srcdir)/kernel/lib
+oskernel_LD_SEARCH_PATHS += kernel/bin kernel/lib
 
 # include architecture-specific files
 include $(archdir)/arch.mk

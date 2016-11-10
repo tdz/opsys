@@ -45,4 +45,4 @@ MKDIR = mkdir
 RANLIB = ranlib
 RM = rm
 SED = sed
-
+TOUCH := touch

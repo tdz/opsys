@@ -7,7 +7,6 @@ include $(builddir)/flags.mk
 .DEFAULT_GOAL := all
 
 # Keep sorted until dependencies are tracked correctly
-include $(srcdir)/kernel/include/module.mk
 include $(srcdir)/kernel/lib/module.mk
 include $(srcdir)/kernel/bin/module.mk
 include $(srcdir)/libc/lib/module.mk

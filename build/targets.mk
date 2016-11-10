@@ -28,7 +28,7 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define C_OBJ_tmpl =
-$1_$2_C_SRC := $2
+$1_$2_C_SRC := $$($1_MODSRCDIR)/$2
 $1_$2_C_OBJ := $$($1_MODOUTDIR)/$2.o
 $1_$2_C_DIR := $$(dir $$($1_$2_C_OBJ)).dir
 $$($1_$2_C_OBJ): $$($1_$2_C_DIR) $$($1_$2_C_SRC)
@@ -48,7 +48,7 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define S_OBJ_tmpl =
-$1_$2_S_SRC := $2
+$1_$2_S_SRC := $$($1_MODSRCDIR)/$2
 $1_$2_S_OBJ := $$($1_MODOUTDIR)/$2.o
 $1_$2_S_DIR := $$(dir $$($1_$2_S_OBJ)).dir
 $$($1_$2_S_OBJ): $$($1_$2_S_DIR) $$($1_$2_S_SRC)
@@ -133,15 +133,12 @@ $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
 
 # targets that apply in every makefile
 
-.PHONY = all clean ctags
+.PHONY: all clean ctags
 
-all : $(FILES) $(all_symlinks) $(ALL_LIBS) $(ALL_BINS)
-	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir all); done
+all: | $(FILES) $(all_symlinks) $(ALL_LIBS) $(ALL_BINS)
 
-clean :
-	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir clean); done
+clean:
 	$(RM) -fr $(DEPSDIR) $(CLEAN_FILES) $(FILES) $(EXTRA_CLEAN)
 
-ctags :
-	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir ctags); done
+ctags:
 	$(CTAGS) -a $(CTAGSFLAGS) *

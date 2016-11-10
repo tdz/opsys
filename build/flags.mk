@@ -1,8 +1,6 @@
 
 # some default flags needed in all makefiles
 
-SUBDIRS =
-
 BINS =
 FILES =
 LIBS =

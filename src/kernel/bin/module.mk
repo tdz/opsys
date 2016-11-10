@@ -35,6 +35,6 @@ oskernel_INCLUDES += kernel/include/$(archdir) kernel/include
 oskernel_LD_SEARCH_PATHS += kernel/bin kernel/lib
 
 # include architecture-specific files
-include $(archdir)/arch.mk
+include $(srcdir)/kernel/bin/$(archdir)/arch.mk
 
 oskernel_LDADD := -lopsys

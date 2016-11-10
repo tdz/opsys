@@ -1,9 +1,4 @@
 
-.PHONY = FORCE
-
-FILES = arch/target
-
-arch/target : FORCE
-	$(LN) -f -s $(target_cpu) $@
-
-FORCE :
+SYMLINKS += arch/target
+arch/target_MODULEDIR := kernel/include
+arch/target_TARGET := arch/$(target_cpu)

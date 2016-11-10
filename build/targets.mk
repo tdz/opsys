@@ -1,16 +1,27 @@
 
 #
+# Per-module variables
+#
+
+define MOD_tmpl =
+$1_MODSRCDIR ?= $$(abspath $$(srcdir)/$$($1_MODULEDIR))
+$1_MODOUTDIR ?= $$(abspath $$(outdir)/$$($1_MODULEDIR))
+endef
+
+$(foreach mod,$(SYMLINKS) $(LIBS) $(BINS),\
+    $(eval $(call MOD_tmpl,$(mod))))
+
+#
 # Per-executable variables
 #
 
-define VAR_tmpl =
-$1_MODOUTDIR ?= $$(outdir)/$$($1_MODULEDIR)
+define EXE_tmpl =
 $1_CPPFLAGS += $$($1_INCLUDES:%=-I$$(srcdir)/%)
 $1_LDFLAGS += $$($1_LD_SEARCH_PATHS:%=-L$$(outdir)/%)
 endef
 
 $(foreach exe,$(LIBS) $(BINS),\
-    $(eval $(call VAR_tmpl,$(exe))))
+    $(eval $(call EXE_tmpl,$(exe))))
 
 #
 # Rules for objects that are created from C source files
@@ -90,6 +101,24 @@ $(foreach bin,$(BINS),\
     $(eval $(call BIN_tmpl,$(bin))))
 
 #
+# Rules for links
+#
+
+define SYMLINK_tmpl
+$1_symlink := $$($1_MODOUTDIR)/$1
+$1_dst := $$($1_MODSRCDIR)/$$($1_TARGET)
+$1_dir := $$(dir $$($1_symlink)).dir
+$$($1_symlink): $$($1_dir) $$($1_dst)
+	$$(LN) -fs $$($1_dst) $$@
+$1_DIRS += $$($1_dir)
+CLEAN_FILES += $$($1_symlink)
+all_symlinks += $$($1_symlink)
+endef
+
+$(foreach symlink,$(SYMLINKS),\
+    $(eval $(call SYMLINK_tmpl,$(symlink))))
+
+#
 # Directories
 #
 
@@ -98,7 +127,7 @@ $1:
 	$$(MKDIR) -p $$(@D) && $$(TOUCH) $$@
 endef
 
-$(foreach exe,$(LIBS) $(BINS),\
+$(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
     $(foreach dir_,$(sort $($(exe)_DIRS)),\
         $(eval $(call DIR_tmpl,$(dir_)))))
 
@@ -106,7 +135,7 @@ $(foreach exe,$(LIBS) $(BINS),\
 
 .PHONY = all clean ctags
 
-all : $(FILES) $(ALL_LIBS) $(ALL_BINS)
+all : $(FILES) $(all_symlinks) $(ALL_LIBS) $(ALL_BINS)
 	for dir in $(SUBDIRS); do ($(MAKE) -C $$dir all); done
 
 clean :

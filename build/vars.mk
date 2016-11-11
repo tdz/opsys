@@ -27,3 +27,5 @@ include $(builddir)/compiler-$(COMPILER).mk
 # feature-specific variables
 $(foreach feature,$(features),\
     $(eval include $(builddir)/vars-$(feature).mk))
+
+.DEFAULT_GOAL := all

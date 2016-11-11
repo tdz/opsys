@@ -16,8 +16,6 @@ LDFLAGS  := -nostdlib -static -melf_$(target_cpu)
 
 include $(builddir)/vars.mk
 
-.DEFAULT_GOAL := all
-
 # include all modules into build
 module := module.mk
 include $(shell find -P $(srcdir) -type f -name "$(module)")

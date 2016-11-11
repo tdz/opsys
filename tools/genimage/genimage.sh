@@ -2,7 +2,8 @@
 
 #
 #  opsys - A small, experimental operating system
-#  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+#  Copyright (C) 2009-2010  Thomas Zimmermann
+#  Copyright (C) 2016       Thomas Zimmermann
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -23,28 +24,39 @@ basedir=$PWD
 srcdir=$PWD
 arch=`uname -m`
 
-while [ $# -gt 0 ]
-do
+while [ $# -gt 0 ]; do
         case "$1" in
                 -a) arch="$2"
+                        shift
                         ;;
                 -b) basedir="$2"
+                        shift
                         ;;
-                -i) imagefile="$2"
+                -i) imgfile="$2"
+                        shift
                         ;;
                 -s) srcdir="$2"
+                        shift
+                        ;;
+                 *) break
                         ;;
         esac
         shift
 done
+
+if [[ -z "$1" ]]; then
+        echo "genimage: no files specified"
+fi
 
 imgpath=`mktemp -td genimage.XXXXXXXXXX` || exit 1
 
 mount -oloop,offset=32256 $imgfile $imgpath || exit 1
 
 cp $basedir/menu.lst $imgpath/boot/grub/
-cp $srcdir/kernel/bin/oskernel $imgpath/
-cp $srcdir/helloworld/bin/helloworld $imgpath/
+
+while [ $# -gt 0 ]; do
+        cp "$1" $imgpath/
+        shift
+done
 
 umount $imgpath && rm -fr $imgpath
-

@@ -7,18 +7,9 @@ BINS =
 FILES =
 LIBS =
 
-# shell
-
-SHELL = /bin/bash
-
-# others
-
-CP = cp
-LN = ln
-MKDIR = mkdir
-RM = rm
-SED = sed
-TOUCH := touch
+# environment variables
+ENVIRONMENT ?= $(subst /,_,$(shell uname -o | tr A-Z a-z))
+include $(builddir)/env-$(ENVIRONMENT).mk
 
 # compiler toolchain
 COMPILER ?= gcc

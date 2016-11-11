@@ -28,11 +28,10 @@ IMAGES = opsyshdd.img
 
 image: $(IMAGES)
 
-maintainer-clean: clean
-	$(RM) -fr doc/ $(IMAGES)
-
 %.img : all
 	$(CP) res/genimage/$@.base $@
 	sudo tools/genimage/genimage.sh -a $(target_cpu) -b res/genimage/ -s $(outdir) -i $@
+
+CLEAN_ALL_FILES += doc/ $(IMAGES)
 
 include $(builddir)/targets.mk

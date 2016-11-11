@@ -1,5 +1,5 @@
 
-EXTRA_CLEAN += tags TAGS
+CLEAN_ALL_FILES += tags TAGS
 
 .PHONY: ctags
 

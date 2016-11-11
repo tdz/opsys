@@ -1,5 +1,5 @@
 
-EXTRA_CLEAN += doxygen.log
+CLEAN_ALL_FILES += doxygen.log
 
 .PHONY: doxygen
 

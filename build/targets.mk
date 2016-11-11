@@ -128,6 +128,7 @@ $(foreach symlink,$(SYMLINKS),\
 define DIR_tmpl =
 $1:
 	$$(MKDIR) -p $$(@D) && $$(TOUCH) $$@
+CLEAN_ALL_FILES += $1
 endef
 
 $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
@@ -161,11 +162,14 @@ $(foreach feature,$(features),\
 # Common targets
 #
 
-.PHONY: all clean doc
+.PHONY: all clean clean-all doc
 
 all: | $(FILES) $(all_symlinks) $(ALL_BINS)
 
 clean:
-	$(RM) -fr $(CLEAN_FILES) $(FILES) $(EXTRA_CLEAN)
+	$(RM) -fr $(CLEAN_FILES) $(FILES)
+
+clean-all: clean
+	$(RM) -fr $(CLEAN_ALL_FILES)
 
 doc:

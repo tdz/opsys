@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +16,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
 
 enum {
         IDT_ENTRY_FLAG_SEGINMEM = 0x80,
@@ -39,4 +42,3 @@ idt_entry_init(struct idt_entry *idte, unsigned long  func,
                                        unsigned short tss,
                                        unsigned char  ring,
                                        unsigned char  flags);
-

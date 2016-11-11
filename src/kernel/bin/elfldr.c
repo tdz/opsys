@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,23 +17,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "elfldr.h"
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
-
-#include "spinlock.h"
-#include "semaphore.h"
-
-/* physical memory */
-#include <pageframe.h>
-
-/* virtual memory */
-#include <page.h>
-#include <pte.h>
-#include <vmem.h>
-
 #include "elf.h"
-#include "elfldr.h"
+#include "page.h"
+#include "pageframe.h"
+#include "pte.h"
+#include "vmem.h"
 
 /* program headers
  */
@@ -67,7 +59,7 @@ elf_loader_construct_phdr_load(const struct vmem *as,
         }
 
         /*
-         * set remaining bytes to zero 
+         * set remaining bytes to zero
          */
 
         if (elf_phdr->p_filesz < elf_phdr->p_memsz)
@@ -97,7 +89,7 @@ elf_loader_construct_phdr(const struct vmem *as,
         elf_loader_construct_phdr_null, elf_loader_construct_phdr_load};
 
         /*
-         * some sanity checks 
+         * some sanity checks
          */
 
         if (!(elf_phdr->p_type < ARRAY_NELEMS(construct_phdr))
@@ -121,7 +113,7 @@ elf_loader_exec(const struct vmem *as,
         elf_ehdr = (const Elf32_Ehdr *)img;
 
         /*
-         * some sanity checks 
+         * some sanity checks
          */
 
         if (!elf_loader_is_elf(img) ||
@@ -138,7 +130,7 @@ elf_loader_exec(const struct vmem *as,
         }
 
         /*
-         * construct sections from program headers 
+         * construct sections from program headers
          */
 
         for (i = 0; i < elf_ehdr->e_phnum; ++i)
@@ -159,7 +151,7 @@ elf_loader_exec(const struct vmem *as,
         }
 
         /*
-         * init TCB of first thread 
+         * init TCB of first thread
          */
 
         *ip = (void *)elf_ehdr->e_entry;

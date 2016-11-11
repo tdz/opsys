@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +16,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
+
+#include <sys/types.h>
 
 /*
  * \brief names the available areas of physical memory
@@ -43,4 +48,3 @@ pmem_area_get_by_frame(os_index_t pgindex);
 
 int
 pmem_area_contains_frame(const struct pmem_area *area, os_index_t pfindex);
-

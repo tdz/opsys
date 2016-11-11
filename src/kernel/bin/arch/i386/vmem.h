@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,7 +17,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct semaphore;
+#pragma once
+
+#include <sys/types.h>
+#include "semaphore.h"
 
 /**
  * \brief paging mode of address space
@@ -140,4 +144,3 @@ vmem_segfault_handler(void *ip);
 
 void
 vmem_pagefault_handler(void *ip, void *addr, unsigned long errcode);
-

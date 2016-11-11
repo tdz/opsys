@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +16,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
+
+#include <sys/types.h>
 
 struct task;
 struct tcb;
@@ -31,4 +36,3 @@ tcb_helper_run_kernel_thread(struct tcb *tcb, void (*func)(struct tcb*));
 
 int
 tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip);
-

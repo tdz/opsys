@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,30 +17,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <sys/types.h>
-
-#include <spinlock.h>
-#include <semaphore.h>
-
-/* physical memory */
-#include "pageframe.h"
-#include "pmem.h"
-
-/* virtual memory */
-#include <arch/i386/page.h>
-#include "pte.h"
-#include "pagetbl.h"
-#include "pde.h"
-#include "pagedir.h"
-#include "vmemarea.h"
-
-#include "vmem.h"
-#include <alloc.h>
-
 #include "vmemhlp.h"
-
-#include <console.h>
+#include <arch/i386/page.h>
+#include <errno.h>
+#include "alloc.h"
+#include "pagedir.h"
+#include "pageframe.h"
+#include "pagetbl.h"
+#include "pmem.h"
+#include "vmem.h"
 
 int
 vmem_helper_init_kernel_vmem(struct vmem *as)
@@ -56,17 +42,17 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
         enum vmem_area_name name;
 
         /*
-         * allocate and init page directory for kernel task 
+         * allocate and init page directory for kernel task
          */
 
         /*
          * os_index_t pfindex;
-         * 
+         *
          * if (!(pfindex = pmem_alloc_frames(pageframe_count(sizeof(*pd))))) {
          * err = -ENOMEM;
          * goto err_pmem_alloc_frames;
          * }
-         * 
+         *
          * pd = pageframe_address(pfindex);
          */
 
@@ -85,7 +71,7 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
         }
 
         /*
-         * init address space for kernel task 
+         * init address space for kernel task
          */
 
         if ((err = vmem_init(as, PAGING_32BIT, pd)) < 0)
@@ -96,7 +82,7 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
         err = 0;
 
         /*
-         * install page tables in all kernel areas 
+         * install page tables in all kernel areas
          */
 
         for (name = 0; (name < LAST_VMEM_AREA) && !(err < 0); ++name)
@@ -116,7 +102,7 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
                                           page_memory(area->npages));
 
                 /*
-                 * create page tables for low area 
+                 * create page tables for low area
                  */
 
                 err = vmem_alloc_page_tables_nopg(as, ptindex, ptcount,
@@ -130,7 +116,7 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
         }
 
         /*
-         * create identity mapping for all identity areas 
+         * create identity mapping for all identity areas
          */
 
         for (name = 0; (name < LAST_VMEM_AREA) && !(err < 0); ++name)
@@ -179,7 +165,7 @@ vmem_helper_init_kernel_vmem(struct vmem *as)
         }
 
         /*
-         * prepare temporary mappings 
+         * prepare temporary mappings
          */
 
         if ((err = vmem_install_tmp_nopg(as)) < 0)
@@ -230,7 +216,7 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
         struct page_directory *pd;
 
         /*
-         * create page directory (has to be at page boundary) 
+         * create page directory (has to be at page boundary)
          */
 
         pgindex = vmem_helper_alloc_pages_in_area(parent,
@@ -252,7 +238,7 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
         }
 
         /*
-         * init address space 
+         * init address space
          */
 
         if ((err = vmem_init(as, PAGING_32BIT, pd)) < 0)
@@ -261,7 +247,7 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
         }
 
         /*
-         * flat-copy page directory from parent 
+         * flat-copy page directory from parent
          */
 
         err = vmem_helper_flat_copy_areas(parent, as, VMEM_AREA_FLAG_GLOBAL);
@@ -279,7 +265,7 @@ err_vmem_init:
         page_directory_uninit(pd);
 err_page_directory_init:
         /*
-         * TODO: unmap page-directory pages 
+         * TODO: unmap page-directory pages
          */
 err_vmem_helper_alloc_pages_in_area:
         return err;

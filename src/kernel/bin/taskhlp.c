@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,25 +17,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <sys/types.h>
-
-#include <mmu.h>
-
-#include "spinlock.h"
-#include "semaphore.h"
-
-/* virtual memory */
-#include <page.h>
-#include <pte.h>
-#include "vmemarea.h"
-#include <vmem.h>
-#include <vmemhlp.h>
-
-#include "alloc.h"
-
-#include "task.h"
 #include "taskhlp.h"
+#include <errno.h>
+#include "alloc.h"
+#include "page.h"
+#include "pte.h"
+#include "task.h"
+#include "vmem.h"
+#include "vmemhlp.h"
 
 int
 task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
@@ -43,7 +33,7 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
         os_index_t pgindex;
 
         /*
-         * init page directory and address space for kernel task 
+         * init page directory and address space for kernel task
          */
 
         err = vmem_helper_init_kernel_vmem(kernel_as);
@@ -54,12 +44,12 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
         }
 
         /*
-         * enable paging 
+         * enable paging
          */
         vmem_enable(kernel_as);
 
         /*
-         * create kernel task 
+         * create kernel task
          */
 
         pgindex = vmem_helper_alloc_pages_in_area(kernel_as,
@@ -87,7 +77,7 @@ err_task_init:
                              pageframe_count(sizeof(**tsk)));*/
 err_vmem_helper_alloc_pages_in_area_tsk:
         /*
-         * TODO: uninit kernel address space 
+         * TODO: uninit kernel address space
          */
 err_vmem_helper_init_kernel_vmem:
         return err;
@@ -100,7 +90,7 @@ task_helper_allocate_task_from_parent(const struct task *parent,
         int err;
 
         /*
-         * allocate task memory 
+         * allocate task memory
          */
 
         if (!(*tsk = kmalloc(sizeof(**tsk))))
@@ -110,7 +100,7 @@ task_helper_allocate_task_from_parent(const struct task *parent,
         }
 
         /*
-         * init task from parent 
+         * init task from parent
          */
 
         if ((err = task_helper_init_task_from_parent(parent, *tsk)) < 0)
@@ -135,7 +125,7 @@ task_helper_init_task_from_parent(const struct task *parent, struct task *tsk)
         struct vmem *as;
 
         /*
-         * create address space from parent 
+         * create address space from parent
          */
 
         err = vmem_helper_allocate_vmem_from_parent
@@ -146,7 +136,7 @@ task_helper_init_task_from_parent(const struct task *parent, struct task *tsk)
         }
 
         /*
-         * init task 
+         * init task
          */
 
         if ((err = task_init(tsk, as)) < 0)
@@ -158,7 +148,7 @@ task_helper_init_task_from_parent(const struct task *parent, struct task *tsk)
 
 err_task_init:
         /*
-         * TODO: free address space 
+         * TODO: free address space
          */
 err_vmem_helper_allocate_vmem_from_parent:
         return err;

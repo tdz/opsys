@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,31 +17,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <sys/types.h>
-
-#include <interupt.h>
-#include "spinlock.h"
-
-#include "list.h"
-#include "ipcmsg.h"
-#include "ipc.h"
-
-#include <tcbregs.h>
-#include <tcb.h>
-
-#include "sched.h"
-
-#include <semaphore.h>
-#include <vmem.h>
-#include <vmemarea.h>
-#include <vmemhlp.h>
-
-#include <task.h>
-#include <generic/tid.h>
 #include "syssrv.h"
-
+#include <errno.h>
 #include "console.h"
+#include "ipc.h"
+#include "tcb.h"
+#include "task.h"
+#include "vmemhlp.h"
 
 static int
 system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
@@ -51,14 +34,14 @@ system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
         {
                 case 0:        /* thread quit */
                         /*
-                         * mark sender thread for removal 
+                         * mark sender thread for removal
                          */
                         console_printf("%s:%x.\n", __FILE__, __LINE__);
                         tcb_set_state(msg->snd, THREAD_STATE_ZOMBIE);
                         break;
                 case 1:        /* write to console */
                         /*
-                         * mark sender thread for removal 
+                         * mark sender thread for removal
                          */
                         console_printf("%s:%x\n", __FILE__, __LINE__);
                         console_printf("received msg: %s\n", (msg->msg0)<<12);
@@ -72,7 +55,7 @@ system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
                         break;
                 default:
                         /*
-                         * unknown command 
+                         * unknown command
                          */
                         {
                                 struct tcb *rcv = msg->snd;

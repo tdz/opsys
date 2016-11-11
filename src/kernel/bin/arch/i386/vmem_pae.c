@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,33 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <stddef.h>
-#include <string.h>
-#include <sys/types.h>
-
-#include <minmax.h>
-#include "membar.h"
-#include "mmu.h"
-#include "cpu.h"
-
-#include <spinlock.h>
-#include <semaphore.h>
-
-/* physical memory */
-#include "pageframe.h"
-#include <pmem.h>
-
-/* virtual memory */
-#include <arch/i386/page.h>
-#include "pte.h"
-#include "pagetbl.h"
-#include "pde.h"
-#include "pagedir.h"
-#include <vmemarea.h>
-
-#include "vmem.h"
 #include "vmem_pae.h"
+#include <errno.h>
 
 int
 vmem_pae_map_pageframe_nopg(void *tlps, os_index_t pfindex,

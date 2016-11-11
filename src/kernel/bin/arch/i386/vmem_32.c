@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,33 +17,19 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <stddef.h>
-#include <string.h>
-#include <sys/types.h>
-
-#include <minmax.h>
-#include "membar.h"
-#include "mmu.h"
-#include "cpu.h"
-
-#include <spinlock.h>
-#include <semaphore.h>
-
-/* physical memory */
-#include "pageframe.h"
-#include <pmem.h>
-
-/* virtual memory */
-#include <arch/i386/page.h>
-#include "pte.h"
-#include "pagetbl.h"
-#include "pde.h"
-#include "pagedir.h"
-#include <vmemarea.h>
-
-#include "vmem.h"
 #include "vmem_32.h"
+#include <arch/i386/page.h>
+#include <errno.h>
+#include <string.h>
+#include "membar.h"
+#include "minmax.h"
+#include "mmu.h"
+#include "pagedir.h"
+#include "pageframe.h"
+#include "pagetbl.h"
+#include "pmem.h"
+#include "vmem.h"
+#include "vmemarea.h"
 
 static struct page_table *
 vmem_32_get_page_table_tmp(void)
@@ -92,7 +79,7 @@ vmem_32_install_page_frame_tmp(os_index_t pfindex)
         pt = vmem_32_get_page_table_tmp();
 
         /*
-         * find empty temporary page 
+         * find empty temporary page
          */
 
         ptebeg = pt->entry;
@@ -107,13 +94,13 @@ vmem_32_install_page_frame_tmp(os_index_t pfindex)
         if (!(pteend - pte))
         {
                 /*
-                 * none found 
+                 * none found
                  */
                 return -EBUSY;
         }
 
         /*
-         * establish mapping to page frame 
+         * establish mapping to page frame
          */
 
         pmem_ref_frames(pfindex, 1);
@@ -137,7 +124,7 @@ vmem_32_uninstall_page_tmp(os_index_t pgindex)
         if (!vmem_32_page_is_tmp(pgindex))
         {
                 /*
-                 * not temporarily mapped 
+                 * not temporarily mapped
                  */
                 return -EINVAL;
         }
@@ -147,12 +134,12 @@ vmem_32_uninstall_page_tmp(os_index_t pgindex)
         index = vmem_32_get_index_tmp(pgindex);
 
         /*
-         * finish access before unmapping page 
+         * finish access before unmapping page
          */
         rwmembar();
 
         /*
-         * remove mapping 
+         * remove mapping
          */
         if ((err = page_table_unmap_page_frame(pt, index)) < 0)
         {
@@ -180,7 +167,7 @@ vmem_32_map_pageframe_nopg(void *tlps, os_index_t pfindex,
         pd = tlps;
 
         /*
-         * get page table 
+         * get page table
          */
 
         ptindex = pagetable_index(page_address(pgindex));
@@ -190,7 +177,7 @@ vmem_32_map_pageframe_nopg(void *tlps, os_index_t pfindex,
         if (!pt)
         {
                 /*
-                 * no page table present 
+                 * no page table present
                  */
                 err = -ENOMEM;
                 goto err_nopagetable;
@@ -321,7 +308,7 @@ vmem_32_check_empty_pages(const void *tlps, os_index_t pgindex, size_t pgcount)
                         size_t i;
 
                         /*
-                         * install page table in virtual address space 
+                         * install page table in virtual address space
                          */
 
                         ptpgindex = vmem_32_install_page_frame_tmp(pfindex);
@@ -334,7 +321,7 @@ vmem_32_check_empty_pages(const void *tlps, os_index_t pgindex, size_t pgcount)
                         pt = page_address(ptpgindex);
 
                         /*
-                         * count empty pages 
+                         * count empty pages
                          */
 
                         for (i = pagetable_page_index(pgindex);
@@ -348,7 +335,7 @@ vmem_32_check_empty_pages(const void *tlps, os_index_t pgindex, size_t pgcount)
                         }
 
                         /*
-                         * uninstall page table 
+                         * uninstall page table
                          */
                         vmem_32_uninstall_page_tmp(ptpgindex);
                 }
@@ -385,7 +372,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
                 if (!ptpfindex)
                 {
                         /*
-                         * allocate and map page-table page frames 
+                         * allocate and map page-table page frames
                          */
 
                         ptpfindex =
@@ -407,7 +394,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
                         }
 
                         /*
-                         * init and install page table 
+                         * init and install page table
                          */
 
                         pt = page_address(ptpgindex);
@@ -432,7 +419,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
                 else
                 {
                         /*
-                         * map page-table page frames 
+                         * map page-table page frames
                          */
 
                         ptpgindex = vmem_32_install_page_frame_tmp(ptpfindex);
@@ -447,7 +434,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
                 }
 
                 /*
-                 * allocate pages within page table 
+                 * allocate pages within page table
                  */
 
                 for (j = pagetable_page_index(pgindex);
@@ -464,7 +451,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
                 }
 
                 /*
-                 * unmap page table 
+                 * unmap page table
                  */
                 vmem_32_uninstall_page_tmp(ptpgindex);
         }
@@ -492,7 +479,7 @@ vmem_32_lookup_frame(const void *tlps, os_index_t pgindex)
         ptpfindex = pde_get_pageframe_index(pd->entry[ptindex]);
 
         /*
-         * map page table of page address 
+         * map page table of page address
          */
 
         ptpgindex = vmem_32_install_page_frame_tmp(ptpfindex);
@@ -504,7 +491,7 @@ vmem_32_lookup_frame(const void *tlps, os_index_t pgindex)
         }
 
         /*
-         * read page frame 
+         * read page frame
          */
 
         pt = page_address(ptpgindex);
@@ -518,7 +505,7 @@ vmem_32_lookup_frame(const void *tlps, os_index_t pgindex)
         pfindex = pte_get_pageframe_index(pt->entry[pgindex & 0x3ff]);
 
         /*
-         * unmap page table 
+         * unmap page table
          */
         vmem_32_uninstall_page_tmp(ptpgindex);
 
@@ -559,7 +546,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
                 if (!ptpfindex)
                 {
                         /*
-                         * allocate and map page-table page frames 
+                         * allocate and map page-table page frames
                          */
 
                         ptpfindex =
@@ -581,7 +568,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
                         }
 
                         /*
-                         * init and install page table 
+                         * init and install page table
                          */
 
                         pt = page_address(ptpgindex);
@@ -606,7 +593,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
                 else
                 {
                         /*
-                         * map page-table page frames 
+                         * map page-table page frames
                          */
 
                         ptpgindex = vmem_32_install_page_frame_tmp(ptpfindex);
@@ -621,7 +608,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
                 }
 
                 /*
-                 * allocate pages within page table 
+                 * allocate pages within page table
                  */
 
                 for (j = pagetable_page_index(pgindex);
@@ -646,7 +633,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
                 }
 
                 /*
-                 * unmap page table 
+                 * unmap page table
                  */
                 vmem_32_uninstall_page_tmp(ptpgindex);
         }
@@ -686,7 +673,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                 if (!ptpfindex)
                 {
                         /*
-                         * allocate and map page-table page frames 
+                         * allocate and map page-table page frames
                          */
 
                         ptpfindex =
@@ -708,7 +695,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                         }
 
                         /*
-                         * init and install page table 
+                         * init and install page table
                          */
 
                         dst_pt = page_address(ptpgindex);
@@ -733,7 +720,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                 else
                 {
                         /*
-                         * map page-table page frames 
+                         * map page-table page frames
                          */
 
                         ptpgindex = vmem_32_install_page_frame_tmp(ptpfindex);
@@ -748,7 +735,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                 }
 
                 /*
-                 * map pages within page table 
+                 * map pages within page table
                  */
 
                 for (j = pagetable_page_index(dst_pgindex);
@@ -764,7 +751,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                         {
                                 err = src_pfindex;
                                 /*
-                                 * handle error 
+                                 * handle error
                                  */
                         }
 
@@ -777,7 +764,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                 }
 
                 /*
-                 * unmap page table 
+                 * unmap page table
                  */
                 vmem_32_uninstall_page_tmp(ptpgindex);
         }

@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +16,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
+
+#include <sys/types.h>
 
 struct tcb_regs
 {
@@ -57,7 +62,7 @@ struct tcb_regs
         unsigned long xmm[8];
         unsigned long mxcsr;
 
-        /* debug registers */        
+        /* debug registers */
         unsigned long dr0;
         unsigned long dr1;
         unsigned long dr2;
@@ -95,4 +100,3 @@ tcb_regs_stack_pop(struct tcb_regs *regs, size_t nbytes);
 
 int
 tcb_regs_switch(struct tcb_regs *src, const struct tcb_regs *dst);
-

@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,8 +35,8 @@
  * \see http://www.stanford.edu/class/cs140/projects/pintos/specs/8254.pdf
  */
 
-#include <ioports.h>
 #include "pit.h"
+#include "ioports.h"
 
 /**
  * \brief program PIT
@@ -49,7 +50,7 @@ pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
         unsigned char byte;
         unsigned short word;
 
-        /* setup PIT control word 
+        /* setup PIT control word
          */
 
         byte = ((counter & 0x3) << 6) | (0x3 << 4) |    /* LSB then MSB */
@@ -57,7 +58,7 @@ pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
 
         io_outb(0x43, byte);
 
-        /* setup PIT counter 
+        /* setup PIT counter
          */
 
         word = 1193180 / freq;

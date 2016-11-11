@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,25 +17,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "multiboot.h"
 #include <errno.h>
 #include <stdint.h>
-
-#include <cpu.h>
-
-/* physical memory */
-#include <pageframe.h>
-#include "pmem.h"
-
-#include "taskhlp.h"
-
-#include "tcbhlp.h"
-
-#include "sched.h"
-#include "loader.h"
 #include "console.h"
-
+#include "cpu.h"
+#include "loader.h"
 #include "main.h"
-#include "multiboot.h"
+#include "pageframe.h"
+#include "pmem.h"
+#include "sched.h"
+#include "taskhlp.h"
+#include "tcbhlp.h"
 
 static void *
 mmap_base_addr(const struct multiboot_mmap *mmap)
@@ -309,7 +303,7 @@ multiboot_load_modules(struct task *parent,
                 }
 
                 /*
-                 * allocate task 
+                 * allocate task
                  */
 
                 err = task_helper_allocate_task_from_parent(parent, &tsk);
@@ -323,7 +317,7 @@ multiboot_load_modules(struct task *parent,
                 }
 
                 /*
-                 * allocate tcb 
+                 * allocate tcb
                  */
 
                 err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb);
@@ -336,7 +330,7 @@ multiboot_load_modules(struct task *parent,
                 }
 
                 /*
-                 * load binary image 
+                 * load binary image
                  */
 
                 if ((err =
@@ -347,7 +341,7 @@ multiboot_load_modules(struct task *parent,
                 }
 
                 /*
-                 * set thread to starting state 
+                 * set thread to starting state
                  */
                 err = tcb_helper_run_user_thread(sched_get_current_thread(cpuid()),
                                                  tcb, ip);
@@ -358,7 +352,7 @@ multiboot_load_modules(struct task *parent,
                 }
 
                 /*
-                 * schedule thread 
+                 * schedule thread
                  */
                 if ((err = sched_add_thread(tcb, 64)) < 0)
                 {
@@ -374,11 +368,11 @@ multiboot_load_modules(struct task *parent,
         err_tcb_helper_run_user_thread:
         err_loader_exec:
                 /*
-                 * FIXME: free tcb 
+                 * FIXME: free tcb
                  */
         err_tcb_helper_allocate_tcb_and_stack:
                 /*
-                 * FIXME: free task 
+                 * FIXME: free task
                  */
         err_task_helper_allocate_task_from_parent:
                 continue;

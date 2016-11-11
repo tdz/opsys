@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,12 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stddef.h>
+#include "idt.h"
 #include <string.h>
 #include <sys/types.h>
-
-#include "syscall.h"
-#include "idt.h"
 #include "idtentry.h"
 #include "interupt.h"
 
@@ -83,7 +81,7 @@ idt_init()
         }
 
         /*
-         * system interupts 
+         * system interupts
          */
 
         IDT_ENTRY_INIT(0x01, isr_handle_invalop);
@@ -92,7 +90,7 @@ idt_init()
         IDT_ENTRY_INIT(0x0e, isr_handle_pagefault);
 
         /*
-         * hardware interupts 
+         * hardware interupts
          */
 
         IDT_ENTRY_INIT(0x20, isr_handle_irq0);
@@ -113,7 +111,7 @@ idt_init()
         IDT_ENTRY_INIT(0x2f, isr_handle_irq15);
 
         /*
-         * syscall interrupt 
+         * syscall interrupt
          */
 
         IDT_ENTRY_INIT(0x80, isr_handle_syscall);

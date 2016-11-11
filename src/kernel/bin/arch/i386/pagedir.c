@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,14 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <sys/types.h>
-
-#include "pageframe.h"
-#include <pmem.h>
-
-#include "pde.h"
 #include "pagedir.h"
+#include <string.h>
+#include "pmem.h"
 
 int
 page_directory_init(struct page_directory *pd)
@@ -47,7 +43,7 @@ page_directory_install_page_table(struct page_directory *pd,
         int err;
 
         /*
-         * ref new page table's page frame 
+         * ref new page table's page frame
          */
 
         if ((err = pmem_ref_frames(pfindex, 1)) < 0)
@@ -56,7 +52,7 @@ page_directory_install_page_table(struct page_directory *pd,
         }
 
         /*
-         * unref old page table's page frame 
+         * unref old page table's page frame
          */
 
         if (pde_get_pageframe_index(pd->entry[index]))
@@ -65,7 +61,7 @@ page_directory_install_page_table(struct page_directory *pd,
         }
 
         /*
-         * update page directory entry 
+         * update page directory entry
          */
         pd->entry[index] = pde_create(pfindex, flags);
 
@@ -97,7 +93,7 @@ page_directory_uninstall_page_table(struct page_directory *pd,
                                     unsigned long index)
 {
         /*
-         * unref page frame of page-table 
+         * unref page frame of page-table
          */
 
         if (pde_get_pageframe_index(pd->entry[index]))
@@ -106,7 +102,7 @@ page_directory_uninstall_page_table(struct page_directory *pd,
         }
 
         /*
-         * clear page directory entry 
+         * clear page directory entry
          */
         pd->entry[index] = pde_create(0, 0);
 

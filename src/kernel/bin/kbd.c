@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,11 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-
-#include <ioports.h>
-
 #include "kbd.h"
+#include <errno.h>
+#include "ioports.h"
 
 enum
 {
@@ -102,7 +101,7 @@ static void
 kbd_ctrl_outb(unsigned char byte)
 {
         /*
-         * wait for completion of previous command 
+         * wait for completion of previous command
          */
         while (kbd_ctrl_inb() & KBD_CTRL_FLAGS_INBUF_FULL);
 
@@ -113,7 +112,7 @@ static unsigned char
 kbd_enc_inb(void)
 {
         /*
-         * wait for input to appear in buffer 
+         * wait for input to appear in buffer
          */
         while (!(kbd_ctrl_inb() & KBD_CTRL_FLAGS_OUTBUF_FULL));
 
@@ -124,7 +123,7 @@ static void
 kbd_enc_outb(unsigned char byte)
 {
         /*
-         * wait for completion of previous command 
+         * wait for completion of previous command
          */
         while (kbd_ctrl_inb() & KBD_CTRL_FLAGS_INBUF_FULL);
 
@@ -170,7 +169,7 @@ static int
 kbd_selftest(void)
 {
         /*
-         * self test 
+         * self test
          */
         return (kbd_ctrl_incmd(KBD_CTRL_CMD_SELFTEST) == 0x55) ? 0 : -ENODEV;
 }
@@ -179,7 +178,7 @@ static int
 kbd_interfacetest(void)
 {
         /*
-         * interface test 
+         * interface test
          */
         return kbd_ctrl_incmd(KBD_CTRL_CMD_KBDITFTEST) ? -EIO : 0;
 }
@@ -190,12 +189,12 @@ kbd_init()
         int err;
 
         /*
-         * enable keyboard 
+         * enable keyboard
          */
         kbd_ctrl_outb(KBD_CTRL_CMD_ENABLEKBD);
 
         /*
-         * test controller 
+         * test controller
          */
 
         if ((err = kbd_selftest()) < 0)
@@ -204,14 +203,14 @@ kbd_init()
         }
 
         /*
-         * test interface between keyboard and controller 
+         * test interface between keyboard and controller
          */
 
         if (kbd_interfacetest() < 0)
         {
 
                 /*
-                 * reset, try again 
+                 * reset, try again
                  */
                 kbd_ctrl_outb(KBD_CTRL_CMD_DISABLEKBD);
                 kbd_enc_outb(KBD_ENCD_CMD_RESET_KBD);
@@ -224,7 +223,7 @@ kbd_init()
         }
 
         /*
-         * enable interrupts, set XT scancode set 
+         * enable interrupts, set XT scancode set
          */
 
         kbd_ctrl_outcmd(KBD_CTRL_CMD_WRCMDBYTE,

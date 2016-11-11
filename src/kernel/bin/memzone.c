@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,19 +17,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "memzone.h"
 #include <errno.h>
 #include <string.h>
-#include <sys/types.h>
-
 #include "bitset.h"
-
-/* virtual memory */
-#include <page.h>
-#include <pte.h>
-#include <vmemarea.h>
-#include <vmemhlp.h>
-
-#include "memzone.h"
+#include "page.h"
+#include "pte.h"
+#include "vmemhlp.h"
 
 enum
 {
@@ -232,7 +227,7 @@ memzone_alloc(struct memzone * mz, size_t nchunks)
         ssize_t i;
 
         /*
-         * find allocated, but unused memory zones 
+         * find allocated, but unused memory zones
          */
 
         if ((chunk = memzone_find_unused(mz, nchunks)) < 0)
@@ -242,7 +237,7 @@ memzone_alloc(struct memzone * mz, size_t nchunks)
         }
 
         /*
-         * mark memory zones as used 
+         * mark memory zones as used
          */
 
         for (i = 0; i < nchunks; ++i)
@@ -262,7 +257,7 @@ memzone_free(struct memzone *mz, os_index_t mzoff, size_t nchunks)
         ssize_t i;
 
         /*
-         * mark memory zones as unused 
+         * mark memory zones as unused
          */
 
         for (i = 0; i < nchunks; ++i)

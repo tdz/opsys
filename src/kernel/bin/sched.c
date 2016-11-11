@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,27 +37,14 @@
  *       pin the thread to a specific CPU during the critical phase.
  */
 
-#include <errno.h>
+#include "sched.h"
 #include <stddef.h>
 #include <string.h>
-#include <sys/types.h>
-
-#include <cpu.h>
-#include <interupt.h>
-
 #include "assert.h"
-
-#include "task.h"
-
-#include "spinlock.h"
-#include "list.h"
-#include "ipcmsg.h"
-
-#include <tcbregs.h>
-#include <tcb.h>
-#include "sched.h"
-
 #include "console.h"
+#include "cpu.h"
+#include "tcb.h"
+#include "task.h"
 
 /**
  * \brief current list head in thread list, one per priority class

@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,8 +17,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-struct vmem;
+#pragma once
+
 struct task;
+struct vmem;
 
 int
 task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk);
@@ -29,4 +32,3 @@ task_helper_allocate_task_from_parent(const struct task *parent,
 int
 task_helper_init_task_from_parent(const struct task *parent,
                                         struct task *tsk);
-

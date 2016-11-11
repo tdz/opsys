@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,34 +17,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "tcb.h"
+#include <arch/i386/page.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
-#include <sys/types.h>
-
+#include "console.h"
 #include "cpu.h"
-
-#include <spinlock.h>
-#include <semaphore.h>
-
-#include <bitset.h>
-
-/* physical memory */
+#include "bitset.h"
 #include "pageframe.h"
-
-/* virtual memory */
-#include <arch/i386/page.h>
+#include "task.h"
 #include "vmem.h"
-
-#include <task.h>
-#include <ipcmsg.h>
-#include <list.h>
-
-#include "tcbregs.h"
-#include "tcb.h"
-
-#include <console.h>
 
 int
 tcb_init_with_id(struct tcb *tcb,
@@ -185,7 +170,7 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         va_list ap;
 
         /*
-         * generate thread execution stack 
+         * generate thread execution stack
          */
 
         va_start(ap, nargs);
@@ -204,11 +189,11 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         tcb_stack_push4(tcb, &stack, 0);        /* no return ip */
 
         /*
-         * prepare stack as if thread was scheduled from irq 
+         * prepare stack as if thread was scheduled from irq
          */
 
         /*
-         * stack after irq 
+         * stack after irq
          */
         tcb_stack_push4(tcb, &stack, eflags());
         tcb_stack_push4(tcb, &stack, cs());
@@ -221,7 +206,7 @@ tcb_set_initial_ready_state(struct tcb *tcb,
         tcb_stack_push4(tcb, &stack, irqno);    /* pushed by irq handler */
 
         /*
-         * tcb_regs_switch 
+         * tcb_regs_switch
          */
         tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
         tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);

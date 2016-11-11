@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,30 +17,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <stddef.h>
-#include <string.h>
-#include <sys/types.h>
-
-#include <cpu.h>
-#include <debug.h>
-#include <interupt.h>
-#include "spinlock.h"
-
-#include "alloc.h"
-#include "list.h"
-#include "ipcmsg.h"
-#include "ipc.h"
-
-#include <generic/tid.h>
-#include "task.h"
-#include <tcbregs.h>
-#include <tcb.h>
-
-#include "sched.h"
 #include "syscall.h"
-
+#include <errno.h>
+#include <generic/tid.h>
+#include <string.h>
 #include "console.h"
+#include "cpu.h"
+#include "ipc.h"
+#include "ipcmsg.h"
+#include "sched.h"
+#include "tcb.h"
+#include "task.h"
 
 #define R0_THREADID(x_)         ((threadid_type)((x_)&0xffffffff))
 
@@ -79,7 +67,7 @@ syscall_entry_handler(unsigned long *tid,
         }
 
         /*
-         * get current thread 
+         * get current thread
          */
 
         if (!(snd = sched_get_current_thread(cpuid())))
@@ -89,7 +77,7 @@ syscall_entry_handler(unsigned long *tid,
         }
 
         /*
-         * get receiver thread 
+         * get receiver thread
          */
 
         rcv = sched_search_thread(threadid_get_taskid(R0_THREADID(*tid)),
@@ -101,7 +89,7 @@ syscall_entry_handler(unsigned long *tid,
         }
 
         /*
-         * send message to receiver 
+         * send message to receiver
          */
 
         if ((err = ipc_msg_init(&snd->msg, snd, (*flags)&~IPC_MSG_FLAGS_RESERVED, *msg0, *msg1)) < 0)
@@ -115,7 +103,7 @@ syscall_entry_handler(unsigned long *tid,
         }
 
         /*
-         * sender is always ready when returning here 
+         * sender is always ready when returning here
          */
 
         if (ipc_msg_flags_is_errno(&snd->msg))
@@ -125,7 +113,7 @@ syscall_entry_handler(unsigned long *tid,
         }
 
         /*
-         * before returning, sender should have received a reply 
+         * before returning, sender should have received a reply
          */
 
         *tid = threadid_create(snd->msg.snd->task->id, snd->msg.snd->id);

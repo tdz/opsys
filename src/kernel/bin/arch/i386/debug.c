@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,11 +44,11 @@ db0_setup(unsigned long addr, enum db_length len,
                        "movl %%dr7, %%eax\n\t"
                        "andl $0xfff0fffc, %%eax\n\t" "movl %%eax, %%dr7\n\t"
                        /*
-                        * load address 
+                        * load address
                         */
                        "movl %0, %%dr0\n\t"
                        /*
-                        * setup breakpoint 0 
+                        * setup breakpoint 0
                         */
 "orl %1, %%eax\n\t" "orl %2, %%eax\n\t" "orl %3, %%eax\n\t" "movl %%eax, %%dr7\n\t":
 : "r"(addr), "r"(lenbits[len]), "r"(modebits[mode]), "r"(enablebits[!!enabled]):"eax");

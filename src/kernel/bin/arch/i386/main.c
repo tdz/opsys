@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,41 +17,23 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/types.h>
-
-#include <cpu.h>
-#include <interupt.h>
-#include <gdt.h>
-#include <idt.h>
-
+#include "main.h"
+#include "alloc.h"
+#include "console.h"
+#include "cpu.h"
+#include "gdt.h"
+#include "idt.h"
+#include "interupt.h"
+#include "kbd.h"
 #include "pic.h"
 #include "pit.h"
-
-#include "spinlock.h"
-#include "semaphore.h"
-
-/* virtual memory */
-#include <vmem.h>
-#include "alloc.h"
-
-#include "kbd.h"
-
-#include "taskhlp.h"
-
-#include "list.h"
-#include "ipcmsg.h"
-
-#include <tcbregs.h>
-#include <tcb.h>
-#include "tcbhlp.h"
-
 #include "sched.h"
-
 #include "syscall.h"
-#include "console.h"
-
 #include "syssrv.h"
-#include "main.h"
+#include "taskhlp.h"
+#include "tcb.h"
+#include "tcbhlp.h"
+#include "vmem.h"
 
 enum
 {
@@ -78,13 +61,13 @@ general_init(struct task **tsk, void *stack)
         struct tcb *tcb;
 
         /*
-         * setup GDT for protected mode 
+         * setup GDT for protected mode
          */
         gdt_init();
         gdt_install();
 
         /*
-         * setup IDT for protected mode 
+         * setup IDT for protected mode
          */
         idt_init();
         idt_install();
@@ -92,12 +75,12 @@ general_init(struct task **tsk, void *stack)
         idt_install_invalid_opcode_handler(main_invalop_handler);
 
         /*
-         * setup interupt controller 
+         * setup interupt controller
          */
         pic_install();
 
         /*
-         * setup keyboard 
+         * setup keyboard
          */
         if ((err = kbd_init()) < 0)
         {
@@ -109,7 +92,7 @@ general_init(struct task **tsk, void *stack)
         }
 
         /*
-         * setup PIT for system timer 
+         * setup PIT for system timer
          */
         pit_install(0, SCHED_FREQ, PIT_MODE_RATEGEN);
         idt_install_irq_handler(0, pit_irq_handler);
@@ -173,7 +156,7 @@ general_init(struct task **tsk, void *stack)
         sti();
 
         /*
-         * create and schedule system service 
+         * create and schedule system service
          */
 
         if ((err = tcb_helper_allocate_tcb_and_stack(*tsk, 1, &tcb)) < 0)

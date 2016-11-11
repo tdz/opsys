@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +16,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
+
+#include <sys/types.h>
+
+struct vmem;
 
 int
 vmem_32_map_pageframe_nopg(void *tlps, os_index_t pfindex,
@@ -54,4 +61,3 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
 int
 vmem_32_share_2nd_lvl_ps(void *dst_tlps, const void *src_tlps,
                          os_index_t pgindex, size_t pgcount);
-

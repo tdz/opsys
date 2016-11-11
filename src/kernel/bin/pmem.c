@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,17 +17,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "pmem.h"
 #include <stddef.h>
 #include <string.h>
-#include <sys/types.h>
-
-#include "minmax.h"
-
-#include <spinlock.h>
+#include "pageframe.h"
 #include "semaphore.h"
-
-#include <pageframe.h>
-#include "pmem.h"
 
 static struct semaphore g_physmap_sem;
 static unsigned char *g_physmap = NULL;
@@ -36,7 +31,7 @@ static int
 pmem_set_flags_self(void)
 {
         /*
-         * add global variables of pmem 
+         * add global variables of pmem
          */
         pmem_set_flags(pageframe_index(&g_physmap),
                        pageframe_count(sizeof(g_physmap)),
@@ -46,7 +41,7 @@ pmem_set_flags_self(void)
                        PMEM_FLAG_RESERVED);
 
         /*
-         * add physmap 
+         * add physmap
          */
         pmem_set_flags(pageframe_index(g_physmap),
                        pageframe_count(g_physmap_nframes*sizeof(g_physmap[0])),
@@ -122,14 +117,14 @@ pmem_alloc_frames(unsigned long nframes)
         while (!pfindex && (beg < end))
         {
                 /*
-                 * find next useable page 
+                 * find next useable page
                  */
                 for (; (beg < end) && (*beg); ++beg)
                 {
                 }
 
                 /*
-                 * end reached 
+                 * end reached
                  */
                 if (beg == end)
                 {
@@ -137,7 +132,7 @@ pmem_alloc_frames(unsigned long nframes)
                 }
 
                 /*
-                 * empty page found 
+                 * empty page found
                  */
                 {
                         unsigned char *beg2;
@@ -147,14 +142,14 @@ pmem_alloc_frames(unsigned long nframes)
                         end2 = beg + nframes;
 
                         /*
-                         * check empty block 
+                         * check empty block
                          */
                         for (; (beg2 < end2) && !(*beg2); ++beg2)
                         {
                         }
 
                         /*
-                         * block not empty 
+                         * block not empty
                          */
                         if (beg2 < end2)
                         {
@@ -163,7 +158,7 @@ pmem_alloc_frames(unsigned long nframes)
                         }
 
                         /*
-                         * reference page frames 
+                         * reference page frames
                          */
                         for (beg2 = beg; beg2 < end2; ++beg2)
                         {
@@ -191,14 +186,14 @@ pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
         end = g_physmap + nframes;
 
         /*
-         * find next useable page 
+         * find next useable page
          */
         for (; (beg < end) && !(*beg); ++beg)
         {
         }
 
         /*
-         * stopped too early, pages already allocated 
+         * stopped too early, pages already allocated
          */
         if (beg < end)
         {
@@ -206,7 +201,7 @@ pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
         }
 
         /*
-         * reference page frames 
+         * reference page frames
          */
 
         beg = g_physmap + pfindex;
@@ -236,7 +231,7 @@ pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
         physmap = g_physmap + pfindex;
 
         /*
-         * check for allocation and max refcount 
+         * check for allocation and max refcount
          */
         for (i = 0; i < nframes; ++i)
         {
@@ -250,7 +245,7 @@ pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
         physmap = g_physmap + pfindex;
 
         /*
-         * increment refcount 
+         * increment refcount
          */
         for (i = 0; i < nframes; ++i)
         {

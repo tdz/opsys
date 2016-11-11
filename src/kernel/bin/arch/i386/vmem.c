@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,32 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <stddef.h>
-#include <string.h>
-#include <sys/types.h>
-
-#include <minmax.h>
-#include "membar.h"
-#include "mmu.h"
-#include "cpu.h"
-
-#include <spinlock.h>
-#include <semaphore.h>
-
-/* physical memory */
-#include "pageframe.h"
-#include <pmem.h>
-
-/* virtual memory */
-#include <arch/i386/page.h>
-#include "pte.h"
-#include "pagetbl.h"
-#include "pde.h"
-#include "pagedir.h"
-#include <vmemarea.h>
-
 #include "vmem.h"
+#include <errno.h>
+#include "cpu.h"
 #include "vmem_32.h"
 #include "vmem_pae.h"
 
@@ -229,7 +207,7 @@ find_empty_pages(const struct vmem *vmem, size_t npages,
                  os_index_t pgindex_beg, os_index_t pgindex_end)
 {
         /*
-         * find continuous area in virtual memory 
+         * find continuous area in virtual memory
          */
 
         while ((pgindex_beg < pgindex_end)
@@ -245,7 +223,7 @@ find_empty_pages(const struct vmem *vmem, size_t npages,
                 }
 
                 /*
-                 * goto page after non-empty one 
+                 * goto page after non-empty one
                  */
                 pgindex_beg += nempty + 1;
         }
@@ -499,7 +477,7 @@ __vmem_map_pages(struct vmem *dst_vmem, os_index_t dst_pgindex,
         };
         /* INDENT-ON */
 
-        return map_pages[dst_vmem->pgmode](dst_vmem->tlps, dst_pgindex, 
+        return map_pages[dst_vmem->pgmode](dst_vmem->tlps, dst_pgindex,
                                            src_vmem, src_pgindex, pgcount,
                                            pteflags);
 }

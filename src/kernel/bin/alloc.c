@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,15 +17,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "alloc.h"
 #include <stddef.h>
 #include <string.h>
-#include <sys/types.h>
-
-/* virtual memory */
-#include <vmemarea.h>
-
 #include "memzone.h"
-#include "alloc.h"
+/*
+#include "vmemarea.h"
+*/
 
 static struct memzone g_memzone_kernel;
 

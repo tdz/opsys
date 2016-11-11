@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,23 +17,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "semaphore.h"
 #include <errno.h>
 #include <stddef.h>
-#include <sys/types.h>
-
-#include <cpu.h>
-#include <interupt.h>
-
-#include "list.h"
-#include "ipcmsg.h"
-
-#include "spinlock.h"
-
-#include <tcbregs.h>
-#include "tcb.h"
+#include "cpu.h"
 #include "sched.h"
-
-#include "semaphore.h"
+#include "tcb.h"
 
 int
 semaphore_init(struct semaphore *sem, unsigned long slots)
@@ -94,7 +84,7 @@ semaphore_enter(struct semaphore *sem)
                 if (avail)
                 {
                         /*
-                         * empty slots available 
+                         * empty slots available
                          */
                         --sem->slots;
                 }
@@ -103,7 +93,7 @@ semaphore_enter(struct semaphore *sem)
                         struct list *waiters;
 
                         /*
-                         * no slots available, enque self in waiter list 
+                         * no slots available, enque self in waiter list
                          */
 
                         if (sem->waiters)
@@ -128,12 +118,12 @@ semaphore_enter(struct semaphore *sem)
                 if (!avail)
                 {
                         /*
-                         * no slots available, schedule self 
+                         * no slots available, schedule self
                          */
                         sched_switch(cpuid());
 
                         /*
-                         * when returning, self is not waiting anymore 
+                         * when returning, self is not waiting anymore
                          */
 
                         spinlock_lock(&sem->lock, (unsigned long)self);
@@ -160,12 +150,12 @@ semaphore_leave(struct semaphore *sem)
         spinlock_lock(&sem->lock, (unsigned long)self);
 
         /*
-         * free slot 
+         * free slot
          */
         ++sem->slots;
 
         /*
-         * wake up one waiter 
+         * wake up one waiter
          */
 
         for (waiters = sem->waiters; waiters; waiters = list_next(waiters))
@@ -175,7 +165,7 @@ semaphore_leave(struct semaphore *sem)
                 /*
                  * any thread in this list is either blocked or has been
                  * woken up by some other, concurrent invocation of this
-                 * function, therefore only consider waiting threads 
+                 * function, therefore only consider waiting threads
                  */
 
                 if (tcb_get_state(waiter) == THREAD_STATE_WAITING)

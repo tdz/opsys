@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,29 +17,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ipc.h"
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
-#include <sys/types.h>
-
-#include <cpu.h>
-#include <interupt.h>
-
-#include "list.h"
-
-#include "ipcmsg.h"
-#include "ipc.h"
-#include "spinlock.h"
-
-#include <tcbregs.h>
-#include <tcb.h>
-
-#include <task.h>
-
-#include <semaphore.h>
-#include <vmem.h>
-
+#include "cpu.h"
 #include "sched.h"
+#include "task.h"
+#include "tcb.h"
+#include "vmem.h"
 
 int
 ipc_send(struct ipc_msg *msg, struct tcb *rcv)
@@ -52,7 +39,7 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
         int err;
 
         /*
-         * check if rcv is ready to receive 
+         * check if rcv is ready to receive
          */
 
         if ((ipc_msg_flags_get_timeout(msg) == IPC_TIMEOUT_NOW)
@@ -63,11 +50,11 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
         }
 
         /*
-         * enqueue message 
+         * enqueue message
          */
         /*
          * TODO: enqueue at end, not at beginning; to prevent walk over list,
-         * first element could have prev pointer set to end of list 
+         * first element could have prev pointer set to end of list
          */
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
@@ -86,7 +73,7 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
         spinlock_unlock(&rcv->lock);
 
         /*
-         * sender state 
+         * sender state
          */
 
         spinlock_lock(&msg->snd->lock,
@@ -97,12 +84,12 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
         if (ipc_msg_flags_has_timeout_value(msg))
         {
                 /*
-                 * TODO: implement timeout 
+                 * TODO: implement timeout
                  */
         }
 
         /*
-         * wake up receiver if necessary 
+         * wake up receiver if necessary
          */
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
@@ -145,8 +132,8 @@ err_tcb_get_state:
         spinlock_unlock(&rcv->lock);
         return err;
 }
-#include <pde.h>
-#include <console.h>
+#include "pde.h"
+#include "console.h"
 int
 ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
 {
@@ -158,7 +145,7 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
         if (!rcv->ipcin)
         {
                 /*
-                 * no pending messages; schedule possible senders 
+                 * no pending messages; schedule possible senders
                  */
                 tcb_set_state(rcv, THREAD_STATE_RECV);
                 spinlock_unlock(&rcv->lock);
@@ -174,7 +161,7 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
         }
 
         /*
-         * dequeue first IPC message 
+         * dequeue first IPC message
          */
 
         msgin = list_data(rcv->ipcin);
@@ -243,4 +230,3 @@ ipc_reply_and_recv(struct ipc_msg *msg, struct tcb *rcv)
 {
         return -ENOSYS;
 }
-

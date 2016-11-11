@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,20 +17,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "loader.h"
 #include <errno.h>
 #include <sys/types.h>
-
-#include "spinlock.h"
-
-#include "list.h"
-#include "ipcmsg.h"
-
-#include <tcbregs.h>
-#include "tcb.h"
-
-#include "task.h"
 #include "elfldr.h"
-#include "loader.h"
+#include "task.h"
+#include "tcb.h"
 
 int
 loader_exec(const struct tcb *tcb,
@@ -38,7 +31,7 @@ loader_exec(const struct tcb *tcb,
         int err;
 
         /*
-         * load image into address space 
+         * load image into address space
          */
 
         if (elf_loader_is_elf(img))

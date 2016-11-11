@@ -4,7 +4,7 @@ builddir := $(topdir)/build
 srcdir   := $(topdir)/src
 outdir   := $(topdir)/out
 
-FEATURES := ctags doxygen
+FEATURES := ctags doxygen image
 
 target_cpu ?= i386
 
@@ -22,16 +22,6 @@ include $(builddir)/vars.mk
 module := module.mk
 include $(shell find -P $(srcdir) -type f -name "$(module)")
 
-IMAGES = opsyshdd.img
-
-.PHONY: image
-
-image: $(IMAGES)
-
-%.img : all
-	$(CP) res/genimage/$@.base $@
-	sudo tools/genimage/genimage.sh -a $(target_cpu) -b res/genimage/ -s $(outdir) -i $@
-
-CLEAN_ALL_FILES += doc/ $(IMAGES)
+CLEAN_ALL_FILES += doc/
 
 include $(builddir)/targets.mk

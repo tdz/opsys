@@ -6,13 +6,13 @@ outdir   := $(topdir)/out
 
 FEATURES := ctags doxygen image
 
-target_cpu ?= i386
+HOST_CPU := i386
 
 # set flags for the compiler toolchain
 CPPFLAGS := -nostdinc
-CFLAGS   := -g -m32 -Wall -Werror -ansi -march=$(target_cpu) -fno-stack-protector
-ASFLAGS  := --32 -march=$(target_cpu)
-LDFLAGS  := -nostdlib -static -melf_$(target_cpu)
+CFLAGS   := -g -m32 -Wall -Werror -ansi -march=$(HOST_CPU) -fno-stack-protector
+ASFLAGS := --32 -march=$(HOST_CPU)
+LDFLAGS := -nostdlib -static -melf_$(HOST_CPU)
 
 include $(builddir)/vars.mk
 

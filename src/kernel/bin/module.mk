@@ -1,5 +1,5 @@
 
-archdir = arch/$(target_cpu)
+archdir = arch/$(HOST_CPU)
 
 BINS += oskernel
 

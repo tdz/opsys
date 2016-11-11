@@ -1,11 +1,9 @@
 
 features := $(sort $(FEATURES))
 
-# some default flags needed in all makefiles
-
-BINS =
-FILES =
-LIBS =
+BUILD_CPU  ?= $(shell uname -m)
+HOST_CPU   ?= $(BUILD_CPU)
+TARGET_CPU ?= $(HOST_CPU)
 
 # environment variables
 ENVIRONMENT ?= $(subst /,_,$(shell uname -o | tr A-Z a-z))

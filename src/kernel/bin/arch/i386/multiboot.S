@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,20 +17,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-.text
+.section .multiboot
 
-.global _start
-
-_start:
-        jmp multiboot_entry
-
-        .align 4
+.align 4
 
 multiboot_header:
         .long 0x1badb002 /* MULTIBOOT_HEADER_MAGIC */
-        .long 0x00000007 /* MULTIBOOT_HEADER_FLAG_ALIGNED|
+        .long 0x00000007 /* MULTIBOOT_HEADER_FLAG_ALIGNED |
                             MULTIBOOT_HEADER_FLAG_MEMINFO */
-        .long -(0x1badb002+0x00000007)
+        .long -(0x1badb002 + 0x00000007)
         /* address fields */
         .long multiboot_header
         .long _start
@@ -41,6 +37,13 @@ multiboot_header:
         .long 80
         .long 43
         .long 0
+
+.text
+
+.global _start
+
+_start:
+        jmp multiboot_entry
 
 multiboot_entry:
         movl $(stack+4096), %esp

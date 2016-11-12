@@ -24,7 +24,4 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         vmemhlp.c \
 	)
 
-# kernel resides at 1 MiB
-reloc_addr = 0x100000
-
-oskernel_LDFLAGS += -Ttext=$(reloc_addr) -e_start
+oskernel_LDSCRIPTS += $(archdir)/oskernel.ld

@@ -1,4 +1,14 @@
 
+#
+# Additional functions for make
+#
+
+strippath = $(patsubst $(abspath $1)/%,%,$(abspath $2))
+
+#
+# Computed variables
+#
+
 features := $(sort $(FEATURES))
 
 BUILD_CPU  ?= $(shell uname -m)

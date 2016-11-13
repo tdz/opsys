@@ -4,8 +4,8 @@
 #
 
 define MOD_tmpl =
-$1_MODSRCDIR ?= $$(abspath $$(srcdir)/$$($1_MODULEDIR))
-$1_MODOUTDIR ?= $$(abspath $$(outdir)/$$($1_MODULEDIR))
+$1_modsrcdir ?= $$(call strippath,$$(topdir)/,$$(srcdir)/$$($1_MODULEDIR)/)/
+$1_modoutdir ?= $$(call strippath,$$(topdir)/,$$(outdir)/$$($1_MODULEDIR)/)/
 endef
 
 $(foreach mod,$(SYMLINKS) $(LIBS) $(BINS),\
@@ -28,8 +28,8 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define C_OBJ_tmpl =
-$1_$2_C_SRC := $$($1_MODSRCDIR)/$2
-$1_$2_C_OBJ := $$($1_MODOUTDIR)/$2.o
+$1_$2_C_SRC := $$($1_modsrcdir)$2
+$1_$2_C_OBJ := $$($1_modoutdir)$2.o
 $1_$2_C_DIR := $$(dir $$($1_$2_C_OBJ)).dir
 $$($1_$2_C_OBJ): $$($1_$2_C_DIR) $$($1_$2_C_SRC)
 	$$(CC) $$($1_CPPFLAGS) $$(CPPFLAGS) $$($1_CFLAGS) $$(CFLAGS) -c -o $$@ $$($1_$2_C_SRC)
@@ -48,8 +48,8 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define S_OBJ_tmpl =
-$1_$2_S_SRC := $$($1_MODSRCDIR)/$2
-$1_$2_S_OBJ := $$($1_MODOUTDIR)/$2.o
+$1_$2_S_SRC := $$($1_modsrcdir)$2
+$1_$2_S_OBJ := $$($1_modoutdir)$2.o
 $1_$2_S_DIR := $$(dir $$($1_$2_S_OBJ)).dir
 $$($1_$2_S_OBJ): $$($1_$2_S_DIR) $$($1_$2_S_SRC)
 	$$(AS) $$($1_ASFLAGS) $$(ASFLAGS) -o $$@ $$($1_$2_S_SRC)
@@ -68,7 +68,7 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define LIB_tmpl =
-$1_LIB := $$($1_MODOUTDIR)/$1
+$1_LIB := $$($1_modoutdir)$1
 $1_DIR := $$(dir $$($1_LIB)).dir
 $1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
 $1_DIRS += $$($1_DIR) $$($1_C_DIRS) $$($1_S_DIRS)
@@ -87,11 +87,11 @@ $(foreach lib,$(LIBS),\
 #
 
 define BIN_tmpl =
-$1_BIN := $$($1_MODOUTDIR)/$1
+$1_BIN := $$($1_modoutdir)$1
 $1_DIR := $$(dir $$($1_BIN)).dir
 $1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
 $1_DIRS += $$($1_DIR) $$($1_C_DIRS) $$($1_S_DIRS)
-$1_ldscripts += $$(foreach ldscript,$$($1_LDSCRIPTS), -T$$($1_MODSRCDIR)/$$(ldscript))
+$1_ldscripts += $$(foreach ldscript,$$($1_LDSCRIPTS), -T$$($1_modsrcdir)$$(ldscript))
 $1_LDADD += $$(patsubst lib%.a,-l%,$$($1_LIBS))
 $1_LIBDEPS += $$(foreach lib,$$($1_LIBS),$$($$(lib)_LIB))
 $$($1_BIN): $$($1_DIR) $$($1_OBJS) $$($1_LIBDEPS)
@@ -108,8 +108,8 @@ $(foreach bin,$(BINS),\
 #
 
 define SYMLINK_tmpl
-$1_symlink := $$($1_MODOUTDIR)/$1
-$1_dst := $$($1_MODSRCDIR)/$$($1_TARGET)
+$1_symlink := $$($1_modoutdir)$1
+$1_dst := $$($1_modsrcdir)$$($1_TARGET)
 $1_dir := $$(dir $$($1_symlink)).dir
 $$($1_symlink): $$($1_dir) $$($1_dst)
 	$$(LN) -fs $$($1_dst) $$@
@@ -140,7 +140,7 @@ $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
 #
 
 define C_DEP_tmpl =
-$1_$2_C_DEP := $$($1_MODOUTDIR)/$2.d
+$1_$2_C_DEP := $$($1_modoutdir)$2.d
 $$($1_$2_C_DEP): $$($1_$2_C_DIR) $$($1_$2_C_SRC)
 	$$(CC) -M -MT '$$($1_$2_C_OBJ) $$@ ' $$($1_CPPFLAGS) $$(CPPFLAGS) $$($1_$2_C_SRC) > $$@;
 CLEAN_FILES += $$($1_$2_C_DEP)

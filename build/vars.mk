@@ -9,6 +9,11 @@ strippath = $(patsubst $(abspath $1)/%,%,$(abspath $2))
 # Computed variables
 #
 
+topdir   := .
+builddir := $(call strippath,$(topdir),$(BUILDDIR))
+srcdir   := $(call strippath,$(topdir),$(SRCDIR))
+outdir   := $(call strippath,$(topdir),$(OUTDIR))
+
 features := $(sort $(FEATURES))
 
 BUILD_CPU  ?= $(shell uname -m)

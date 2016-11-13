@@ -30,15 +30,15 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define C_OBJ_tmpl =
-$1_$2_C_SRC := $$($1_modsrcdir)$2
-$1_$2_C_OBJ := $$($1_modoutdir)$2.o
-$1_$2_C_DIR := $$(dir $$($1_$2_C_OBJ)).dir
-$$($1_$2_C_OBJ): $$($1_$2_C_DIR) $$($1_$2_C_SRC)
-	$$(CC) $$($1_cppflags) $$($1_cflags) -c -o $$@ $$($1_$2_C_SRC)
-$1_C_SRCS += $$($1_$2_C_SRC)
-$1_C_OBJS += $$($1_$2_C_OBJ)
-$1_C_DIRS += $$($1_$2_C_DIR)
-CLEAN_FILES += $$($1_$2_C_OBJ)
+$1_$2_c_src := $$($1_modsrcdir)$2
+$1_$2_c_obj := $$($1_modoutdir)$2.o
+$1_$2_c_dir := $$(dir $$($1_$2_c_obj)).dir
+$$($1_$2_c_obj): $$($1_$2_c_dir) $$($1_$2_c_src)
+	$$(CC) $$($1_cppflags) $$($1_cflags) -c -o $$@ $$($1_$2_c_src)
+$1_c_srcs += $$($1_$2_c_src)
+$1_c_objs += $$($1_$2_c_obj)
+$1_c_dirs += $$($1_$2_c_dir)
+clean_files += $$($1_$2_c_obj)
 endef
 
 $(foreach exe,$(LIBS) $(BINS),\
@@ -50,15 +50,15 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define S_OBJ_tmpl =
-$1_$2_S_SRC := $$($1_modsrcdir)$2
-$1_$2_S_OBJ := $$($1_modoutdir)$2.o
-$1_$2_S_DIR := $$(dir $$($1_$2_S_OBJ)).dir
-$$($1_$2_S_OBJ): $$($1_$2_S_DIR) $$($1_$2_S_SRC)
-	$$(AS) $$($1_asflags) -o $$@ $$($1_$2_S_SRC)
-$1_S_SRCS += $$($1_$2_S_SRC)
-$1_S_OBJS += $$($1_$2_S_OBJ)
-$1_S_DIRS += $$($1_$2_S_DIR)
-CLEAN_FILES += $$($1_$2_S_OBJ)
+$1_$2_s_src := $$($1_modsrcdir)$2
+$1_$2_s_obj := $$($1_modoutdir)$2.o
+$1_$2_s_dir := $$(dir $$($1_$2_s_obj)).dir
+$$($1_$2_s_obj): $$($1_$2_s_dir) $$($1_$2_s_src)
+	$$(AS) $$($1_asflags) -o $$@ $$($1_$2_s_src)
+$1_s_srcs += $$($1_$2_s_src)
+$1_s_objs += $$($1_$2_s_obj)
+$1_s_dirs += $$($1_$2_s_dir)
+clean_files += $$($1_$2_s_obj)
 endef
 
 $(foreach exe,$(LIBS) $(BINS),\
@@ -70,15 +70,15 @@ $(foreach exe,$(LIBS) $(BINS),\
 #
 
 define LIB_tmpl =
-$1_LIB := $$($1_modoutdir)$1
-$1_DIR := $$(dir $$($1_LIB)).dir
-$1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
-$1_DIRS += $$($1_DIR) $$($1_C_DIRS) $$($1_S_DIRS)
-$$($1_LIB): $$($1_DIR) $$($1_OBJS)
-	$$(AR) rcs $$@ $$($1_OBJS)
+$1_lib := $$($1_modoutdir)$1
+$1_dir := $$(dir $$($1_lib)).dir
+$1_objs := $$($1_c_objs) $$($1_s_objs)
+$1_dirs := $$($1_dir) $$($1_c_dirs) $$($1_s_dirs)
+$$($1_lib): $$($1_dir) $$($1_objs)
+	$$(AR) rcs $$@ $$($1_objs)
 	$$(RANLIB) $$@
-CLEAN_FILES += $$($1_LIB)
-ALL_LIBS += $$($1_LIB)
+clean_files += $$($1_lib)
+all_libs += $$($1_lib)
 endef
 
 $(foreach lib,$(LIBS),\
@@ -89,17 +89,17 @@ $(foreach lib,$(LIBS),\
 #
 
 define BIN_tmpl =
-$1_BIN := $$($1_modoutdir)$1
-$1_DIR := $$(dir $$($1_BIN)).dir
-$1_OBJS += $$($1_C_OBJS) $$($1_S_OBJS)
-$1_DIRS += $$($1_DIR) $$($1_C_DIRS) $$($1_S_DIRS)
-$1_ldscripts += $$(foreach ldscript,$$($1_LDSCRIPTS), -T$$($1_modsrcdir)$$(ldscript))
-$1_LDADD += $$(patsubst lib%.a,-l%,$$($1_LIBS))
-$1_LIBDEPS += $$(foreach lib,$$($1_LIBS),$$($$(lib)_LIB))
-$$($1_BIN): $$($1_DIR) $$($1_OBJS) $$($1_LIBDEPS)
-	$$(LD) $$($1_ldflags) $$($1_ldscripts) -o $$@ $$($1_OBJS) $$($1_LDADD) $$(LDADD)
-CLEAN_FILES += $$($1_BIN)
-ALL_BINS += $$($1_BIN)
+$1_bin := $$($1_modoutdir)$1
+$1_dir := $$(dir $$($1_bin)).dir
+$1_objs := $$($1_c_objs) $$($1_s_objs)
+$1_dirs := $$($1_dir) $$($1_c_dirs) $$($1_s_dirs)
+$1_ldscripts := $$(foreach ldscript,$$($1_LDSCRIPTS), -T$$($1_modsrcdir)$$(ldscript))
+$1_ldadd := $$(LDADD) $$(patsubst lib%.a,-l%,$$($1_LIBS))
+$1_libs := $$(foreach lib,$$($1_LIBS),$$($$(lib)_lib))
+$$($1_bin): $$($1_dir) $$($1_objs) $$($1_libs)
+	$$(LD) $$($1_ldflags) $$($1_ldscripts) -o $$@ $$($1_objs) $$($1_ldadd)
+clean_files += $$($1_bin)
+all_bins += $$($1_bin)
 endef
 
 $(foreach bin,$(BINS),\
@@ -115,8 +115,8 @@ $1_dst := $$($1_modsrcdir)$$($1_TARGET)
 $1_dir := $$(dir $$($1_symlink)).dir
 $$($1_symlink): $$($1_dir) $$($1_dst)
 	$$(LN) -fs $$($1_dst) $$@
-$1_DIRS += $$($1_dir)
-CLEAN_FILES += $$($1_symlink)
+$1_dirs += $$($1_dir)
+clean_files += $$($1_symlink)
 all_symlinks += $$($1_symlink)
 endef
 
@@ -130,7 +130,7 @@ $(foreach symlink,$(SYMLINKS),\
 define DIR_tmpl =
 $1:
 	$$(MKDIR) -p $$(@D) && $$(TOUCH) $$@
-CLEAN_ALL_FILES += $1
+clean_all_files += $1
 endef
 
 $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
@@ -142,11 +142,11 @@ $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
 #
 
 define C_DEP_tmpl =
-$1_$2_C_DEP := $$($1_modoutdir)$2.d
-$$($1_$2_C_DEP): $$($1_$2_C_DIR) $$($1_$2_C_SRC)
-	$$(CC) -M -MT '$$($1_$2_C_OBJ) $$@ ' $$($1_cppflags) $$($1_$2_C_SRC) > $$@;
-CLEAN_FILES += $$($1_$2_C_DEP)
--include $$($1_$2_C_DEP)
+$1_$2_c_dep := $$($1_modoutdir)$2.d
+$$($1_$2_c_dep): $$($1_$2_c_dir) $$($1_$2_c_src)
+	$$(CC) -M -MT '$$($1_$2_c_obj) $$@ ' $$($1_cppflags) $$($1_$2_c_src) > $$@;
+clean_files += $$($1_$2_c_dep)
+-include $$($1_$2_c_dep)
 endef
 
 $(foreach exe,$(LIBS) $(BINS),\
@@ -166,12 +166,12 @@ $(foreach feature,$(features),\
 
 .PHONY: all clean clean-all doc
 
-all: | $(FILES) $(all_symlinks) $(ALL_BINS)
+all: | $(FILES) $(all_symlinks) $(all_bins)
 
 clean:
-	$(RM) -fr $(CLEAN_FILES) $(FILES)
+	$(RM) -fr $(clean_files) $(FILES)
 
 clean-all: clean
-	$(RM) -fr $(CLEAN_ALL_FILES)
+	$(RM) -fr $(clean_all_files)
 
 doc:

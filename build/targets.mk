@@ -134,7 +134,7 @@ clean_all_files += $1
 endef
 
 $(foreach exe,$(SYMLINKS) $(LIBS) $(BINS),\
-    $(foreach dir_,$(sort $($(exe)_DIRS)),\
+    $(foreach dir_,$(sort $($(exe)_dirs)),\
         $(eval $(call DIR_tmpl,$(dir_)))))
 
 #

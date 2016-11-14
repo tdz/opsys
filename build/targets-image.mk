@@ -3,7 +3,7 @@ $(foreach image,$(IMAGES),\
     $(eval $(call MOD_tmpl,$(image))))
 
 define IMG_tmpl =
-$1_img := $$($1_modoutdir)/$1
+$1_img := $$($1_modoutdir)$1
 $1_dir := $$(dir $$($1_img)).dir
 $1_img_in := $$(IMAGE_IN_DIR)$1.base
 $1_bindeps := $$(foreach bin,$$($1_BINS),$$($$(bin)_bin))

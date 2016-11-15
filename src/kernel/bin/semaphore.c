@@ -160,7 +160,7 @@ semaphore_leave(struct semaphore *sem)
 
         for (waiters = sem->waiters; waiters; waiters = list_next(waiters))
         {
-                struct tcb *waiter = list_data(sem->waiters);
+                struct tcb *waiter = tcb_of_wait_list(sem->waiters);
 
                 /*
                  * any thread in this list is either blocked or has been

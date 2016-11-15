@@ -22,6 +22,12 @@
 /* sender waits for reply */
 #define IPC_MSG_FLAGS_TIMEOUT(x_)          (((x_)&0xfffffffe)>>1)
 
+struct ipc_msg*
+ipc_msg_of_list(struct list* l)
+{
+    return containerof(l, struct ipc_msg, rcv_q);
+}
+
 int
 ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
              unsigned long flags, unsigned long msg0, unsigned long msg1)

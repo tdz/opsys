@@ -52,6 +52,12 @@ struct tcb
     spinlock_type lock;
 };
 
+struct tcb*
+tcb_of_sched_list(struct list* l);
+
+struct tcb*
+tcb_of_wait_list(struct list* l);
+
 int
 tcb_init_with_id(struct tcb *tcb,
                  struct task *task, unsigned char id, void *stack);

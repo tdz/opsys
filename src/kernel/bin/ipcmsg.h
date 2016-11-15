@@ -44,6 +44,9 @@ struct ipc_msg {
     unsigned long   msg1;
 };
 
+struct ipc_msg*
+ipc_msg_of_list(struct list* l);
+
 int
 ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
                                   unsigned long flags,

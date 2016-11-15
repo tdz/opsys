@@ -128,7 +128,7 @@ sched_get_thread(struct list *listhead)
                 return NULL;
         }
 
-        tcb = list_data(listhead);
+        tcb = tcb_of_sched_list(listhead);
 
         return tcb;
 }
@@ -159,7 +159,7 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
 
                         do
                         {
-                                struct tcb *currenttcb = list_data(current);
+                                struct tcb *currenttcb = tcb_of_sched_list(current);
 
                                 if ((currenttcb->id == tcbid) &&
                                     (currenttcb->task->id == taskid))
@@ -193,7 +193,7 @@ sched_switch_to(unsigned int cpu, struct tcb *next)
         assert(cpu < ARRAY_NELEMS(g_current_thread));
         assert(next && tcb_is_runnable(next));
 
-        tcb = list_data(g_current_thread[cpu]);
+        tcb = tcb_of_sched_list(g_current_thread[cpu]);
 
         /*if (next != tcb)*/
         {
@@ -236,7 +236,7 @@ sched_select_thread(void)
                         do
                         {
                                 listhead = listhead->next;
-                                struct tcb *tcb = list_data(listhead);
+                                struct tcb *tcb = tcb_of_sched_list(listhead);
 
                                 if (tcb_is_runnable(tcb))
                                 {

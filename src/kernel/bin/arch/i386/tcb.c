@@ -30,6 +30,18 @@
 #include "task.h"
 #include "vmem.h"
 
+struct tcb*
+tcb_of_sched_list(struct list* l)
+{
+    return containerof(l, struct tcb, sched);
+}
+
+struct tcb*
+tcb_of_wait_list(struct list* l)
+{
+    return containerof(l, struct tcb, wait);
+}
+
 int
 tcb_init_with_id(struct tcb *tcb,
                  struct task *task, unsigned char id, void *stack)

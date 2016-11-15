@@ -159,7 +159,7 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
          * dequeue first IPC message
          */
 
-        msgin = list_data(rcv->ipcin);
+        msgin = ipc_msg_of_list(rcv->ipcin);
         rcv->ipcin = list_next(rcv->ipcin);
 
         if (!msgin)

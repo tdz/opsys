@@ -86,7 +86,7 @@ sched_add_thread(struct tcb *tcb, prio_class_type prio)
 {
         console_printf("%s:%x adding tcb=%x, prio=%x.\n", __FILE__, __LINE__, tcb, prio);
 
-        list_init(&tcb->sched, &tcb->sched, &tcb->sched, tcb);
+        list_init(&tcb->sched, &tcb->sched, &tcb->sched);
 
         if (!g_thread[prio])
         {

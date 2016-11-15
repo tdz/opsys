@@ -21,22 +21,19 @@
 #include <stddef.h>
 
 struct list *
-list_init(struct list *list, struct list *prev, struct list *next, void *data)
+list_init(struct list *list, struct list *prev, struct list *next)
 {
-        list->next = next;
-        list->data = data;
-        list->prev = prev;
+    list->next = next;
+    list->prev = prev;
 
-        if (prev)
-        {
-                prev->next = list;
-        }
-        if (next)
-        {
-                next->prev = list;
-        }
+    if (prev) {
+        prev->next = list;
+    }
+    if (next) {
+        next->prev = list;
+    }
 
-        return list;
+    return list;
 }
 
 struct list *
@@ -45,9 +42,8 @@ list_enque_in_front(struct list *list, struct list *newlist)
         newlist->prev = list->prev;
         newlist->next = list;
 
-        if (list->prev)
-        {
-                list->prev->next = newlist;
+        if (list->prev) {
+            list->prev->next = newlist;
         }
 
         list->prev = newlist;
@@ -61,9 +57,8 @@ list_enque_behind(struct list *list, struct list *newlist)
         newlist->prev = list;
         newlist->next = list->next;
 
-        if (list->next)
-        {
-                list->next->prev = newlist;
+        if (list->next) {
+            list->next->prev = newlist;
         }
 
         list->next = newlist;
@@ -74,13 +69,11 @@ list_enque_behind(struct list *list, struct list *newlist)
 struct list *
 list_deque(struct list *list)
 {
-        if (list->next)
-        {
-                list->next->prev = list->prev;
+        if (list->next) {
+            list->next->prev = list->prev;
         }
-        if (list->prev)
-        {
-                list->prev->next = list->next;
+        if (list->prev) {
+            list->prev->next = list->next;
         }
 
         list->prev = NULL;
@@ -99,10 +92,4 @@ struct list *
 list_prev(const struct list *list)
 {
         return list->prev;
-}
-
-void *
-list_data(const struct list *list)
-{
-        return list->data;
 }

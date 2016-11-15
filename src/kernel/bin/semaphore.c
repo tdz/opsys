@@ -100,12 +100,11 @@ semaphore_enter(struct semaphore *sem)
                         {
                                 waiters = list_init(&self->wait,
                                                     sem->waiters->prev,
-                                                    sem->waiters, self);
+                                                    sem->waiters);
                         }
                         else
                         {
-                                waiters = list_init(&self->wait,
-                                                    NULL, NULL, self);
+                                waiters = list_init(&self->wait, NULL, NULL);
                         }
 
                         sem->waiters = waiters;

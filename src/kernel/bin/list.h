@@ -19,17 +19,13 @@
 
 #pragma once
 
-struct list
-{
-        struct list *next;
-        void        *data;
-        struct list *prev;
+struct list {
+    struct list *next;
+    struct list *prev;
 };
 
 struct list *
-list_init(struct list *list,
-          struct list *prev,
-          struct list *next, void *data);
+list_init(struct list *list, struct list *prev, struct list *next);
 
 struct list *
 list_enque_in_front(struct list *list, struct list *newlist);
@@ -45,6 +41,3 @@ list_next(const struct list *list);
 
 struct list *
 list_prev(const struct list *list);
-
-void *
-list_data(const struct list *list);

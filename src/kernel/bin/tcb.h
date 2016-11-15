@@ -26,17 +26,15 @@ struct task;
 #include "spinlock.h"
 #include "tcbregs.h"
 
-enum thread_state
-{
-        THREAD_STATE_ZOMBIE = 0, /**< \brief waiting for removal */
-        THREAD_STATE_READY, /**< \brief ready to be executed */
-        THREAD_STATE_SEND, /**< \brief blocked by send action */
-        THREAD_STATE_RECV, /**< \brief blocked by receive action */
-        THREAD_STATE_WAITING /**< \brief blocked by waiting for some lock */
+enum thread_state {
+    THREAD_STATE_ZOMBIE = 0, /**< \brief waiting for removal */
+    THREAD_STATE_READY, /**< \brief ready to be executed */
+    THREAD_STATE_SEND, /**< \brief blocked by send action */
+    THREAD_STATE_RECV, /**< \brief blocked by receive action */
+    THREAD_STATE_WAITING /**< \brief blocked by waiting for some lock */
 };
 
-struct tcb
-{
+struct tcb {
     enum thread_state state;
     struct task *task; /**< Address of task structure of the thread */
     void *stack; /**< Stack base address */
@@ -59,8 +57,8 @@ struct tcb*
 tcb_of_wait_list(struct list* l);
 
 int
-tcb_init_with_id(struct tcb *tcb,
-                 struct task *task, unsigned char id, void *stack);
+tcb_init_with_id(struct tcb *tcb, struct task *task, unsigned char id,
+                 void *stack);
 
 int
 tcb_init(struct tcb *tcb, struct task *task, void *stack);

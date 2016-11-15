@@ -46,118 +46,100 @@ int
 tcb_init_with_id(struct tcb *tcb,
                  struct task *task, unsigned char id, void *stack)
 {
-        int err;
-        os_index_t pfindex;
+    console_printf("tcb id=%x.\n", id);
 
-        console_printf("tcb id=%x.\n", id);
+    int res = task_ref(task);
+    if (res < 0) {
+        return res;
+    }
 
-        if ((err = task_ref(task)) < 0)
-        {
-                goto err_task_ref;
-        }
+    if (bitset_isset(task->threadid, id)) {
+        res = -EINVAL;
+        goto err_bitset_isset;
+    }
 
-        if (bitset_isset(task->threadid, id))
-        {
-                err = -EINVAL;
-                goto err_bitset_isset;
-        }
+    bitset_set(task->threadid, id);
 
-        bitset_set(task->threadid, id);
+    memset(tcb, 0, sizeof(*tcb));
 
-        memset(tcb, 0, sizeof(*tcb));
+    tcb->state = THREAD_STATE_ZOMBIE;
+    tcb->task = task;
+    tcb->stack = stack;
+    tcb->id = id;
+    tcb->ipcin = NULL;
 
-        tcb->state = THREAD_STATE_ZOMBIE;
-        tcb->task = task;
-        tcb->stack = stack;
-        tcb->id = id;
-        tcb->ipcin = NULL;
+    list_init(&tcb->wait);
+    list_init(&tcb->sched);
 
-        list_init(&tcb->wait);
-        list_init(&tcb->sched);
+    spinlock_init(&tcb->lock);
 
-        spinlock_init(&tcb->lock);
+    os_index_t pfindex = vmem_lookup_frame(task->as,
+                                           page_index(task->as->tlps));
+    if (pfindex < 0) {
+        res = pfindex;
+        goto err_vmem_lookup_pageframe;
+    }
 
-        pfindex = vmem_lookup_frame(task->as, page_index(task->as->tlps));
+    res = tcb_regs_init(&tcb->regs, stack, pageframe_address(pfindex));
+    if (res < 0) {
+        goto err_tcb_regs_init;
+    }
 
-        if (pfindex < 0)
-        {
-                err = pfindex;
-                goto err_vmem_lookup_pageframe;
-        }
-
-        err = tcb_regs_init(&tcb->regs, stack, pageframe_address(pfindex));
-
-        if (err < 0)
-        {
-                goto err_tcb_regs_init;
-        }
-
-        return 0;
+    return 0;
 
 err_tcb_regs_init:
 err_vmem_lookup_pageframe:
-        spinlock_uninit(&tcb->lock);
-        bitset_unset(task->threadid, id);
+    spinlock_uninit(&tcb->lock);
+    bitset_unset(task->threadid, id);
 err_bitset_isset:
-        task_unref(task);
-err_task_ref:
-        return err;
+    task_unref(task);
+    return res;
 }
 
 int
 tcb_init(struct tcb *tcb, struct task *task, void *stack)
 {
-        int err;
-        ssize_t id;
+    ssize_t id = bitset_find_unset(task->threadid, sizeof(task->threadid));
+    if (id < 0) {
+        return (int)id;
+    }
 
-        id = bitset_find_unset(task->threadid, sizeof(task->threadid));
+    int res = tcb_init_with_id(tcb, task, id, stack);
+    if (res < 0) {
+        return res;
+    }
 
-        if (id < 0)
-        {
-                err = id;
-                goto err_bitset_find_unset;
-        }
-
-        if ((err = tcb_init_with_id(tcb, task, id, stack)) < 0)
-        {
-                goto err_tcb_init_with_id;
-        }
-
-        return 0;
-
-err_tcb_init_with_id:
-err_bitset_find_unset:
-        return err;
+    return 0;
 }
 
 void
 tcb_uninit(struct tcb *tcb)
 {
-        task_unref(tcb->task);
+    task_unref(tcb->task);
 }
 
 void
 tcb_set_state(struct tcb *tcb, enum thread_state state)
 {
-        tcb->state = state;
+    tcb->state = state;
 }
 
 enum thread_state
 tcb_get_state(const struct tcb *tcb)
 {
-        return tcb->state;
+    return tcb->state;
 }
 
 int
 tcb_is_runnable(const struct tcb *tcb)
 {
-        return (tcb->state == THREAD_STATE_READY);
+    return (tcb->state == THREAD_STATE_READY);
 }
 
 int
 tcb_switch(struct tcb *tcb, const struct tcb *dst)
 {
-        return tcb_regs_switch(&tcb->regs, &dst->regs);
+    return tcb_regs_switch(&tcb->regs, &dst->regs);
 }
 
 int

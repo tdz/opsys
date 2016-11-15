@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <stdarg.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 struct tcb_regs
@@ -78,7 +80,11 @@ void
 tcb_regs_uninit(struct tcb_regs *regs);
 
 void
-tcb_regs_init_state(struct tcb_regs *regs);
+tcb_regs_init_state(struct tcb_regs *regs,
+                    const void *ip,
+                    unsigned char irqno,
+					void* stack,
+                    unsigned long nargs, va_list ap);
 
 void
 tcb_regs_set_ip(struct tcb_regs *regs, void *ip);
@@ -92,10 +98,10 @@ tcb_regs_set_fp(struct tcb_regs *regs, void *fp);
 unsigned char *
 tcb_regs_get_fp(struct tcb_regs *regs);
 
-void
+uintptr_t
 tcb_regs_stack_push(struct tcb_regs *regs, size_t nbytes);
 
-void
+uintptr_t
 tcb_regs_stack_pop(struct tcb_regs *regs, size_t nbytes);
 
 int

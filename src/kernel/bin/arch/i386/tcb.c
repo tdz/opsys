@@ -160,78 +160,18 @@ tcb_switch(struct tcb *tcb, const struct tcb *dst)
         return tcb_regs_switch(&tcb->regs, &dst->regs);
 }
 
-static void
-tcb_stack_push4(struct tcb *tcb, unsigned long **stack, unsigned long value)
-{
-        --(*stack);
-        (*stack)[0] = value;
-
-        tcb_regs_stack_push(&tcb->regs, sizeof(**stack));
-}
-
 int
 tcb_set_initial_ready_state(struct tcb *tcb,
                             const void *ip,
                             unsigned char irqno,
                             unsigned long *stack, int nargs, ...)
 {
-        extern void tcb_regs_switch_entry_point(void);
-        extern void tcb_regs_switch_first_return(void);
+    va_list ap;
+    va_start(ap, nargs);
+    tcb_regs_init_state(&tcb->regs, ip, irqno, stack, nargs, ap);
+    va_end(ap);
 
-        va_list ap;
+    tcb_set_state(tcb, THREAD_STATE_READY);
 
-        /*
-         * generate thread execution stack
-         */
-
-        va_start(ap, nargs);
-
-        while (nargs)
-        {
-                unsigned long arg = va_arg(ap, unsigned long);
-
-                tcb_stack_push4(tcb, &stack, arg);
-
-                --nargs;
-        }
-
-        va_end(ap);
-
-        tcb_stack_push4(tcb, &stack, 0);        /* no return ip */
-
-        /*
-         * prepare stack as if thread was scheduled from irq
-         */
-
-        /*
-         * stack after irq
-         */
-        tcb_stack_push4(tcb, &stack, eflags());
-        tcb_stack_push4(tcb, &stack, cs());
-        tcb_stack_push4(tcb, &stack, (unsigned long)ip);
-        tcb_stack_push4(tcb, &stack, irqno);
-
-        tcb_stack_push4(tcb, &stack, 0);        /* %eax */
-        tcb_stack_push4(tcb, &stack, 0);        /* %ecx */
-        tcb_stack_push4(tcb, &stack, 0);        /* %edx */
-        tcb_stack_push4(tcb, &stack, irqno);    /* pushed by irq handler */
-
-        /*
-         * tcb_regs_switch
-         */
-        tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
-        tcb_stack_push4(tcb, &stack, (unsigned long)&tcb->regs);
-        tcb_stack_push4(tcb, &stack,
-                        (unsigned long)tcb_regs_switch_first_return);
-        tcb_stack_push4(tcb, &stack,
-                        (unsigned long)tcb_regs_get_fp(&tcb->regs));
-        tcb_regs_set_fp(&tcb->regs, tcb_regs_get_sp(&tcb->regs));
-
-        tcb_regs_init_state(&tcb->regs);
-
-        tcb_regs_set_ip(&tcb->regs, tcb_regs_switch_entry_point);
-
-        tcb_set_state(tcb, THREAD_STATE_READY);
-
-        return 0;
+    return 0;
 }

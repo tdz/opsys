@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2009-2010  Thomas Zimmermann
+ *  Copyright (C) 2016       Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,6 +16,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
 
 enum
 {
@@ -52,7 +55,7 @@ enum
  * \param[out] reply_flags flags of the reply
  * \param[out] reply_msg0 first reply message word
  * \param[out] reply_msg1 second reply message word
- * \return 0 on success, or a negative error value otherwise 
+ * \return 0 on success, or a negative error value otherwise
  * \retval -EAGAIN resource is temporarily not available
  * \retval -EINVAL the flags argument is invalid
  * \retval -ESRCH the specified receiver thread does not exist
@@ -68,7 +71,7 @@ enum
  *
  * In case that a sender-specified timeout is reached without the
  * receiver handling the call, the function returns with -ETIMEDOUT.
- * 
+ *
  * The exact register layout of an IPC message is shown in the table below.
  *
  * <table>
@@ -110,7 +113,7 @@ enum
  * memory mappings. The sender can also specify access rights of
  * how map the pages. The sender can only grant right that it
  * has itself.
- * 
+ *
  * The register layout for memory mappings is shown in the table below.
  *
  * <table>
@@ -209,4 +212,3 @@ syscall0(unsigned long rcv,
          unsigned long flags,
          unsigned long msg0,
          unsigned long msg1);
-

@@ -20,3 +20,9 @@
 #pragma once
 
 #define NULL    ((void*)0)
+
+#define offsetof(_type, _field) \
+    (__builtin_offsetof(_type, _field))
+
+#define containerof(_addr, _type, _field) \
+    ((_type*)(((unsigned char*)(_addr)) - offsetof(_type, _field)))

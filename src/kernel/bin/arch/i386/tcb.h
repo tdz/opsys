@@ -45,7 +45,6 @@ struct tcb
     struct tcb_regs regs; /**< CPU registers */
 
     struct list * volatile ipcin; /**< List of incoming IPC messages */
-    struct list ipcout;
     struct ipc_msg msg;
     struct list wait;
     struct list sched;

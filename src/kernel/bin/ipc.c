@@ -59,15 +59,10 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
-        if (rcv->ipcin)
-        {
-                rcv->ipcin = list_init(&msg->snd->ipcout, rcv->ipcin->prev,
-                                       rcv->ipcin, &msg->snd->msg);
-        }
-        else
-        {
-                rcv->ipcin = list_init(&msg->snd->ipcout,
-                                       NULL, NULL, &msg->snd->msg);
+        if (rcv->ipcin) {
+            rcv->ipcin = list_enque_in_front(rcv->ipcin, &msg->rcv_q);
+        } else {
+            rcv->ipcin = &msg->rcv_q;
         }
 
         spinlock_unlock(&rcv->lock);

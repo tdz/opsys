@@ -17,6 +17,7 @@
  */
 
 #include "ipcmsg.h"
+#include <stddef.h>
 
 /* sender waits for reply */
 #define IPC_MSG_FLAGS_TIMEOUT(x_)          (((x_)&0xfffffffe)>>1)
@@ -25,12 +26,13 @@ int
 ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
              unsigned long flags, unsigned long msg0, unsigned long msg1)
 {
-        msg->snd= snd;
-        msg->flags = flags&~IPC_MSG_FLAGS_RESERVED;
-        msg->msg0 = msg0;
-        msg->msg1 = msg1;
+    list_init(&msg->rcv_q, NULL, NULL, &msg->rcv_q);
+    msg->snd= snd;
+    msg->flags = flags&~IPC_MSG_FLAGS_RESERVED;
+    msg->msg0 = msg0;
+    msg->msg1 = msg1;
 
-        return 0;
+    return 0;
 }
 
 int

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "list.h"
+
 struct tcb;
 
 enum ipc_timeout
@@ -34,12 +36,12 @@ enum ipc_msg_flags
         IPC_MSG_FLAG_IS_ERRNO  = 1<<16
 };
 
-struct ipc_msg
-{
-        struct tcb   *snd;
-        unsigned long flags;
-        unsigned long msg0;
-        unsigned long msg1;
+struct ipc_msg {
+    struct list     rcv_q;
+    struct tcb*     snd;
+    unsigned long   flags;
+    unsigned long   msg0;
+    unsigned long   msg1;
 };
 
 int

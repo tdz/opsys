@@ -25,6 +25,7 @@ oskernel_SRCS = alloc.c \
                 syssrv.c \
                 task.c \
                 taskhlp.c \
+                tcb.c \
                 tcbhlp.c \
                 vmemarea.c
 

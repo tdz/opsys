@@ -14,7 +14,6 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         pagetbl.c \
         pde.c \
         pte.c \
-        tcb.c \
         tcbregs.c \
         tcbregs.S \
         vmem.c \

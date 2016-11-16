@@ -10,7 +10,6 @@ oskernel_SRCS = alloc.c \
                 assert.c \
                 bitset.c \
                 console.c \
-                crt.c \
                 elfldr.c \
                 ipc.c \
                 ipcmsg.c \

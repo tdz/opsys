@@ -21,7 +21,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
-#include "crt.h"
+#include "drivers/vga/crt.h"
 
 static size_t
 console_hextostr(unsigned long v, char *str)

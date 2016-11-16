@@ -17,7 +17,6 @@ oskernel_SRCS = alloc.c \
                 list.c \
                 loader.c \
                 memzone.c \
-                pit.c \
                 pmem.c \
                 pmemarea.c \
                 sched.c \

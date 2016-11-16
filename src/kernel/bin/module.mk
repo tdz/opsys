@@ -1,5 +1,6 @@
 
-archdir = arch/$(HOST_CPU)
+archdir    := arch/$(HOST_CPU)/
+driversdir := drivers/
 
 BINS += oskernel
 
@@ -36,5 +37,9 @@ oskernel_LD_SEARCH_PATHS += kernel/bin kernel/lib
 
 # include architecture-specific files
 include $(srcdir)/kernel/bin/$(archdir)/arch.mk
+
+# include drivers
+driver_mk := driver.mk
+include $(shell find -P $(srcdir)/kernel/bin/$(driversdir) -type f -name "$(driver_mk)")
 
 oskernel_LIBS += libopsys.a

@@ -24,22 +24,21 @@
 void
 pic_install()
 {
-        __asm__(/* out ICW 1 */
-                "mov $0x11, %%al\n\t"
-                "out %%al, $0x20\n\t" "out %%al, $0xa0\n\t"
-                /* out ICW 2 */
-                "mov $0x20, %%al\n\t"
-                "out %%al, $0x21\n\t"
-                "mov $0x28, %%al\n\t" "out %%al, $0xa1\n\t"
-                /* out ICW 3 */
-                "mov $0x04, %%al\n\t"
-                "out %%al, $0x21\n\t"
-                "mov $0x02, %%al\n\t" "out %%al, $0xa1\n\t"
-                /* out ICW 4 */
-                "mov $0x01, %%al\n\t" "out %%al, $0x21\n\t" "out %%al, $0xa1\n\t"
-                :
-                :
-                : "al");
+    /* out ICW 1 */
+    io_outb(0x20, 0x11);
+    io_outb(0xa0, 0x11);
+
+    /* out ICW 2 */
+    io_outb(0x21, 0x20);
+    io_outb(0xa1, 0x28);
+
+    /* out ICW 3 */
+    io_outb(0x21, 0x04);
+    io_outb(0xa1, 0x02);
+
+    /* out ICW 4 */
+    io_outb(0x21, 0x01);
+    io_outb(0xa1, 0x01);
 }
 
 /* signal end of interupt to PIC */

@@ -13,6 +13,7 @@ oskernel_SRCS = alloc.c \
                 elfldr.c \
                 ipc.c \
                 ipcmsg.c \
+                irq.c \
                 list.c \
                 loader.c \
                 memzone.c \

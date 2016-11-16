@@ -19,6 +19,7 @@
 
 #include "kbd.h"
 #include <errno.h>
+#include "idt.h"
 #include "ioports.h"
 
 enum {
@@ -168,11 +169,20 @@ kbd_interfacetest(void)
     return kbd_ctrl_incmd(KBD_CTRL_CMD_KBDITFTEST) ? -EIO : 0;
 }
 
+#include "console.h"
+
+static void
+kbd_irq_handler(unsigned char irqno)
+{
+    int scancode = kbd_get_scancode();
+
+    console_printf("%s:%x: keyboard handler scancode=%x.\n",
+                   __FILE__, __LINE__, scancode);
+}
+
 int
 kbd_init()
 {
-    int err;
-
     /* enable keyboard */
     kbd_ctrl_outb(KBD_CTRL_CMD_ENABLEKBD);
 
@@ -198,6 +208,8 @@ kbd_init()
         }
     }
 
+    idt_install_irq_handler(1, kbd_irq_handler);
+
     /* enable interrupts, set XT scancode set */
 
     kbd_ctrl_outcmd(KBD_CTRL_CMD_WRCMDBYTE,
@@ -217,15 +229,4 @@ int
 kbd_get_scancode()
 {
     return io_inb(IOPORT_ENCD);
-}
-
-#include "console.h"
-
-void
-kbd_irq_handler(unsigned char irqno)
-{
-    int scancode = kbd_get_scancode();
-
-    console_printf("%s:%x: keyboard handler scancode=%x.\n",
-                   __FILE__, __LINE__, scancode);
 }

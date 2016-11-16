@@ -24,6 +24,3 @@ kbd_init(void);
 
 int
 kbd_get_scancode(void);
-
-void
-kbd_irq_handler(unsigned char irqno);

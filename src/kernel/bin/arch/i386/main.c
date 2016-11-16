@@ -86,10 +86,6 @@ general_init(struct task **tsk, void *stack)
         {
                 console_perror("kbd_init", -err);
         }
-        else
-        {
-                idt_install_irq_handler(1, kbd_irq_handler);
-        }
 
         /*
          * setup PIT for system timer

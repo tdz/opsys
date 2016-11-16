@@ -36,6 +36,7 @@
  */
 
 #include "pit.h"
+#include <stdint.h>
 #include "ioports.h"
 
 /**
@@ -47,34 +48,26 @@
 void
 pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
 {
-        unsigned char byte;
-        unsigned short word;
+    /* setup PIT control word */
 
-        /* setup PIT control word
-         */
+    uint8_t byte = ((counter & 0x3) << 6) |
+                   (0x3 << 4) |            /* LSB, then MSB */
+                   ((mode & 0x7) << 1);
 
-        byte = ((counter & 0x3) << 6) | (0x3 << 4) |    /* LSB then MSB */
-                ((mode & 0x7) << 1);
+    io_outb(0x43, byte);
 
-        io_outb(0x43, byte);
+    /* setup PIT counter */
 
-        /* setup PIT counter
-         */
+    uint16_t word = 1193180 / freq;
 
-        word = 1193180 / freq;
-
-        io_outb(0x40 + (counter & 0x03), word & 0xff);
-        io_outb(0x40 + (counter & 0x03), (word & 0xff00) >> 8);
+    io_outb(0x40 + (counter & 0x03), word & 0xff);
+    io_outb(0x40 + (counter & 0x03), (word & 0xff00) >> 8);
 }
-
-#include "console.h"
 
 void
 pit_irq_handler(unsigned char irqno)
 {
-        static unsigned long tickcounter = 0;
+    static unsigned long tickcounter = 0;
 
-/*        console_printf("%s:%x timer handler.\n", __FILE__, __LINE__);*/
-
-        ++tickcounter;
+    ++tickcounter;
 }

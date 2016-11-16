@@ -19,21 +19,19 @@
 
 #pragma once
 
-enum pit_counter
-{
-        PIT_COUNTER_TIMER = 0,
-        PIT_COUNTER_DRAM  = 1,
-        PIT_COUNTER_SPKR  = 2
+enum pit_counter {
+    PIT_COUNTER_TIMER = 0,
+    PIT_COUNTER_DRAM  = 1,
+    PIT_COUNTER_SPKR  = 2
 };
 
-enum pit_mode
-{
-        PIT_MODE_TERMINAL = 0x00,
-        PIT_MODE_ONESHOT  = 0x01,
-        PIT_MODE_RATEGEN  = 0x02,
-        PIT_MODE_WAVEGEN  = 0x03,
-        PIT_MODE_SWSTROBE = 0x04,
-        PIT_MODE_HWSTROBE = 0x05
+enum pit_mode {
+    PIT_MODE_TERMINAL = 0x00,
+    PIT_MODE_ONESHOT  = 0x01,
+    PIT_MODE_RATEGEN  = 0x02,
+    PIT_MODE_WAVEGEN  = 0x03,
+    PIT_MODE_SWSTROBE = 0x04,
+    PIT_MODE_HWSTROBE = 0x05
 };
 
 void

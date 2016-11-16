@@ -36,6 +36,3 @@ enum pit_mode {
 
 void
 pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode);
-
-void
-pit_irq_handler(unsigned char irqno);

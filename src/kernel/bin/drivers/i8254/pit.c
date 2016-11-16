@@ -37,7 +37,16 @@
 
 #include "pit.h"
 #include <stdint.h>
+#include "idt.h"
 #include "ioports.h"
+
+static void
+pit_irq_handler(unsigned char irqno)
+{
+    static unsigned long tickcounter = 0;
+
+    ++tickcounter;
+}
 
 /**
  * \brief program PIT
@@ -62,12 +71,6 @@ pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
 
     io_outb(0x40 + (counter & 0x03), word & 0xff);
     io_outb(0x40 + (counter & 0x03), (word & 0xff00) >> 8);
-}
 
-void
-pit_irq_handler(unsigned char irqno)
-{
-    static unsigned long tickcounter = 0;
-
-    ++tickcounter;
+    idt_install_irq_handler(0, pit_irq_handler);
 }

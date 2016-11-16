@@ -91,7 +91,6 @@ general_init(struct task **tsk, void *stack)
          * setup PIT for system timer
          */
         pit_install(0, SCHED_FREQ, PIT_MODE_RATEGEN);
-        idt_install_irq_handler(0, pit_irq_handler);
 
         idt_install_syscall_handler(syscall_entry_handler);
 

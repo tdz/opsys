@@ -19,7 +19,7 @@
 
 #include "interupt.h"
 #include "cpu.h"
-#include "ioports.h"
+#include "drivers/i8259/pic.h"
 
 /* clear interupts */
 void
@@ -39,18 +39,7 @@ sti()
 void
 eoi(unsigned char intno)
 {
-        if (intno > 15)
-        {
-                return;
-        }
-        else if (intno > 7)
-        {
-                io_outb(0xa0, 0x20);
-        }
-        else
-        {
-                io_outb(0x20, 0x20);
-        }
+        pic_eoi(intno);
 }
 
 int

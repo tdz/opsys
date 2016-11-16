@@ -21,3 +21,6 @@
 
 void
 pic_install(void);
+
+void
+pic_eoi(unsigned char intno);

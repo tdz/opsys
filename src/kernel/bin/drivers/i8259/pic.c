@@ -18,6 +18,8 @@
  */
 
 #include "pic.h"
+#include <stdint.h>
+#include "ioports.h"
 
 void
 pic_install()
@@ -38,4 +40,20 @@ pic_install()
                 :
                 :
                 : "al");
+}
+
+/* signal end of interupt to PIC */
+void
+pic_eoi(unsigned char intno)
+{
+    static const uint8_t ioport[2] = {
+        0x20,
+        0xa0
+    };
+
+    if (intno > 15) {
+        return; /* silently ignore software interrupts */
+    }
+
+    io_outb(ioport[intno > 7], 0x20);
 }

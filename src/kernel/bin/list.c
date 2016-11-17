@@ -37,49 +37,57 @@ list_init(struct list *list, struct list *prev, struct list *next)
 }
 
 struct list *
-list_enque_in_front(struct list *list, struct list *newlist)
+list_enqueue_before(struct list *list, struct list *newlist)
 {
-        newlist->prev = list->prev;
-        newlist->next = list;
-
-        if (list->prev) {
-            list->prev->next = newlist;
-        }
-
-        list->prev = newlist;
-
+    if (!list) {
         return newlist;
+    }
+
+    newlist->prev = list->prev;
+    newlist->next = list;
+
+    if (list->prev) {
+        list->prev->next = newlist;
+    }
+
+    list->prev = newlist;
+
+    return newlist;
 }
 
 struct list *
-list_enque_behind(struct list *list, struct list *newlist)
+list_enqueue_after(struct list *list, struct list *newlist)
 {
-        newlist->prev = list;
-        newlist->next = list->next;
-
-        if (list->next) {
-            list->next->prev = newlist;
-        }
-
-        list->next = newlist;
-
+    if (!list) {
         return newlist;
+    }
+
+    newlist->prev = list;
+    newlist->next = list->next;
+
+    if (list->next) {
+        list->next->prev = newlist;
+    }
+
+    list->next = newlist;
+
+    return list;
 }
 
 struct list *
-list_deque(struct list *list)
+list_dequeue(struct list *list)
 {
-        if (list->next) {
-            list->next->prev = list->prev;
-        }
-        if (list->prev) {
-            list->prev->next = list->next;
-        }
+    if (list->next) {
+        list->next->prev = list->prev;
+    }
+    if (list->prev) {
+        list->prev->next = list->next;
+    }
 
-        list->prev = NULL;
-        list->next = NULL;
+    list->prev = NULL;
+    list->next = NULL;
 
-        return list;
+    return list;
 }
 
 struct list *

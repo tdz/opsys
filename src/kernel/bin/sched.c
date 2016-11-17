@@ -88,14 +88,7 @@ sched_add_thread(struct tcb *tcb, prio_class_type prio)
 
         list_init(&tcb->sched, &tcb->sched, &tcb->sched);
 
-        if (!g_thread[prio])
-        {
-                g_thread[prio] = &tcb->sched;
-        }
-        else
-        {
-                list_enque_in_front(g_thread[prio], &tcb->sched);
-        }
+        g_thread[prio] = list_enqueue_before(g_thread[prio], &tcb->sched);
 
         return 0;
 }

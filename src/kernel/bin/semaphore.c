@@ -131,7 +131,7 @@ semaphore_enter(struct semaphore *sem)
                         {
                                 sem->waiters = self->wait.next;
                         }
-                        list_deque(&self->wait);
+                        list_dequeue(&self->wait);
 
                         spinlock_unlock(&sem->lock);
                 }

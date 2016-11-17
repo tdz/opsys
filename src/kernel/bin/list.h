@@ -28,13 +28,13 @@ struct list *
 list_init(struct list *list, struct list *prev, struct list *next);
 
 struct list *
-list_enque_in_front(struct list *list, struct list *newlist);
+list_enqueue_before(struct list *list, struct list *newlist);
 
 struct list *
-list_enque_behind(struct list *list, struct list *newlist);
+list_enqueue_after(struct list *list, struct list *newlist);
 
 struct list *
-list_deque(struct list *list);
+list_dequeue(struct list *list);
 
 struct list *
 list_next(const struct list *list);

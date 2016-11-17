@@ -19,15 +19,14 @@
 
 #pragma once
 
+#include "list.h"
 #include "spinlock.h"
-
-struct list;
 
 struct semaphore
 {
-        spinlock_type lock;
-        unsigned long slots;
-        struct list *waiters;
+        spinlock_type   lock;
+        unsigned long   slots;
+        struct list     waiters; /**< Waiter-list head */
 };
 
 int

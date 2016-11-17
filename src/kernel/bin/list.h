@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 struct list {
     struct list* next;
     struct list* prev;
@@ -28,13 +30,37 @@ struct list*
 list_init(struct list* list);
 
 struct list*
+list_init_head(struct list* head);
+
+bool
+list_is_empty(const struct list* head);
+
+void
 list_enqueue_before(struct list* list, struct list* newlist);
 
-struct list*
+void
 list_enqueue_after(struct list* list, struct list* newlist);
 
-struct list*
+void
+list_enqueue_front(struct list* head, struct list* newlist);
+
+void
+list_enqueue_back(struct list* head, struct list* newlist);
+
+void
 list_dequeue(struct list* list);
+
+struct list*
+list_begin(const struct list* head);
+
+const struct list*
+list_end(const struct list* head);
+
+struct list*
+list_first(const struct list* head);
+
+struct list*
+list_last(const struct list* head);
 
 struct list*
 list_next(const struct list* list);

@@ -52,13 +52,9 @@ ipc_send_and_wait(struct ipc_msg *msg, struct tcb *rcv)
         /*
          * enqueue message
          */
-        /*
-         * TODO: enqueue at end, not at beginning; to prevent walk over list,
-         * first element could have prev pointer set to end of list
-         */
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
-        rcv->ipcin = list_enqueue_before(rcv->ipcin, &msg->rcv_q);
+        list_enqueue_back(&rcv->ipcin, &msg->rcv_q);
         spinlock_unlock(&rcv->lock);
 
         /*
@@ -131,8 +127,9 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
 
         spinlock_lock(&rcv->lock, (unsigned long)sched_get_current_thread(cpuid()));
 
-        if (!rcv->ipcin)
+        if (list_is_empty(&rcv->ipcin))
         {
+                console_printf("%s:%x\n", __FILE__, __LINE__);
                 /*
                  * no pending messages; schedule possible senders
                  */
@@ -141,10 +138,12 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
                 sched_switch(cpuid());
                 spinlock_lock(&rcv->lock,
                               (unsigned long)sched_get_current_thread(cpuid()));
+                console_printf("%s:%x\n", __FILE__, __LINE__);
         }
 
-        if (!rcv->ipcin)
+        if (list_is_empty(&rcv->ipcin))
         {
+                console_printf("%s:%x\n", __FILE__, __LINE__);
                 err = -EAGAIN;
                 goto err_rcv_ipcin;
         }
@@ -153,11 +152,14 @@ ipc_recv(struct ipc_msg *msg, struct tcb *rcv)
          * dequeue first IPC message
          */
 
-        msgin = ipc_msg_of_list(rcv->ipcin);
-        rcv->ipcin = list_next(rcv->ipcin);
+        struct list* ipcin = list_first(&rcv->ipcin);
+        list_dequeue(ipcin);
+
+        msgin = ipc_msg_of_list(ipcin);
 
         if (!msgin)
         {
+                console_printf("%s:%x\n", __FILE__, __LINE__);
                 err = -EAGAIN;
                 goto err_msg;
         }

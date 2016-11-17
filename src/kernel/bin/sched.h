@@ -19,7 +19,6 @@
 
 #pragma once
 
-struct list;
 struct tcb;
 
 /** \brief a priority class */

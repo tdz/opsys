@@ -30,12 +30,23 @@ list_init(struct list* list)
 }
 
 struct list*
+list_init_head(struct list* head)
+{
+    head->next = head;
+    head->prev = head;
+
+    return head;
+}
+
+bool
+list_is_empty(const struct list* head)
+{
+    return list_begin(head) == list_end(head);
+}
+
+void
 list_enqueue_before(struct list* list, struct list* newlist)
 {
-    if (!list) {
-        return newlist;
-    }
-
     newlist->prev = list->prev;
     newlist->next = list;
 
@@ -44,17 +55,11 @@ list_enqueue_before(struct list* list, struct list* newlist)
     }
 
     list->prev = newlist;
-
-    return newlist;
 }
 
-struct list*
+void
 list_enqueue_after(struct list* list, struct list* newlist)
 {
-    if (!list) {
-        return newlist;
-    }
-
     newlist->prev = list;
     newlist->next = list->next;
 
@@ -63,11 +68,21 @@ list_enqueue_after(struct list* list, struct list* newlist)
     }
 
     list->next = newlist;
-
-    return list;
 }
 
-struct list*
+void
+list_enqueue_front(struct list* head, struct list* newlist)
+{
+    list_enqueue_after(head, newlist);
+}
+
+void
+list_enqueue_back(struct list* head, struct list* newlist)
+{
+    list_enqueue_before(head, newlist);
+}
+
+void
 list_dequeue(struct list* list)
 {
     if (list->next) {
@@ -79,8 +94,36 @@ list_dequeue(struct list* list)
 
     list->prev = NULL;
     list->next = NULL;
+}
 
-    return list;
+struct list*
+list_begin(const struct list* head)
+{
+    return head->next;
+}
+
+const struct list*
+list_end(const struct list* head)
+{
+    return head;
+}
+
+struct list*
+list_first(const struct list* head)
+{
+    if (list_is_empty(head)) {
+        return NULL;
+    }
+    return list_begin(head);
+}
+
+struct list*
+list_last(const struct list* head)
+{
+    if (list_is_empty(head)) {
+        return NULL;
+    }
+    return list_prev(list_end(head));
 }
 
 struct list*

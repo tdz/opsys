@@ -35,7 +35,7 @@ semaphore_init(struct semaphore *sem, unsigned long slots)
         }
 
         sem->slots = slots;
-        sem->waiters = NULL;
+        list_init_head(&sem->waiters);
 
 err_spinlock_init:
         return err;
@@ -94,8 +94,7 @@ semaphore_enter(struct semaphore *sem)
                          * no slots available, enque self in waiter list
                          */
 
-                        sem->waiters = list_enqueue_before(sem->waiters,
-                                                           &self->wait);
+                        list_enqueue_back(&sem->waiters, &self->wait);
 
                         tcb_set_state(self, THREAD_STATE_WAITING);
                 }
@@ -115,10 +114,6 @@ semaphore_enter(struct semaphore *sem)
 
                         spinlock_lock(&sem->lock, (unsigned long)self);
 
-                        if (sem->waiters == &self->wait)
-                        {
-                                sem->waiters = self->wait.next;
-                        }
                         list_dequeue(&self->wait);
 
                         spinlock_unlock(&sem->lock);
@@ -145,9 +140,11 @@ semaphore_leave(struct semaphore *sem)
          * wake up one waiter
          */
 
-        for (waiters = sem->waiters; waiters; waiters = list_next(waiters))
+        waiters = list_begin(&sem->waiters);
+
+        while (waiters != list_end(&sem->waiters))
         {
-                struct tcb *waiter = tcb_of_wait_list(sem->waiters);
+                struct tcb *waiter = tcb_of_wait_list(waiters);
 
                 /*
                  * any thread in this list is either blocked or has been
@@ -160,6 +157,8 @@ semaphore_leave(struct semaphore *sem)
                         tcb_set_state(waiter, THREAD_STATE_READY);
                         break;
                 }
+
+                waiters = list_next(waiters);
         }
 
         spinlock_unlock(&sem->lock);

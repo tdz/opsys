@@ -66,7 +66,8 @@ tcb_init_with_id(struct tcb *tcb,
     tcb->task = task;
     tcb->stack = stack;
     tcb->id = id;
-    tcb->ipcin = NULL;
+
+    list_init_head(&tcb->ipcin);
 
     list_init(&tcb->wait);
     list_init(&tcb->sched);

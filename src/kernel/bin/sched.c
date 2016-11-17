@@ -50,7 +50,7 @@
  * \brief current list head in thread list, one per priority class
  * \internal
  */
-static struct list *g_thread[SCHED_NPRIOS];
+static struct list g_thread[SCHED_NPRIOS];
 
 /**
  * \brief TCB of the currently scheduled thread on each CPU
@@ -74,6 +74,10 @@ sched_init(struct tcb* idle)
         g_current_thread[i] = idle;
     }
 
+    for (size_t i = 0; i < ARRAY_NELEMS(g_thread); ++i) {
+        list_init_head(g_thread + i);
+    }
+
     return sched_add_thread(idle, 0);
 }
 
@@ -86,13 +90,12 @@ sched_init(struct tcb* idle)
 int
 sched_add_thread(struct tcb *tcb, prio_class_type prio)
 {
-        console_printf("%s:%x adding tcb=%x, prio=%x.\n", __FILE__, __LINE__, tcb, prio);
+    console_printf("%s:%x adding tcb=%x, prio=%x.\n", __FILE__, __LINE__, tcb, prio);
 
-        tcb->sched.next = &tcb->sched;
-        tcb->sched.prev = &tcb->sched;
-        g_thread[prio] = list_enqueue_before(g_thread[prio], &tcb->sched);
+    list_enqueue_back(g_thread + prio, &tcb->sched);
+    tcb->prio = prio;
 
-        return 0;
+    return 0;
 }
 
 /**
@@ -117,38 +120,32 @@ sched_get_current_thread(unsigned int cpu)
 struct tcb *
 sched_search_thread(unsigned int taskid, unsigned char tcbid)
 {
-        struct tcb *tcb;
-        struct list **cur_prio;
-        struct list **end_prio;
+    const struct list* cur_prio = g_thread;
+    const struct list* end_prio = cur_prio + ARRAY_NELEMS(g_thread);
 
-        tcb = NULL;
+    while (cur_prio < end_prio) {
+        struct list* listhead = list_begin(cur_prio);
 
-        cur_prio = g_thread;
-        end_prio = cur_prio + ARRAY_NELEMS(g_thread);
+        while (listhead != list_end(cur_prio)) {
+            struct tcb* tcb = tcb_of_sched_list(listhead);
 
-        while (cur_prio < end_prio)
-        {
-                if (*cur_prio)
-                {
-                        struct list *current = *cur_prio;
-
-                        do
-                        {
-                                struct tcb *currenttcb = tcb_of_sched_list(current);
-
-                                if ((currenttcb->id == tcbid) &&
-                                    (currenttcb->task->id == taskid))
-                                {
-                                        tcb = currenttcb;
-                                }
-                                current = current->next;
-                        } while (!tcb && (current != *cur_prio));
-                }
-
-                ++cur_prio;
+            if ((tcb->id == tcbid) && (tcb->task->id == taskid)) {
+                return tcb;
+            }
+            listhead = list_next(listhead);
         }
 
-        return tcb;
+        ++cur_prio;
+    }
+
+    return NULL;
+}
+
+static void
+move_thread_to_back(struct tcb* tcb)
+{
+    list_dequeue(&tcb->sched);
+    list_enqueue_back(g_thread + tcb->prio, &tcb->sched);
 }
 
 /**
@@ -164,6 +161,10 @@ sched_switch_to(unsigned int cpu, struct tcb* next)
 {
     assert(cpu < ARRAY_NELEMS(g_current_thread));
     assert(next && tcb_is_runnable(next));
+
+    /* We move the new thread to the end of the scheduler's
+     * ready list, so we don't select it over and over again. */
+    move_thread_to_back(next);
 
     struct tcb* self = g_current_thread[cpu];
 
@@ -195,41 +196,33 @@ err_tcb_switch:
  * \return the tcb of a runnable thread, or NULL otherwise
  * \internal
  */
-static struct tcb *
+static struct tcb*
 sched_select_thread(void)
 {
-        struct list **end_prio;
-        struct list **cur_prio;
+    const struct list* min_prio = g_thread;
+    const struct list* cur_prio = min_prio + ARRAY_NELEMS(g_thread);
 
-        end_prio = g_thread;
-        cur_prio = end_prio + ARRAY_NELEMS(g_thread);
+    while (cur_prio > min_prio) {
 
-        while (cur_prio > end_prio)
-        {
-                --cur_prio;
+        --cur_prio;
 
-                if (*cur_prio)
-                {
-                        struct list *listhead = *cur_prio;
+        struct list* listhead = list_begin(cur_prio);
 
-                        do
-                        {
-                                listhead = listhead->next;
-                                struct tcb *tcb = tcb_of_sched_list(listhead);
+        while (listhead != list_end(cur_prio)) {
+                struct tcb* tcb = tcb_of_sched_list(listhead);
 
-                                if (tcb_is_runnable(tcb))
-                                {
-                                        /* found runnable thread with highest prio */
-                                        return tcb;
-                                }
-                        } while (listhead != *cur_prio);
+                if (tcb_is_runnable(tcb)) {
+                    /* found runnable thread with highest prio */
+                    return tcb;
                 }
+                listhead = list_next(listhead);
         }
+    }
 
-        /* there should always be an idle thread runnable */
-        assert_never_reach();
+    /* there should always be an idle thread runnable */
+    assert_never_reach();
 
-        return NULL;
+    return NULL;
 }
 
 /**
@@ -240,21 +233,15 @@ sched_select_thread(void)
 int
 sched_switch(unsigned int cpu)
 {
-        struct tcb *tcb;
-        int err;
+    /* at least the idle thread should always be runnable */
+    struct tcb* tcb = sched_select_thread();
 
-        /* at least the idle thread should always be runnable */
-        tcb = sched_select_thread();
+    int res = sched_switch_to(cpu, tcb);
+    if (res < 0) {
+        return res;
+    }
 
-        if ((err = sched_switch_to(cpu, tcb)) < 0)
-        {
-                goto err_sched_switch_to;
-        }
-
-        return 0;
-
-err_sched_switch_to:
-        return err;
+    return 0;
 }
 
 /**

@@ -39,10 +39,11 @@ struct tcb {
     struct task *task; /**< Address of task structure of the thread */
     void *stack; /**< Stack base address */
     unsigned char id; /**< Task-local id */
+    unsigned char prio;
 
     struct tcb_regs regs; /**< CPU registers */
 
-    struct list * volatile ipcin; /**< List of incoming IPC messages */
+    struct list ipcin; /**< List head of incoming IPC messages */
     struct ipc_msg msg;
     struct list wait;
     struct list sched;

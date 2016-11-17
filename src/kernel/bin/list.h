@@ -20,24 +20,24 @@
 #pragma once
 
 struct list {
-    struct list *next;
-    struct list *prev;
+    struct list* next;
+    struct list* prev;
 };
 
-struct list *
-list_init(struct list *list, struct list *prev, struct list *next);
+struct list*
+list_init(struct list* list, struct list* prev, struct list* next);
 
-struct list *
-list_enqueue_before(struct list *list, struct list *newlist);
+struct list*
+list_enqueue_before(struct list* list, struct list* newlist);
 
-struct list *
-list_enqueue_after(struct list *list, struct list *newlist);
+struct list*
+list_enqueue_after(struct list* list, struct list* newlist);
 
-struct list *
-list_dequeue(struct list *list);
+struct list*
+list_dequeue(struct list* list);
 
-struct list *
-list_next(const struct list *list);
+struct list*
+list_next(const struct list* list);
 
-struct list *
-list_prev(const struct list *list);
+struct list*
+list_prev(const struct list* list);

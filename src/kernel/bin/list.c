@@ -20,8 +20,8 @@
 #include "list.h"
 #include <stddef.h>
 
-struct list *
-list_init(struct list *list, struct list *prev, struct list *next)
+struct list*
+list_init(struct list* list, struct list* prev, struct list* next)
 {
     list->next = next;
     list->prev = prev;
@@ -36,8 +36,8 @@ list_init(struct list *list, struct list *prev, struct list *next)
     return list;
 }
 
-struct list *
-list_enqueue_before(struct list *list, struct list *newlist)
+struct list*
+list_enqueue_before(struct list* list, struct list* newlist)
 {
     if (!list) {
         return newlist;
@@ -55,8 +55,8 @@ list_enqueue_before(struct list *list, struct list *newlist)
     return newlist;
 }
 
-struct list *
-list_enqueue_after(struct list *list, struct list *newlist)
+struct list*
+list_enqueue_after(struct list* list, struct list* newlist)
 {
     if (!list) {
         return newlist;
@@ -74,8 +74,8 @@ list_enqueue_after(struct list *list, struct list *newlist)
     return list;
 }
 
-struct list *
-list_dequeue(struct list *list)
+struct list*
+list_dequeue(struct list* list)
 {
     if (list->next) {
         list->next->prev = list->prev;
@@ -90,14 +90,14 @@ list_dequeue(struct list *list)
     return list;
 }
 
-struct list *
-list_next(const struct list *list)
+struct list*
+list_next(const struct list* list)
 {
-        return list->next;
+    return list->next;
 }
 
-struct list *
-list_prev(const struct list *list)
+struct list*
+list_prev(const struct list* list)
 {
-        return list->prev;
+    return list->prev;
 }

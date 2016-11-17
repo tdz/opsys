@@ -86,8 +86,8 @@ sched_add_thread(struct tcb *tcb, prio_class_type prio)
 {
         console_printf("%s:%x adding tcb=%x, prio=%x.\n", __FILE__, __LINE__, tcb, prio);
 
-        list_init(&tcb->sched, &tcb->sched, &tcb->sched);
-
+        tcb->sched.next = &tcb->sched;
+        tcb->sched.prev = &tcb->sched;
         g_thread[prio] = list_enqueue_before(g_thread[prio], &tcb->sched);
 
         return 0;

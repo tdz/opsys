@@ -21,17 +21,10 @@
 #include <stddef.h>
 
 struct list*
-list_init(struct list* list, struct list* prev, struct list* next)
+list_init(struct list* list)
 {
-    list->next = next;
-    list->prev = prev;
-
-    if (prev) {
-        prev->next = list;
-    }
-    if (next) {
-        next->prev = list;
-    }
+    list->next = NULL;
+    list->prev = NULL;
 
     return list;
 }

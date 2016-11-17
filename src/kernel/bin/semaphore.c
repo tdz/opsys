@@ -90,24 +90,12 @@ semaphore_enter(struct semaphore *sem)
                 }
                 else
                 {
-                        struct list *waiters;
-
                         /*
                          * no slots available, enque self in waiter list
                          */
 
-                        if (sem->waiters)
-                        {
-                                waiters = list_init(&self->wait,
-                                                    sem->waiters->prev,
-                                                    sem->waiters);
-                        }
-                        else
-                        {
-                                waiters = list_init(&self->wait, NULL, NULL);
-                        }
-
-                        sem->waiters = waiters;
+                        sem->waiters = list_enqueue_before(sem->waiters,
+                                                           &self->wait);
 
                         tcb_set_state(self, THREAD_STATE_WAITING);
                 }

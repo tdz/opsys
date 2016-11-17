@@ -72,8 +72,8 @@ tcb_init_with_id(struct tcb *tcb,
         tcb->id = id;
         tcb->ipcin = NULL;
 
-        list_init(&tcb->wait, NULL, NULL);
-        list_init(&tcb->sched, NULL, NULL);
+        list_init(&tcb->wait);
+        list_init(&tcb->sched);
 
         spinlock_init(&tcb->lock);
 

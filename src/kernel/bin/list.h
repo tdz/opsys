@@ -25,7 +25,7 @@ struct list {
 };
 
 struct list*
-list_init(struct list* list, struct list* prev, struct list* next);
+list_init(struct list* list);
 
 struct list*
 list_enqueue_before(struct list* list, struct list* newlist);

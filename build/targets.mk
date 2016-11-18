@@ -164,7 +164,7 @@ $(foreach feature,$(features),\
 # Common targets
 #
 
-.PHONY: all clean clean-all doc
+.PHONY: all clean clean-all doc install
 
 all: | $(FILES) $(all_symlinks) $(all_bins)
 
@@ -175,3 +175,5 @@ clean-all: clean
 	$(RM) -fr $(clean_all_files)
 
 doc:
+
+install: $(install_targets)

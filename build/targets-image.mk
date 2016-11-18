@@ -14,6 +14,7 @@ $$($1_img): $$($1_dir) $$($1_img_in) $$($1_deps)
 	sudo $$(GENIMAGE) -a $$(HOST_CPU) -b $$(IMAGE_IN_DIR) -s $$(outdir) -i $$@ $$($1_deps)
 clean_all_files += $$($1_img)
 image_files += $$($1_img)
+install_targets += $$($1_img)
 endef
 
 $(foreach image,$(IMAGES),\

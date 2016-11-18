@@ -24,5 +24,5 @@ enum {
         EXIT_FAILURE
 };
 
-void
-exit(int status) __attribute__((noreturn));
+_Noreturn void
+exit(int status);

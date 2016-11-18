@@ -19,12 +19,13 @@
 
 #pragma once
 
+#include <stdalign.h>
 #include "pde.h"
 
 struct page_directory
 {
-        volatile pde_type entry[1024]; /* page-directory entries */
-} __attribute__ (( aligned(4096) ));
+        alignas(4096 )volatile pde_type entry[1024]; /* page-directory entries */
+};
 
 int
 page_directory_init(struct page_directory *pd);

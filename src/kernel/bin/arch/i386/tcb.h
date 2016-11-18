@@ -37,21 +37,21 @@ enum thread_state
 
 struct tcb
 {
-        enum thread_state state;
-        struct task *task; /**< Address of task structure of the thread */
-        void *stack; /**< Stack base address */
-        unsigned char id; /**< Task-local id */
+    enum thread_state state;
+    struct task *task; /**< Address of task structure of the thread */
+    void *stack; /**< Stack base address */
+    unsigned char id; /**< Task-local id */
 
-        struct tcb_regs regs; /**< CPU registers */
+    struct tcb_regs regs; /**< CPU registers */
 
-        struct list * volatile ipcin; /**< List of incoming IPC messages */
-        struct list ipcout;
-        struct ipc_msg msg;
-        struct list wait;
-        struct list sched;
+    struct list * volatile ipcin; /**< List of incoming IPC messages */
+    struct list ipcout;
+    struct ipc_msg msg;
+    struct list wait;
+    struct list sched;
 
-        spinlock_type lock;
-} __attribute__ (( aligned(256) ));
+    spinlock_type lock;
+};
 
 int
 tcb_init_with_id(struct tcb *tcb,

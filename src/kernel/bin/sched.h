@@ -39,11 +39,8 @@ sched_init(unsigned int cpu, struct tcb *idle);
 int
 sched_add_thread(struct tcb *tcb, prio_class_type prio);
 
-struct tcb *
+struct tcb*
 sched_get_current_thread(unsigned int cpu);
-
-struct tcb *
-sched_get_thread(struct list *listhead);
 
 struct tcb *
 sched_search_thread(unsigned int taskid, unsigned char tcbid);

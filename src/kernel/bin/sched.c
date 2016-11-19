@@ -52,7 +52,10 @@
  */
 static struct list *g_thread[SCHED_NPRIOS];
 
-static struct list *g_current_thread[SCHED_NCPUS];
+/**
+ * \brief TCB of the currently scheduled thread on each CPU
+ */
+static struct tcb* g_current_thread[SCHED_NCPUS];
 
 /**
  * \brief init scheduler
@@ -65,14 +68,14 @@ static struct list *g_current_thread[SCHED_NCPUS];
  * It is added to the thread list automatically.
  */
 int
-sched_init(unsigned int cpu, struct tcb *idle)
+sched_init(unsigned int cpu, struct tcb* idle)
 {
-        assert(cpu < ARRAY_NELEMS(g_current_thread));
-        assert(idle);
+    assert(cpu < ARRAY_NELEMS(g_current_thread));
+    assert(idle);
 
-        g_current_thread[cpu] = &idle->sched;
+    g_current_thread[cpu] = idle;
 
-        return sched_add_thread(idle, 0);
+    return sched_add_thread(idle, 0);
 }
 
 /**
@@ -101,29 +104,9 @@ sched_add_thread(struct tcb *tcb, prio_class_type prio)
 struct tcb *
 sched_get_current_thread(unsigned int cpu)
 {
-        assert(cpu < ARRAY_NELEMS(g_current_thread));
+    assert(cpu < ARRAY_NELEMS(g_current_thread));
 
-        return sched_get_thread(g_current_thread[cpu]);
-}
-
-/**
- * \brief return the thread at the beginning of the list
- * \param[in] listhead a list of threads
- * \return the first thread in the list, or NULL otherwise
- */
-struct tcb *
-sched_get_thread(struct list *listhead)
-{
-        struct tcb *tcb;
-
-        if (!listhead)
-        {
-                return NULL;
-        }
-
-        tcb = tcb_of_sched_list(listhead);
-
-        return tcb;
+    return g_current_thread[cpu];
 }
 
 /**
@@ -178,30 +161,34 @@ sched_search_thread(unsigned int taskid, unsigned char tcbid)
  * \attention The destination thread has to be in runnable state.
  */
 int
-sched_switch_to(unsigned int cpu, struct tcb *next)
+sched_switch_to(unsigned int cpu, struct tcb* next)
 {
-        int err;
-        struct tcb *tcb;
+    assert(cpu < ARRAY_NELEMS(g_current_thread));
+    assert(next && tcb_is_runnable(next));
 
-        assert(cpu < ARRAY_NELEMS(g_current_thread));
-        assert(next && tcb_is_runnable(next));
+    struct tcb* self = g_current_thread[cpu];
 
-        tcb = tcb_of_sched_list(g_current_thread[cpu]);
+    if (next == self) {
+		return 0; /* nothing to do if we're switching to the same thread */
+	}
 
-        /*if (next != tcb)*/
-        {
-                g_current_thread[cpu] = &next->sched;
+    /* Calling tcb_switch() means scheduling another thread, We set
+     * the new thread as the current one _before_ switching, or it
+     * won't know it's own TCB structure otherwise. */
+	g_current_thread[cpu] = next;
 
-                if ((err = tcb_switch(tcb, next)) < 0)
-                {
-                        goto err_tcb_switch;
-                }
-        }
+	int res = tcb_switch(self, next);
+    if (res < 0) {
+        goto err_tcb_switch;
+	}
 
-        return 0;
+    return 0;
 
 err_tcb_switch:
-        return err;
+    /* tcb_switch() failed, so we set ourselfes as the current
+     * thread. */
+	g_current_thread[cpu] = self;
+    return res;
 }
 
 /**

@@ -133,7 +133,7 @@ general_init(struct task **tsk, void *stack)
          * setup scheduler
          */
 
-        if ((err = sched_init(cpuid(), tcb)) < 0)
+        if ((err = sched_init(tcb)) < 0)
         {
                 console_perror("sched_init", -err);
                 goto err_sched_init;

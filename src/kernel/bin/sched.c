@@ -59,21 +59,20 @@ static struct tcb* g_current_thread[SCHED_NCPUS];
 
 /**
  * \brief init scheduler
- * \param cpu the CPU for which the scheduler gets initialized
  * \param[in] idle the initial idle thread
  * \return 0 on success, or a negative error code otherwise
  *
- * This initializes the scheduler on the given CPU. The passed thread is the
- * initial kernel thread on the CPU and also serves as the CPU's idle thread.
- * It is added to the thread list automatically.
+ * This initializes the scheduler. The passed thread is the idle
+ * thread. It is added to the thread list automatically.
  */
 int
-sched_init(unsigned int cpu, struct tcb* idle)
+sched_init(struct tcb* idle)
 {
-    assert(cpu < ARRAY_NELEMS(g_current_thread));
     assert(idle);
 
-    g_current_thread[cpu] = idle;
+    for (size_t i = 0; i < ARRAY_NELEMS(g_current_thread); ++i) {
+        g_current_thread[i] = idle;
+    }
 
     return sched_add_thread(idle, 0);
 }

@@ -34,7 +34,7 @@ enum
 };
 
 int
-sched_init(unsigned int cpu, struct tcb *idle);
+sched_init(struct tcb *idle);
 
 int
 sched_add_thread(struct tcb *tcb, prio_class_type prio);

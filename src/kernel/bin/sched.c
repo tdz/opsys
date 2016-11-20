@@ -88,7 +88,7 @@ sched_init(struct tcb* idle)
  * \return 0 on success, or a negative error code otherwise
  */
 int
-sched_add_thread(struct tcb *tcb, prio_class_type prio)
+sched_add_thread(struct tcb* tcb, prio_class_type prio)
 {
     console_printf("%s:%x adding tcb=%x, prio=%x.\n", __FILE__, __LINE__, tcb, prio);
 
@@ -103,7 +103,7 @@ sched_add_thread(struct tcb *tcb, prio_class_type prio)
  * \param cpu the CPU on which the thread is running
  * \return the currently scheduled thread's tcb structure
  */
-struct tcb *
+struct tcb*
 sched_get_current_thread(unsigned int cpu)
 {
     assert(cpu < ARRAY_NELEMS(g_current_thread));
@@ -117,7 +117,7 @@ sched_get_current_thread(unsigned int cpu)
  * \param tcbid a thread id
  * \return the found thread, or NULL otherwise
  */
-struct tcb *
+struct tcb*
 sched_search_thread(unsigned int taskid, unsigned char tcbid)
 {
     const struct list* cur_prio = g_thread;
@@ -254,6 +254,5 @@ sched_switch(unsigned int cpu)
 void
 sched_irq_handler(unsigned char irqno)
 {
-        sched_switch(cpuid());
+    sched_switch(cpuid());
 }
-

@@ -28,6 +28,7 @@ oskernel_SRCS = alloc.c \
                 taskhlp.c \
                 tcb.c \
                 tcbhlp.c \
+                timer.c \
                 vmemarea.c
 
 oskernel_INCLUDES += kernel/bin/$(archdir) kernel/bin

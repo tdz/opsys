@@ -43,6 +43,7 @@
 #include "assert.h"
 #include "console.h"
 #include "cpu.h"
+#include "irq.h"
 #include "tcb.h"
 #include "task.h"
 
@@ -56,6 +57,23 @@ static struct list g_thread[SCHED_NPRIOS];
  * \brief TCB of the currently scheduled thread on each CPU
  */
 static struct tcb* g_current_thread[SCHED_NCPUS];
+
+/**
+ * \brief handle schedule interrupt
+ * \param irqno the interrupt that triggered the call
+ *
+ * This function is the high-level entry point for the thread-schedule
+ * interrupt. It triggers switches to other runnable threads.
+ */
+static enum irq_status
+irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
+{
+    sched_switch(cpuid());
+
+    return IRQ_HANDLED;
+}
+
+static struct irq_handler g_irq_handler;
 
 /**
  * \brief init scheduler
@@ -78,7 +96,28 @@ sched_init(struct tcb* idle)
         list_init_head(g_thread + i);
     }
 
-    return sched_add_thread(idle, 0);
+    irq_handler_init(&g_irq_handler, irq_handler_func);
+
+    int res = install_irq_handler(0, &g_irq_handler);
+    if (res < 0) {
+        goto err_install_irq_handler;
+    }
+
+    res = sched_add_thread(idle, 0);
+    if (res < 0) {
+        goto err_sched_add_thread;
+    }
+
+    return 0;
+
+err_sched_add_thread:
+    remove_irq_handler(0, &g_irq_handler);
+err_install_irq_handler:
+    for (size_t i = ARRAY_NELEMS(g_current_thread); i;) {
+        --i;
+        g_current_thread[i] = NULL;
+    }
+    return res;
 }
 
 /**
@@ -242,17 +281,4 @@ sched_switch(unsigned int cpu)
     }
 
     return 0;
-}
-
-/**
- * \brief handle schedule interrupt
- * \param irqno the interrupt that triggered the call
- *
- * This function is the high-level entry point for the thread-schedule
- * interrupt. It triggers switches to other runnable threads.
- */
-void
-sched_irq_handler(unsigned char irqno)
-{
-    sched_switch(cpuid());
 }

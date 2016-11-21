@@ -48,6 +48,3 @@ sched_switch_to(unsigned int cpu, struct tcb* next);
 
 int
 sched_switch(unsigned int cpu);
-
-void
-sched_irq_handler(unsigned char irqno);

@@ -142,8 +142,6 @@ general_init(struct task **tsk, void *stack)
                 goto err_sched_init;
         }
 
-        idt_install_irq_handler(0, sched_irq_handler);
-
 /*
         if ((err = sched_add_thread(tcb, 0)) < 0)
         {

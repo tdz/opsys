@@ -39,14 +39,19 @@
 #include <stdint.h>
 #include "idt.h"
 #include "ioports.h"
+#include "irq.h"
 
-static void
-pit_irq_handler(unsigned char irqno)
+static enum irq_status
+irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
 {
     static unsigned long tickcounter = 0;
 
     ++tickcounter;
+
+    return IRQ_NOT_HANDLED;
 }
+
+static struct irq_handler g_irq_handler;
 
 /**
  * \brief program PIT
@@ -72,5 +77,6 @@ pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
     io_outb(0x40 + (counter & 0x03), word & 0xff);
     io_outb(0x40 + (counter & 0x03), (word & 0xff00) >> 8);
 
-    idt_install_irq_handler(0, pit_irq_handler);
+    irq_handler_init(&g_irq_handler, irq_handler_func);
+    install_irq_handler(0, &g_irq_handler);
 }

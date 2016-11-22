@@ -43,9 +43,9 @@
 #include "assert.h"
 #include "console.h"
 #include "cpu.h"
-#include "irq.h"
-#include "tcb.h"
 #include "task.h"
+#include "tcb.h"
+#include "timer.h"
 
 /**
  * \brief current list head in thread list, one per priority class
@@ -58,22 +58,25 @@ static struct list g_thread[SCHED_NPRIOS];
  */
 static struct tcb* g_current_thread[SCHED_NCPUS];
 
+static timeout_t
+sched_timeout(void)
+{
+    return 1000 / SCHED_FREQ;
+}
+
 /**
- * \brief handle schedule interrupt
- * \param irqno the interrupt that triggered the call
- *
  * This function is the high-level entry point for the thread-schedule
  * interrupt. It triggers switches to other runnable threads.
  */
-static enum irq_status
-irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
+static timeout_t
+alarm_handler(struct alarm* alarm)
 {
     sched_switch(cpuid());
 
-    return IRQ_HANDLED;
+    return sched_timeout();
 }
 
-static struct irq_handler g_irq_handler;
+static struct alarm g_alarm;
 
 /**
  * \brief init scheduler
@@ -96,11 +99,11 @@ sched_init(struct tcb* idle)
         list_init_head(g_thread + i);
     }
 
-    irq_handler_init(&g_irq_handler, irq_handler_func);
+    alarm_init(&g_alarm, alarm_handler);
 
-    int res = install_irq_handler(0, &g_irq_handler);
+    int res = timer_add_alarm(&g_alarm, sched_timeout());
     if (res < 0) {
-        goto err_install_irq_handler;
+        goto err_timer_add_alarm;
     }
 
     res = sched_add_thread(idle, 0);
@@ -111,8 +114,8 @@ sched_init(struct tcb* idle)
     return 0;
 
 err_sched_add_thread:
-    remove_irq_handler(0, &g_irq_handler);
-err_install_irq_handler:
+    timer_remove_alarm(&g_alarm);
+err_timer_add_alarm:
     for (size_t i = ARRAY_NELEMS(g_current_thread); i;) {
         --i;
         g_current_thread[i] = NULL;

@@ -25,6 +25,8 @@ struct tcb;
 typedef unsigned char prio_class_type;
 
 enum {
+    /** \brief frequency for thread scheduling in Hz */
+    SCHED_FREQ = 20,
     /** \brief maximum number of CPUs supported by scheduler */
     SCHED_NCPUS  = 1,
     /** \brief number of priority classes supported by scheduler */

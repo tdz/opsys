@@ -36,11 +36,6 @@
 #include "timer.h"
 #include "vmem.h"
 
-enum
-{
-        SCHED_FREQ = 20 /**< \brief frequency for thread scheduling */
-};
-
 /*
  * Platform entry points for ISR handlers
  *

@@ -137,106 +137,57 @@ idt_install()
 }
 
 int
-idt_install_invalid_opcode_handler(void (*hdlr) (void *))
+idt_install_invalid_opcode_handler(void (*hdlr) (void*))
 {
-        const int ints = int_enabled();
+    bool ints_on = cli_if_on();
+    invalop_handler = hdlr;
+    sti_if_on(ints_on);
 
-        if (ints)
-        {
-                cli();
-        }
-
-        invalop_handler = hdlr;
-
-        if (ints)
-        {
-                sti();
-        }
-
-        return 0;
+    return 0;
 }
 
 int
-idt_install_segfault_handler(void (*hdlr) (void *))
+idt_install_segfault_handler(void (*hdlr) (void*))
 {
-        const int ints = int_enabled();
+    bool ints_on = cli_if_on();
+    segfault_handler = hdlr;
+    sti_if_on(ints_on);
 
-        if (ints)
-        {
-                cli();
-        }
-
-        segfault_handler = hdlr;
-
-        if (ints)
-        {
-                sti();
-        }
-
-        return 0;
+    return 0;
 }
 
 int
-idt_install_pagefault_handler(void (*hdlr) (void *, void *, unsigned long))
+idt_install_pagefault_handler(void (*hdlr) (void*, void*, unsigned long))
 {
-        const int ints = int_enabled();
+    bool ints_on = cli_if_on();
+    pagefault_handler = hdlr;
+    sti_if_on(ints_on);
 
-        if (ints)
-        {
-                cli();
-        }
-
-        pagefault_handler = hdlr;
-
-        if (ints)
-        {
-                sti();
-        }
-
-        return 0;
+    return 0;
 }
 
 int
-idt_install_irq_handler(unsigned char irqno, void (*hdlr) (unsigned char))
+idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char))
 {
-        if (irqno < ARRAY_NELEMS(irq_table))
-        {
-                const int ints = int_enabled();
-
-                if (ints)
-                {
-                        cli();
-                }
-
-                irq_table[irqno] = hdlr;
-
-                if (ints)
-                {
-                        sti();
-                }
-        }
-
+    if (irqno >= ARRAY_NELEMS(irq_table)) {
         return 0;
+    }
+
+    bool ints_on = cli_if_on();
+    irq_table[irqno] = hdlr;
+    sti_if_on(ints_on);
+
+    return 0;
 }
 
 int
-idt_install_syscall_handler(void (*hdlr) (unsigned long *,
-                                          unsigned long *,
-                                          unsigned long *, unsigned long *))
+idt_install_syscall_handler(void (*hdlr) (unsigned long*,
+                                          unsigned long*,
+                                          unsigned long*, unsigned long*))
 {
-        const int ints = int_enabled();
+    bool ints_on = cli_if_on();
+    syscall_handler = hdlr;
+    sti_if_on(ints_on);
 
-        if (ints)
-        {
-                cli();
-        }
-
-        syscall_handler = hdlr;
-
-        if (ints)
-        {
-                sti();
-        }
-
-        return 0;
+    return 0;
 }

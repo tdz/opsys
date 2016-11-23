@@ -35,6 +35,25 @@ sti()
         __asm__("sti\n\t");
 }
 
+bool
+cli_if_on()
+{
+    bool ints_on = int_enabled();
+
+    if (ints_on) {
+        cli();
+    }
+    return ints_on;
+}
+
+void
+sti_if_on(bool old_ints_on)
+{
+    if (old_ints_on) {
+        sti();
+    }
+}
+
 /* signal end of interupt to PIC */
 void
 eoi(unsigned char intno)
@@ -42,7 +61,7 @@ eoi(unsigned char intno)
         pic_eoi(intno);
 }
 
-int
+bool
 int_enabled()
 {
         return !!(eflags() & EFLAGS_IF);

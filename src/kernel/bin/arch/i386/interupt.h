@@ -19,14 +19,22 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 void
 cli(void);
 
 void
 sti(void);
 
+bool
+cli_if_on(void) __attribute__((warn_unused_result));
+
+void
+sti_if_on(bool old_ints_on);
+
 void
 eoi(unsigned char intno);
 
-int
+bool
 int_enabled(void);

@@ -32,7 +32,7 @@ int
 ipc_msg_init(struct ipc_msg *msg, struct tcb *snd,
              unsigned long flags, unsigned long msg0, unsigned long msg1)
 {
-    list_init(&msg->rcv_q);
+    list_init_item(&msg->rcv_q);
     msg->snd= snd;
     msg->flags = flags&~IPC_MSG_FLAGS_RESERVED;
     msg->msg0 = msg0;

@@ -27,7 +27,7 @@ struct list {
 };
 
 struct list*
-list_init(struct list* list);
+list_init_item(struct list* item);
 
 struct list*
 list_init_head(struct list* head);
@@ -36,19 +36,19 @@ bool
 list_is_empty(const struct list* head);
 
 void
-list_enqueue_before(struct list* list, struct list* newlist);
+list_enqueue_before(struct list* item, struct list* newitem);
 
 void
-list_enqueue_after(struct list* list, struct list* newlist);
+list_enqueue_after(struct list* item, struct list* newitem);
 
 void
-list_enqueue_front(struct list* head, struct list* newlist);
+list_enqueue_front(struct list* head, struct list* newitem);
 
 void
-list_enqueue_back(struct list* head, struct list* newlist);
+list_enqueue_back(struct list* head, struct list* newitem);
 
 void
-list_dequeue(struct list* list);
+list_dequeue(struct list* item);
 
 struct list*
 list_begin(const struct list* head);
@@ -63,7 +63,7 @@ struct list*
 list_last(const struct list* head);
 
 struct list*
-list_next(const struct list* list);
+list_next(const struct list* item);
 
 struct list*
-list_prev(const struct list* list);
+list_prev(const struct list* item);

@@ -21,12 +21,12 @@
 #include <stddef.h>
 
 struct list*
-list_init(struct list* list)
+list_init_item(struct list* item)
 {
-    list->next = NULL;
-    list->prev = NULL;
+    item->next = NULL;
+    item->prev = NULL;
 
-    return list;
+    return item;
 }
 
 struct list*
@@ -45,55 +45,55 @@ list_is_empty(const struct list* head)
 }
 
 void
-list_enqueue_before(struct list* list, struct list* newlist)
+list_enqueue_before(struct list* item, struct list* newitem)
 {
-    newlist->prev = list->prev;
-    newlist->next = list;
+    newitem->prev = item->prev;
+    newitem->next = item;
 
-    if (list->prev) {
-        list->prev->next = newlist;
+    if (item->prev) {
+        item->prev->next = newitem;
     }
 
-    list->prev = newlist;
+    item->prev = newitem;
 }
 
 void
-list_enqueue_after(struct list* list, struct list* newlist)
+list_enqueue_after(struct list* item, struct list* newitem)
 {
-    newlist->prev = list;
-    newlist->next = list->next;
+    newitem->prev = item;
+    newitem->next = item->next;
 
-    if (list->next) {
-        list->next->prev = newlist;
+    if (item->next) {
+        item->next->prev = newitem;
     }
 
-    list->next = newlist;
+    item->next = newitem;
 }
 
 void
-list_enqueue_front(struct list* head, struct list* newlist)
+list_enqueue_front(struct list* head, struct list* newitem)
 {
-    list_enqueue_after(head, newlist);
+    list_enqueue_after(head, newitem);
 }
 
 void
-list_enqueue_back(struct list* head, struct list* newlist)
+list_enqueue_back(struct list* head, struct list* newitem)
 {
-    list_enqueue_before(head, newlist);
+    list_enqueue_before(head, newitem);
 }
 
 void
-list_dequeue(struct list* list)
+list_dequeue(struct list* item)
 {
-    if (list->next) {
-        list->next->prev = list->prev;
+    if (item->next) {
+        item->next->prev = item->prev;
     }
-    if (list->prev) {
-        list->prev->next = list->next;
+    if (item->prev) {
+        item->prev->next = item->next;
     }
 
-    list->prev = NULL;
-    list->next = NULL;
+    item->prev = NULL;
+    item->next = NULL;
 }
 
 struct list*
@@ -127,13 +127,13 @@ list_last(const struct list* head)
 }
 
 struct list*
-list_next(const struct list* list)
+list_next(const struct list* item)
 {
-    return list->next;
+    return item->next;
 }
 
 struct list*
-list_prev(const struct list* list)
+list_prev(const struct list* item)
 {
-    return list->prev;
+    return item->prev;
 }

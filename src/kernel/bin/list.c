@@ -83,6 +83,22 @@ list_enqueue_back(struct list* head, struct list* newitem)
 }
 
 void
+list_enqueue_sorted(struct list* head, struct list* newitem,
+                    int (*cmp)(struct list*, struct list*))
+{
+    struct list* item = list_begin(head);
+
+    while (item != list_end(head)) {
+        if (cmp(newitem, item) > 0) {
+            break;
+        }
+        item = list_next(item);
+    }
+
+    list_enqueue_before(item, newitem);
+}
+
+void
 list_dequeue(struct list* item)
 {
     if (item->next) {

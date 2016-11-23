@@ -48,6 +48,10 @@ void
 list_enqueue_back(struct list* head, struct list* newitem);
 
 void
+list_enqueue_sorted(struct list* head, struct list* newitem,
+                    int (*cmp)(struct list*, struct list*));
+
+void
 list_dequeue(struct list* item);
 
 struct list*

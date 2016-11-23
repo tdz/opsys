@@ -57,6 +57,12 @@ const struct list*
 list_end(const struct list* head);
 
 struct list*
+list_rbegin(const struct list* head);
+
+const struct list*
+list_rend(const struct list* head);
+
+struct list*
 list_first(const struct list* head);
 
 struct list*

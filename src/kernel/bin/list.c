@@ -109,6 +109,18 @@ list_end(const struct list* head)
 }
 
 struct list*
+list_rbegin(const struct list* head)
+{
+    return head->prev;
+}
+
+const struct list*
+list_rend(const struct list* head)
+{
+    return head;
+}
+
+struct list*
 list_first(const struct list* head)
 {
     if (list_is_empty(head)) {

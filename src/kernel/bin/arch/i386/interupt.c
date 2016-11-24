@@ -25,20 +25,20 @@
 void
 cli()
 {
-        __asm__("cli\n\t");
+    __asm__("cli\n\t");
 }
 
 /* set interupts */
 void
 sti()
 {
-        __asm__("sti\n\t");
+    __asm__("sti\n\t");
 }
 
 bool
 cli_if_on()
 {
-    bool ints_on = int_enabled();
+    bool ints_on = ints_enabled();
 
     if (ints_on) {
         cli();
@@ -54,15 +54,15 @@ sti_if_on(bool old_ints_on)
     }
 }
 
+bool
+ints_enabled()
+{
+    return !!(eflags() & EFLAGS_IF);
+}
+
 /* signal end of interupt to PIC */
 void
 eoi(unsigned char intno)
 {
-        pic_eoi(intno);
-}
-
-bool
-int_enabled()
-{
-        return !!(eflags() & EFLAGS_IF);
+    pic_eoi(intno);
 }

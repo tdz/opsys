@@ -33,8 +33,8 @@ cli_if_on(void) __attribute__((warn_unused_result));
 void
 sti_if_on(bool old_ints_on);
 
+bool
+ints_enabled(void);
+
 void
 eoi(unsigned char intno);
-
-bool
-int_enabled(void);

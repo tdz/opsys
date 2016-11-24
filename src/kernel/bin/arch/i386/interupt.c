@@ -59,10 +59,3 @@ ints_enabled()
 {
     return !!(eflags() & EFLAGS_IF);
 }
-
-/* signal end of interupt to PIC */
-void
-eoi(unsigned char intno)
-{
-    pic_eoi(intno);
-}

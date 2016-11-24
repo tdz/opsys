@@ -35,6 +35,3 @@ sti_if_on(bool old_ints_on);
 
 bool
 ints_enabled(void);
-
-void
-eoi(unsigned char intno);

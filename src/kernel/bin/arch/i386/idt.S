@@ -53,40 +53,30 @@ isr_handle_debug:
         jmp isr_handle_debug
 
 isr_handle_invalop:
-        cmp $0, invalop_handler
-        je isr_handle_invalop_ret
         pushl %eax
         pushl %ecx
         pushl %edx
         pushl 12(%esp)
-        movl invalop_handler, %eax
-        call *%eax
+        call platform_handle_invalid_opcode
         addl $4, %esp
         popl %edx
         popl %ecx
         popl %eax
-isr_handle_invalop_ret:
         iret
 
 isr_handle_segfault:
-        cmp $0, segfault_handler
-        je isr_handle_segfault_ret
         pushl %eax
         pushl %ecx
         pushl %edx
         pushl 16(%esp)
-        movl segfault_handler, %eax
-        call *%eax
+        call platform_handle_segmentation_fault
         addl $4, %esp
         popl %edx
         popl %ecx
         popl %eax
-isr_handle_segfault_ret:
         iret
 
 isr_handle_pagefault:
-        cmp $0, pagefault_handler
-        je isr_handle_pagefault_ret
         pushl %eax
         pushl %ecx
         pushl %edx
@@ -94,13 +84,11 @@ isr_handle_pagefault:
         movl %cr2, %eax
         pushl %eax
         pushl 24(%esp)
-        movl pagefault_handler, %eax
-        call *%eax
+        call platform_handle_page_fault
         addl $12, %esp
         popl %edx
         popl %ecx
         popl %eax
-isr_handle_pagefault_ret:
         iret
 
 isr_handle_irqN:
@@ -108,9 +96,9 @@ isr_handle_irqN:
         pushl %eax
         pushl %ecx
         pushl %edx
-        /* call isr_handle_irq */
+        /* call platform IRQ handler */
         pushl 12(%esp)
-        call isr_handle_irq
+        call platform_handle_irq
         jmp isr_handle_irq_return
 
 /* Used in tcb_regs_switch_first_return() for setting up a new
@@ -122,7 +110,7 @@ isr_handle_irq_return:
         addl $4, %esp
         /* signal eoi to PIC */
         pushl 12(%esp)
-        call eoi
+        call platform_eoi
         addl $4, %esp
         /* restore registers */
         popl %edx
@@ -196,8 +184,6 @@ isr_handle_irq15:
         jmp isr_handle_irqN
 
 isr_handle_syscall:
-        cmp $0, syscall_handler
-        je isr_handle_syscall_ret_enosys
         pushl %eax
         pushl %ebx
         pushl %ecx
@@ -210,17 +196,10 @@ isr_handle_syscall:
         pushl %eax
         addl $4, %eax /* pointer r0 */
         pushl %eax
-        movl syscall_handler, %eax
-        call *%eax
+        call platform_handle_syscall
         addl $16, %esp /* remove pointers from stack */
         popl %edx
         popl %ecx
         popl %ebx
         popl %eax
         iret
-isr_handle_syscall_ret_enosys:
-        /* invalid sysno, return -ENOSYS */
-        movl $0x1, %ebx /* error flag */
-        movl $-81, %ecx /* error code */
-        iret
-

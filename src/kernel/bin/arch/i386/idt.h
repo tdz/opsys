@@ -28,21 +28,3 @@ idt_init(void);
 
 void
 idt_install(void);
-
-int
-idt_install_invalid_opcode_handler(void (*hdlr)(void*));
-
-int
-idt_install_segfault_handler(void (*hdlr)(void*));
-
-int
-idt_install_pagefault_handler(void (*hdlr)(void*, void*, unsigned long));
-
-int
-idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char));
-
-int
-idt_install_syscall_handler(void (*hdlr)(unsigned long*,
-                                         unsigned long*,
-                                         unsigned long*,
-                                         unsigned long*));

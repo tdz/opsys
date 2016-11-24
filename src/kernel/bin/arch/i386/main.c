@@ -40,10 +40,50 @@ enum
         SCHED_FREQ = 20 /**< \brief frequency for thread scheduling */
 };
 
-static void
-main_invalop_handler(void *ip)
+/*
+ * Platform entry points for ISR handlers
+ *
+ * The platform_ functions below are the entry points from the
+ * IDT's interupt handlers into the main executable. The functions
+ * must forward the interupts to whatever drivers or modules have
+ * been initialized.
+ */
+
+void __attribute__((used))
+platform_handle_invalid_opcode(void* ip)
 {
-        console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
+    console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
+}
+
+void __attribute__((used))
+platform_handle_irq(unsigned char irqno)
+{
+    pic_handle_irq(irqno);
+}
+
+void __attribute__((used))
+platform_eoi(unsigned char irqno)
+{
+    pic_eoi(irqno);
+}
+
+void __attribute__((used))
+platform_handle_segmentation_fault(void* ip)
+{
+    vmem_segfault_handler(ip);
+}
+
+void __attribute__((used))
+platform_handle_page_fault(void* ip, void* addr, unsigned long errcode)
+{
+    vmem_pagefault_handler(ip, addr, errcode);
+}
+
+void __attribute__((used))
+platform_handle_syscall(unsigned long* r0, unsigned long* r1,
+                        unsigned long* r2, unsigned long* r3)
+{
+    syscall_entry_handler(r0, r1, r2, r3);
 }
 
 /**
@@ -72,8 +112,6 @@ general_init(struct task **tsk, void *stack)
         idt_init();
         idt_install();
 
-        idt_install_invalid_opcode_handler(main_invalop_handler);
-
         /*
          * setup interupt controller
          */
@@ -92,14 +130,9 @@ general_init(struct task **tsk, void *stack)
          */
         pit_install(0, SCHED_FREQ, PIT_MODE_RATEGEN);
 
-        idt_install_syscall_handler(syscall_entry_handler);
-
         /*
          * build initial task and address space
          */
-
-        idt_install_segfault_handler(vmem_segfault_handler);
-        idt_install_pagefault_handler(vmem_pagefault_handler);
 
         if ((err = task_helper_init_kernel_task(&g_kernel_as, tsk)) < 0)
         {

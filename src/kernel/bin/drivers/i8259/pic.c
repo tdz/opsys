@@ -62,11 +62,6 @@ unmask_irq(unsigned char irqno)
 static int
 enable_irq(unsigned char irqno)
 {
-    int res = idt_install_irq_handler(irqno, pic_handle_irq);
-    if (res < 0) {
-        return res;
-    }
-
     unmask_irq(irqno);
 
     return 0;
@@ -75,7 +70,6 @@ enable_irq(unsigned char irqno)
 static void
 disable_irq(unsigned char irqno)
 {
-    idt_install_irq_handler(irqno, NULL);
     mask_irq(irqno);
 }
 

@@ -23,21 +23,6 @@
 #include "idtentry.h"
 #include "interupt.h"
 
-/* system interupts
- */
-
-void (*invalop_handler) (void *ip);
-void (*segfault_handler) (void *ip);
-void (*pagefault_handler) (void *ip, void *addr, unsigned long);
-void (*syscall_handler) (unsigned long *r0,
-                         unsigned long *r1,
-                         unsigned long *r2, unsigned long *r3);
-
-/* hardware interupts
- */
-
-void (*irq_table[16]) (unsigned char);
-
 static struct idt_entry g_idt[256];
 
 void
@@ -134,66 +119,4 @@ idt_install()
         __asm__("lidt (%0)\n\t"
                 :
                 :"r"(&idtr));
-}
-
-int
-idt_install_invalid_opcode_handler(void (*hdlr) (void*))
-{
-    bool ints_on = cli_if_on();
-    invalop_handler = hdlr;
-    sti_if_on(ints_on);
-
-    return 0;
-}
-
-int
-idt_install_segfault_handler(void (*hdlr) (void*))
-{
-    bool ints_on = cli_if_on();
-    segfault_handler = hdlr;
-    sti_if_on(ints_on);
-
-    return 0;
-}
-
-int
-idt_install_pagefault_handler(void (*hdlr) (void*, void*, unsigned long))
-{
-    bool ints_on = cli_if_on();
-    pagefault_handler = hdlr;
-    sti_if_on(ints_on);
-
-    return 0;
-}
-
-int
-idt_install_irq_handler(unsigned char irqno, void (*hdlr)(unsigned char))
-{
-    if (irqno >= ARRAY_NELEMS(irq_table)) {
-        return 0;
-    }
-
-    bool ints_on = cli_if_on();
-    irq_table[irqno] = hdlr;
-    sti_if_on(ints_on);
-
-    return 0;
-}
-
-int
-idt_install_syscall_handler(void (*hdlr) (unsigned long*,
-                                          unsigned long*,
-                                          unsigned long*, unsigned long*))
-{
-    bool ints_on = cli_if_on();
-    syscall_handler = hdlr;
-    sti_if_on(ints_on);
-
-    return 0;
-}
-
-void __attribute__((used))
-isr_handle_irq(unsigned char irqno)
-{
-    irq_table[irqno](irqno);
 }

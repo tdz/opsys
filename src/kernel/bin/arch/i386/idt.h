@@ -19,6 +19,10 @@
 
 #pragma once
 
+enum {
+    IDT_IRQ_OFFSET = 0x20
+};
+
 void
 idt_init(void);
 

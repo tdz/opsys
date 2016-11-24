@@ -24,6 +24,11 @@
 #include "ioports.h"
 #include "irq.h"
 
+#define PIC1_CMD    0x20
+#define PIC1_DATA   0x21
+#define PIC2_CMD    0xa0
+#define PIC2_DATA   0xa1
+
 static int
 enable_irq(unsigned char irqno)
 {
@@ -42,21 +47,21 @@ pic_install()
     /* Init IRQ framework */
     init_irq_handling(enable_irq, disable_irq);
 
-    /* out ICW 1 */
-    io_outb(0x20, 0x11);
-    io_outb(0xa0, 0x11);
+    /* Send init code 0x11 to PICs */
+    io_outb(PIC1_CMD, 0x11);
+    io_outb(PIC2_CMD, 0x11);
 
-    /* out ICW 2 */
-    io_outb(0x21, 0x20);
-    io_outb(0xa1, 0x28);
+    /* Remap interupt numbers to not collide with CPU exceptions */
+    io_outb(PIC1_DATA, IDT_IRQ_OFFSET);
+    io_outb(PIC2_DATA, IDT_IRQ_OFFSET + 8);
 
-    /* out ICW 3 */
-    io_outb(0x21, 0x04);
-    io_outb(0xa1, 0x02);
+    /* Master-slave configuration */
+    io_outb(PIC1_DATA, 0x04); /* Set PIC1 to master */
+    io_outb(PIC2_DATA, 0x02); /* Set PIC2 to slave */
 
-    /* out ICW 4 */
-    io_outb(0x21, 0x01);
-    io_outb(0xa1, 0x01);
+    /* Set x86 mode */
+    io_outb(PIC1_DATA, 0x01);
+    io_outb(PIC1_DATA, 0x01);
 }
 
 void

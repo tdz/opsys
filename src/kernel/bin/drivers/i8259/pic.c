@@ -20,10 +20,14 @@
 #include "pic.h"
 #include <stdint.h>
 #include "ioports.h"
+#include "irq.h"
 
 void
 pic_install()
 {
+    /* Init IRQ framework */
+    init_irq_handling();
+
     /* out ICW 1 */
     io_outb(0x20, 0x11);
     io_outb(0xa0, 0x11);

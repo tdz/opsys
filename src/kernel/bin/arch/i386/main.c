@@ -27,7 +27,6 @@
 #include "gdt.h"
 #include "idt.h"
 #include "interupt.h"
-#include "irq.h"
 #include "sched.h"
 #include "syscall.h"
 #include "syssrv.h"
@@ -79,8 +78,6 @@ general_init(struct task **tsk, void *stack)
          * setup interupt controller
          */
         pic_install();
-
-        init_irq_handling();
 
         /*
          * setup keyboard

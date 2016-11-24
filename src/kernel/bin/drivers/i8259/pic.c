@@ -73,16 +73,16 @@ pic_handle_irq(unsigned char irqno)
 
 /* signal end of interupt to PIC */
 void
-pic_eoi(unsigned char intno)
+pic_eoi(unsigned char irqno)
 {
-    static const uint8_t ioport[2] = {
-        0x20,
-        0xa0
-    };
-
-    if (intno > 15) {
-        return; /* silently ignore software interrupts */
+    if (irqno > 15) {
+        /* silently ignore software interrupts */
+        return;
+    } else if (irqno > 7) {
+        /* Signal EOI for PIC2 */
+        io_outb(PIC2_CMD, 0x20);
     }
 
-    io_outb(ioport[intno > 7], 0x20);
+    /* Always signal EOI to PIC1 */
+    io_outb(PIC1_CMD, 0x20);
 }

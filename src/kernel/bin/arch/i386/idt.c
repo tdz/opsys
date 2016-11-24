@@ -18,6 +18,7 @@
  */
 
 #include "idt.h"
+#include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 #include "idtentry.h"
@@ -47,10 +48,20 @@ extern void idt_handle_irq14(void);
 extern void idt_handle_irq15(void);
 extern void idt_handle_syscall(void);
 
+struct idt_register {
+    uint16_t limit;
+    uint32_t base;
+} __attribute__((packed));
+
 static struct idt_entry g_idt[256];
 
+const static struct idt_register idtr = {
+    .limit = (uint16_t)sizeof(g_idt),
+    .base = (uint32_t)g_idt,
+};
+
 void
-idt_init()
+init_idt()
 {
 #define IDT_ENTRY_INIT(index, funcname)         \
     idt_entry_init(g_idt+(index),               \
@@ -91,23 +102,11 @@ idt_init()
 
     /* syscall interrupt */
     IDT_ENTRY_INIT(0x80, idt_handle_syscall);
-}
 
-struct idt_register
-{
-        unsigned short limit __attribute__ ((packed));
-        unsigned long base __attribute__ ((packed));
-};
+#undef IDT_ENTRY_INIT
 
-void
-idt_install()
-{
-        const static struct idt_register idtr = {
-                .limit = sizeof(g_idt),
-                .base = (unsigned long)g_idt,
-        };
-
-        __asm__("lidt (%0)\n\t"
-                :
-                :"r"(&idtr));
+    /* load the IDT into the IDTR */
+    __asm__("lidt (%0)\n\t"
+            :
+            :"r"(&idtr));
 }

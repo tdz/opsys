@@ -24,7 +24,4 @@ enum {
 };
 
 void
-idt_init(void);
-
-void
-idt_install(void);
+init_idt(void);

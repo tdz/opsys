@@ -106,11 +106,8 @@ general_init(struct task **tsk, void *stack)
         gdt_init();
         gdt_install();
 
-        /*
-         * setup IDT for protected mode
-         */
-        idt_init();
-        idt_install();
+        /* setup IDT for protected mode */
+        init_idt();
 
         /*
          * setup interupt controller

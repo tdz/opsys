@@ -19,40 +19,39 @@
 
 .text
 
-.global isr_drop_interupt
-.global isr_handle_debug
-.global isr_handle_invalop
-.global isr_handle_segfault
-.global isr_handle_pagefault
-.global isr_handle_irqN
-.global isr_handle_irq0
-.global isr_handle_irq1
-.global isr_handle_irq2
-.global isr_handle_irq3
-.global isr_handle_irq4
-.global isr_handle_irq5
-.global isr_handle_irq6
-.global isr_handle_irq7
-.global isr_handle_irq8
-.global isr_handle_irq9
-.global isr_handle_irq10
-.global isr_handle_irq11
-.global isr_handle_irq12
-.global isr_handle_irq13
-.global isr_handle_irq14
-.global isr_handle_irq15
-.global isr_handle_syscall
+.global idt_ignore_interupt
+.global idt_handle_debug
+.global idt_handle_invalid_opcode
+.global idt_handle_segmentation_fault
+.global idt_handle_page_fault
+.global idt_handle_irq0
+.global idt_handle_irq1
+.global idt_handle_irq2
+.global idt_handle_irq3
+.global idt_handle_irq4
+.global idt_handle_irq5
+.global idt_handle_irq6
+.global idt_handle_irq7
+.global idt_handle_irq8
+.global idt_handle_irq9
+.global idt_handle_irq10
+.global idt_handle_irq11
+.global idt_handle_irq12
+.global idt_handle_irq13
+.global idt_handle_irq14
+.global idt_handle_irq15
+.global idt_handle_syscall
 
-.global isr_handle_irq_return
+.global idt_handle_irq_return
 
-isr_drop_interupt:
+idt_ignore_interupt:
         iret
 
-isr_handle_debug:
+idt_handle_debug:
         hlt
-        jmp isr_handle_debug
+        jmp idt_handle_debug
 
-isr_handle_invalop:
+idt_handle_invalid_opcode:
         pushl %eax
         pushl %ecx
         pushl %edx
@@ -64,7 +63,7 @@ isr_handle_invalop:
         popl %eax
         iret
 
-isr_handle_segfault:
+idt_handle_segmentation_fault:
         pushl %eax
         pushl %ecx
         pushl %edx
@@ -76,7 +75,7 @@ isr_handle_segfault:
         popl %eax
         iret
 
-isr_handle_pagefault:
+idt_handle_page_fault:
         pushl %eax
         pushl %ecx
         pushl %edx
@@ -91,7 +90,7 @@ isr_handle_pagefault:
         popl %eax
         iret
 
-isr_handle_irqN:
+idt_handle_irq:
         /* save registers (according to cdecl convention) */
         pushl %eax
         pushl %ecx
@@ -99,14 +98,14 @@ isr_handle_irqN:
         /* call platform IRQ handler */
         pushl 12(%esp)
         call platform_handle_irq
-        jmp isr_handle_irq_return
+        jmp idt_handle_irq_return
 
 /* Used in tcb_regs_switch_first_return() for setting up a new
  * thread's initial stack. We make the stack look as if the thread
  * had been scheduled from an interupt. When switching to the new
  * thread for the first time, we jump here, clean up the interupt
  * stack and return to normal thread initialization. */
-isr_handle_irq_return:
+idt_handle_irq_return:
         addl $4, %esp
         /* signal eoi to PIC */
         pushl 12(%esp)
@@ -119,71 +118,71 @@ isr_handle_irq_return:
         addl $4, %esp /* remove irqno */
         iret
 
-isr_handle_irq0:
+idt_handle_irq0:
         pushl $0
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq1:
+idt_handle_irq1:
         pushl $1
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq2:
+idt_handle_irq2:
         pushl $2
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq3:
+idt_handle_irq3:
         pushl $3
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq4:
+idt_handle_irq4:
         pushl $4
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq5:
+idt_handle_irq5:
         pushl $5
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq6:
+idt_handle_irq6:
         pushl $6
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq7:
+idt_handle_irq7:
         pushl $7
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq8:
+idt_handle_irq8:
         pushl $8
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq9:
+idt_handle_irq9:
         pushl $9
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq10:
+idt_handle_irq10:
         pushl $10
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq11:
+idt_handle_irq11:
         pushl $11
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq12:
+idt_handle_irq12:
         pushl $12
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq13:
+idt_handle_irq13:
         pushl $13
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq14:
+idt_handle_irq14:
         pushl $14
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_irq15:
+idt_handle_irq15:
         pushl $15
-        jmp isr_handle_irqN
+        jmp idt_handle_irq
 
-isr_handle_syscall:
+idt_handle_syscall:
         pushl %eax
         pushl %ebx
         pushl %ecx

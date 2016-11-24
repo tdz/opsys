@@ -23,83 +23,74 @@
 #include "idtentry.h"
 #include "interupt.h"
 
+/* Interupt entry points in idt.S */
+extern void idt_ignore_interupt(void);
+extern void idt_handle_debug(void);
+extern void idt_handle_invalid_opcode(void);
+extern void idt_handle_segmentation_fault(void);
+extern void idt_handle_page_fault(void);
+extern void idt_handle_irq0(void);
+extern void idt_handle_irq1(void);
+extern void idt_handle_irq2(void);
+extern void idt_handle_irq3(void);
+extern void idt_handle_irq4(void);
+extern void idt_handle_irq5(void);
+extern void idt_handle_irq6(void);
+extern void idt_handle_irq7(void);
+extern void idt_handle_irq8(void);
+extern void idt_handle_irq9(void);
+extern void idt_handle_irq10(void);
+extern void idt_handle_irq11(void);
+extern void idt_handle_irq12(void);
+extern void idt_handle_irq13(void);
+extern void idt_handle_irq14(void);
+extern void idt_handle_irq15(void);
+extern void idt_handle_syscall(void);
+
 static struct idt_entry g_idt[256];
 
 void
 idt_init()
 {
-#define IDT_ENTRY_INIT(index, funcname)                                 \
-        idt_entry_init(g_idt+(index),                                   \
-                       (unsigned long)funcname,                         \
-                       0x08,                                            \
-                       0,                                               \
-                       IDT_ENTRY_FLAG_SEGINMEM|IDT_ENTRY_FLAG_32BITINT|IDT_ENTRY_FLAG_INTGATE)
+#define IDT_ENTRY_INIT(index, funcname)         \
+    idt_entry_init(g_idt+(index),               \
+                   (unsigned long)funcname,     \
+                   0x08,                        \
+                   0,                           \
+                   IDT_ENTRY_FLAG_SEGINMEM|     \
+                   IDT_ENTRY_FLAG_32BITINT|     \
+                   IDT_ENTRY_FLAG_INTGATE)
 
-        extern void isr_drop_interupt(void);
-        extern void isr_handle_debug(void);
-        extern void isr_handle_invalop(void);
-        extern void isr_handle_segfault(void);
-        extern void isr_handle_pagefault(void);
-        extern void isr_handle_irq0(void);
-        extern void isr_handle_irq1(void);
-        extern void isr_handle_irq2(void);
-        extern void isr_handle_irq3(void);
-        extern void isr_handle_irq4(void);
-        extern void isr_handle_irq5(void);
-        extern void isr_handle_irq6(void);
-        extern void isr_handle_irq7(void);
-        extern void isr_handle_irq8(void);
-        extern void isr_handle_irq9(void);
-        extern void isr_handle_irq10(void);
-        extern void isr_handle_irq11(void);
-        extern void isr_handle_irq12(void);
-        extern void isr_handle_irq13(void);
-        extern void isr_handle_irq14(void);
-        extern void isr_handle_irq15(void);
-        extern void isr_handle_syscall(void);
+    for (size_t i = 0; i < ARRAY_NELEMS(g_idt); ++i) {
+        IDT_ENTRY_INIT(i, idt_ignore_interupt);
+    }
 
-        size_t i;
+    /* CPU exceptions */
+    IDT_ENTRY_INIT(0x01, idt_handle_debug);
+    IDT_ENTRY_INIT(0x06, idt_handle_invalid_opcode);
+    IDT_ENTRY_INIT(0x0d, idt_handle_segmentation_fault);
+    IDT_ENTRY_INIT(0x0e, idt_handle_page_fault);
 
-        for (i = 0; i < ARRAY_NELEMS(g_idt); ++i)
-        {
-                IDT_ENTRY_INIT(i, isr_drop_interupt);
-        }
+    /* hardware interupts */
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x0, idt_handle_irq0);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x1, idt_handle_irq1);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x2, idt_handle_irq2);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x3, idt_handle_irq3);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x4, idt_handle_irq4);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x5, idt_handle_irq5);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x6, idt_handle_irq6);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x7, idt_handle_irq7);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x8, idt_handle_irq8);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0x9, idt_handle_irq9);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0xa, idt_handle_irq10);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0xb, idt_handle_irq11);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0xc, idt_handle_irq12);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0xd, idt_handle_irq13);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0xe, idt_handle_irq14);
+    IDT_ENTRY_INIT(IDT_IRQ_OFFSET + 0xf, idt_handle_irq15);
 
-        /*
-         * system interupts
-         */
-
-        IDT_ENTRY_INIT(0x01, isr_handle_invalop);
-        IDT_ENTRY_INIT(0x06, isr_handle_invalop);
-        IDT_ENTRY_INIT(0x0d, isr_handle_segfault);
-        IDT_ENTRY_INIT(0x0e, isr_handle_pagefault);
-
-        /*
-         * hardware interupts
-         */
-
-        IDT_ENTRY_INIT(0x20, isr_handle_irq0);
-        IDT_ENTRY_INIT(0x21, isr_handle_irq1);
-        IDT_ENTRY_INIT(0x22, isr_handle_irq2);
-        IDT_ENTRY_INIT(0x23, isr_handle_irq3);
-        IDT_ENTRY_INIT(0x24, isr_handle_irq4);
-        IDT_ENTRY_INIT(0x25, isr_handle_irq5);
-        IDT_ENTRY_INIT(0x26, isr_handle_irq6);
-        IDT_ENTRY_INIT(0x27, isr_handle_irq7);
-        IDT_ENTRY_INIT(0x28, isr_handle_irq8);
-        IDT_ENTRY_INIT(0x29, isr_handle_irq9);
-        IDT_ENTRY_INIT(0x2a, isr_handle_irq10);
-        IDT_ENTRY_INIT(0x2b, isr_handle_irq11);
-        IDT_ENTRY_INIT(0x2c, isr_handle_irq12);
-        IDT_ENTRY_INIT(0x2d, isr_handle_irq13);
-        IDT_ENTRY_INIT(0x2e, isr_handle_irq14);
-        IDT_ENTRY_INIT(0x2f, isr_handle_irq15);
-
-        /*
-         * syscall interrupt
-         */
-
-        IDT_ENTRY_INIT(0x80, isr_handle_syscall);
+    /* syscall interrupt */
+    IDT_ENTRY_INIT(0x80, idt_handle_syscall);
 }
 
 struct idt_register

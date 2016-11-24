@@ -1,6 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann <tdz@users.sourceforge.net>
+ *  Copyright (C) 2010  Thomas Zimmermann
+ *  Copyright (C) 2016  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -81,7 +82,7 @@ tcb_regs_switch:
         movl 12(%ebp), %eax
 
         /* no interrupts between update of address space and stack */
-        cli 
+        cli
 
         /* restore page directory */
         movl 52(%eax), %edx
@@ -132,5 +133,5 @@ tcb_regs_switch_first_return:
         /* remove tcb_regs_switch parameters */
         sti /* normally enabled by sched_switch_to */
         addl $8, %esp;
-        jmp isr_handle_irq_return
+        jmp idt_handle_irq_return
 

@@ -19,8 +19,6 @@
 #include "irq.h"
 #include <stddef.h>
 #include <string.h>
-#include "drivers/i8259/pic.h"
-#include "idt.h"
 #include "interupt.h"
 
 static struct irq_handler*
@@ -40,12 +38,15 @@ irq_handler_init(struct irq_handler* irqh,
 struct irq_handling {
     /* \attention Do not write with interupts enabled! */
     struct list irqh[256];
+    int (*enable_irq)(unsigned char);
+    void (*disable_irq)(unsigned char);
 };
 
 static struct irq_handling g_irq_handling;
 
 void
-init_irq_handling()
+init_irq_handling(int (*enable_irq)(unsigned char),
+                  void (*disable_irq)(unsigned char))
 {
     struct list* head = g_irq_handling.irqh;
     const struct list* head_end = head + ARRAY_NELEMS(g_irq_handling.irqh);
@@ -53,10 +54,13 @@ init_irq_handling()
     for (; head < head_end; ++head) {
         list_init_head(head);
     }
+
+    g_irq_handling.enable_irq = enable_irq;
+    g_irq_handling.disable_irq = disable_irq;
 }
 
-static void
-irq_handler(unsigned char irqno)
+void
+handle_irq(unsigned char irqno)
 {
     const struct list* head = g_irq_handling.irqh + irqno;
     struct list* item = list_begin(head);
@@ -87,7 +91,11 @@ install_irq_handler(unsigned char irqno, struct irq_handler* irqh)
     if (list_is_empty(head)) {
         /* We're handling a new interrupt, install an
          * interupt handler. */
-        idt_install_irq_handler(irqno, irq_handler);
+        int res = g_irq_handling.enable_irq(irqno);
+        if (res < 0) {
+            sti_if_on(ints_on);
+            return res;
+        }
     }
 
     list_enqueue_back(head, &irqh->irqh);
@@ -107,7 +115,7 @@ remove_irq_handler(unsigned char irqno, struct irq_handler* irqh)
     if (list_is_empty(g_irq_handling.irqh + irqno)) {
         /* Remove interupt if we don't handle it
          * any longer. */
-        idt_install_irq_handler(irqno, NULL);
+        g_irq_handling.disable_irq(irqno);
     }
 
     sti_if_on(ints_on);

@@ -23,4 +23,7 @@ void
 pic_install(void);
 
 void
+pic_handle_irq(unsigned char irqno);
+
+void
 pic_eoi(unsigned char intno);

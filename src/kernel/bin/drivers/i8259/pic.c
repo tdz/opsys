@@ -18,15 +18,29 @@
  */
 
 #include "pic.h"
+#include <stddef.h>
 #include <stdint.h>
+#include "idt.h"
 #include "ioports.h"
 #include "irq.h"
+
+static int
+enable_irq(unsigned char irqno)
+{
+    return idt_install_irq_handler(irqno, pic_handle_irq);
+}
+
+static void
+disable_irq(unsigned char irqno)
+{
+    idt_install_irq_handler(irqno, NULL);
+}
 
 void
 pic_install()
 {
     /* Init IRQ framework */
-    init_irq_handling();
+    init_irq_handling(enable_irq, disable_irq);
 
     /* out ICW 1 */
     io_outb(0x20, 0x11);
@@ -43,6 +57,13 @@ pic_install()
     /* out ICW 4 */
     io_outb(0x21, 0x01);
     io_outb(0xa1, 0x01);
+}
+
+void
+pic_handle_irq(unsigned char irqno)
+{
+    /* Call IRQ framework */
+    handle_irq(irqno);
 }
 
 /* signal end of interupt to PIC */

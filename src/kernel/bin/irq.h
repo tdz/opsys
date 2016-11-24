@@ -35,7 +35,11 @@ irq_handler_init(struct irq_handler* irqh,
                  enum irq_status (*func)(unsigned char, struct irq_handler*));
 
 void
-init_irq_handling(void);
+init_irq_handling(int (*enable_irq)(unsigned char),
+                  void (*disable_irq)(unsigned char));
+
+void
+handle_irq(unsigned char irqno);
 
 int
 install_irq_handler(unsigned char irqno, struct irq_handler* irqh);

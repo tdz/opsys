@@ -191,3 +191,9 @@ idt_install_syscall_handler(void (*hdlr) (unsigned long*,
 
     return 0;
 }
+
+void __attribute__((used))
+isr_handle_irq(unsigned char irqno)
+{
+    irq_table[irqno](irqno);
+}

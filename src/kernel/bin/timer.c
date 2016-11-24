@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <stddef.h>
 #include "interupt.h"
-#include "irq.h"
 
 static struct alarm*
 alarm_of_list(struct list* item)
@@ -54,15 +53,31 @@ struct timer {
     timestamp_t timestamp_ns;
 
     struct list alarm_list;
-    struct irq_handler irqh;
+
+    int (*set_timeout)(timeout_t);
+    void (*clear_timeout)(void);
 };
 
-static struct timer*
-timer_of_irq_handler(struct irq_handler* irqh)
+static struct timer g_timer;
+
+int
+init_timer(int (*set_timeout)(timeout_t), void (*clear_timeout)(void))
 {
-    assert(irqh);
-    return containerof(irqh, struct timer, irqh);
+    assert(set_timeout);
+    assert(clear_timeout);
+
+    g_timer.timestamp_ns = 0;
+    list_init_head(&g_timer.alarm_list);
+
+    g_timer.set_timeout = set_timeout;
+    g_timer.clear_timeout = clear_timeout;
+
+    return 0;
 }
+
+void
+uninit_timer()
+{ }
 
 static int
 cmp_timestamp(struct list* newitem, struct list* item)
@@ -75,22 +90,18 @@ cmp_timestamp(struct list* newitem, struct list* item)
     return (diff > 0) - (diff < 0);
 }
 
-static enum irq_status
-timer_handle_irq(unsigned char irqno, struct irq_handler* irqh)
+void
+handle_timeout()
 {
-    assert(irqh);
-
     timestamp_t timestamp_ns = 0;
-
-    struct timer* timer = timer_of_irq_handler(irqh);
 
     /* We fetch items from the list of alarms and loop while
      * the timestamp is in the past. This way, we handle all
      * alarms that have expired. */
 
-    struct list* item = list_begin(&timer->alarm_list);
+    struct list* item = list_begin(&g_timer.alarm_list);
 
-    while (item != list_end(&timer->alarm_list)) {
+    while (item != list_end(&g_timer.alarm_list)) {
 
         struct alarm* alarm = alarm_of_list(item);
 
@@ -114,7 +125,7 @@ timer_handle_irq(unsigned char irqno, struct irq_handler* irqh)
 
         if (reltime_ns) {
             alarm->timestamp_ns = timestamp_ns + reltime_ns;
-            list_enqueue_sorted(&timer->alarm_list,
+            list_enqueue_sorted(&g_timer.alarm_list,
                                 &alarm->timer_entry,
                                 cmp_timestamp);
         }
@@ -122,25 +133,13 @@ timer_handle_irq(unsigned char irqno, struct irq_handler* irqh)
         item = next;
     }
 
-    return IRQ_HANDLED;
-}
-
-static struct timer g_timer;
-
-int
-init_timer()
-{
-    g_timer.timestamp_ns = 0;
-    list_init_head(&g_timer.alarm_list);
-    irq_handler_init(&g_timer.irqh, timer_handle_irq);
-
-    return 0;
-}
-
-void
-uninit_timer()
-{
-    install_irq_handler(0, NULL);
+    if (item != list_end(&g_timer.alarm_list)) {
+        const struct alarm* alarm = alarm_of_list(item);
+        timeout_t timeout_ns = alarm->timestamp_ns - timestamp_ns;
+        g_timer.set_timeout(timeout_ns);
+    } else {
+        g_timer.clear_timeout();
+    }
 }
 
 int
@@ -151,7 +150,7 @@ timer_add_alarm(struct alarm* alarm, timeout_t reltime_ns)
     bool ints_on = cli_if_on();
 
     if (list_is_empty(&g_timer.alarm_list)) {
-        install_irq_handler(0, &g_timer.irqh);
+        g_timer.set_timeout(reltime_ns);
     }
 
     alarm->timestamp_ns = g_timer.timestamp_ns + reltime_ns;
@@ -174,7 +173,7 @@ timer_remove_alarm(struct alarm* alarm)
     list_dequeue(&alarm->timer_entry);
 
     if (list_is_empty(&g_timer.alarm_list)) {
-        install_irq_handler(0, NULL);
+        g_timer.clear_timeout();
     }
 
     sti_if_on(ints_on);

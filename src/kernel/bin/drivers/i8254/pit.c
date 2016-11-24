@@ -40,6 +40,7 @@
 #include "idt.h"
 #include "ioports.h"
 #include "irq.h"
+#include "timer.h"
 
 static enum irq_status
 irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
@@ -48,10 +49,22 @@ irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
 
     ++tickcounter;
 
+    handle_timeout();
+
     return IRQ_NOT_HANDLED;
 }
 
 static struct irq_handler g_irq_handler;
+
+static int
+set_timeout(timeout_t timeout_ns)
+{
+    return 0;
+}
+
+static void
+clear_timeout(void)
+{ }
 
 /**
  * \brief program PIT
@@ -62,6 +75,8 @@ static struct irq_handler g_irq_handler;
 void
 pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
 {
+    init_timer(set_timeout, clear_timeout);
+
     /* setup PIT control word */
 
     uint8_t byte = ((counter & 0x3) << 6) |

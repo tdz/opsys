@@ -40,10 +40,13 @@ bool
 alarm_has_expired(const struct alarm* alarm, timestamp_t timestamp_ns);
 
 int
-init_timer(void);
+init_timer(int (*set_timeout)(timeout_t), void (*clear_timeout)(void));
 
 void
 uninit_timer(void);
+
+void
+handle_timeout(void);
 
 int
 timer_add_alarm(struct alarm* alarm, timeout_t reltime_ns);

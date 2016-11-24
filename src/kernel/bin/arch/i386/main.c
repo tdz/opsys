@@ -33,7 +33,6 @@
 #include "taskhlp.h"
 #include "tcb.h"
 #include "tcbhlp.h"
-#include "timer.h"
 #include "vmem.h"
 
 /*
@@ -122,8 +121,6 @@ general_init(struct task **tsk, void *stack)
          * setup PIT for system timer
          */
         pit_install(0, SCHED_FREQ, PIT_MODE_RATEGEN);
-
-        init_timer();
 
         /*
          * build initial task and address space

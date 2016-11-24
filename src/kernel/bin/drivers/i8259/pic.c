@@ -29,16 +29,54 @@
 #define PIC2_CMD    0xa0
 #define PIC2_DATA   0xa1
 
+static void
+mask_irq(unsigned char irqno)
+{
+    uint8_t ioport = irqno > 7 ? PIC2_DATA : PIC1_DATA;
+    uint8_t bit = 1 << (irqno - 8 * (irqno > 7));
+
+    uint8_t imr = io_inb(ioport);
+    imr |= bit;
+    io_outb(ioport, imr);
+
+    if ((irqno > 7) && !imr) {
+        mask_irq(2); /* mask PIC2 IRQ if not used */
+    }
+}
+
+static void
+unmask_irq(unsigned char irqno)
+{
+    uint8_t ioport = irqno > 7 ? PIC2_DATA : PIC1_DATA;
+    uint8_t bit = 1 << (irqno - 8 * (irqno > 7));
+
+    uint8_t imr = io_inb(ioport);
+    imr &= ~bit;
+    io_outb(ioport, imr);
+
+    if ((irqno > 7) && imr) {
+        unmask_irq(2); /* unmask PIC2 IRQ if used */
+    }
+}
+
 static int
 enable_irq(unsigned char irqno)
 {
-    return idt_install_irq_handler(irqno, pic_handle_irq);
+    int res = idt_install_irq_handler(irqno, pic_handle_irq);
+    if (res < 0) {
+        return res;
+    }
+
+    unmask_irq(irqno);
+
+    return 0;
 }
 
 static void
 disable_irq(unsigned char irqno)
 {
     idt_install_irq_handler(irqno, NULL);
+    mask_irq(irqno);
 }
 
 void

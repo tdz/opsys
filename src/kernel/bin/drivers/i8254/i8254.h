@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "irq.h"
+
 enum pit_counter {
     PIT_COUNTER_TIMER = 0,
     PIT_COUNTER_DRAM  = 1,
@@ -34,5 +36,18 @@ enum pit_mode {
     PIT_MODE_HWSTROBE = 0x05
 };
 
+struct i8254_drv {
+    unsigned long counter_freq[3];
+
+    struct irq_handler irq_handler;
+};
+
+int
+i8254_init(struct i8254_drv* i8254);
+
 void
-pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode);
+i8254_uninit(struct i8254_drv* i8254);
+
+void
+i8254_set_up(struct i8254_drv* i8254, enum pit_counter counter,
+             unsigned long freq, enum pit_mode mode);

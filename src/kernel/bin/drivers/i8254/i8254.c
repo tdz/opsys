@@ -36,11 +36,25 @@
  */
 
 #include "i8254.h"
+#include <assert.h>
+#include <string.h>
 #include <stdint.h>
-#include "idt.h"
 #include "ioports.h"
-#include "irq.h"
 #include "timer.h"
+
+enum {
+    i8254_IRQNO = 0
+};
+
+enum {
+    i8254_DATA0 = 0x40,
+    i8254_DATA1 = 0x41,
+    i8254_DATA2 = 0x42,
+    i8254_CMD   = 0x43
+};
+
+#define i8254_DATA(_counter) \
+    ( i8254_DATA0 + ((_counter) & 0x03) )
 
 static enum irq_status
 irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
@@ -54,8 +68,6 @@ irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
     return IRQ_NOT_HANDLED;
 }
 
-static struct irq_handler g_irq_handler;
-
 static int
 set_timeout(timeout_t timeout_ns)
 {
@@ -66,6 +78,43 @@ static void
 clear_timeout(void)
 { }
 
+int
+i8254_init(struct i8254_drv* i8254)
+{
+    assert(i8254);
+
+    int res = init_timer(set_timeout, clear_timeout);
+    if (res < 0) {
+        return res;
+    }
+
+    for (size_t i = 0; i < ARRAY_NELEMS(i8254->counter_freq); ++i) {
+        i8254->counter_freq[i] = 0;
+    }
+
+    irq_handler_init(&i8254->irq_handler, irq_handler_func);
+
+    res = install_irq_handler(i8254_IRQNO, &i8254->irq_handler);
+    if (res < 0) {
+        goto err_install_irq_handler;
+    }
+
+    return 0;
+
+err_install_irq_handler:
+    uninit_timer();
+    return res;
+}
+
+void
+i8254_uninit(struct i8254_drv* i8254)
+{
+    assert(i8254);
+
+    remove_irq_handler(i8254_IRQNO, &i8254->irq_handler);
+    uninit_timer();
+}
+
 /**
  * \brief program PIT
  * \param counter the PIT counter to use
@@ -73,9 +122,10 @@ clear_timeout(void)
  * \param mode the mode
  */
 void
-pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
+i8254_set_up(struct i8254_drv* i8254, enum pit_counter counter,
+             unsigned long freq, enum pit_mode mode)
 {
-    init_timer(set_timeout, clear_timeout);
+    assert(i8254);
 
     /* setup PIT control word */
 
@@ -83,15 +133,17 @@ pit_install(enum pit_counter counter, unsigned long freq, enum pit_mode mode)
                    (0x3 << 4) |            /* LSB, then MSB */
                    ((mode & 0x7) << 1);
 
-    io_outb(0x43, byte);
+    io_outb(i8254_CMD, byte);
 
     /* setup PIT counter */
 
     uint16_t word = 1193180 / freq;
 
-    io_outb(0x40 + (counter & 0x03), word & 0xff);
-    io_outb(0x40 + (counter & 0x03), (word & 0xff00) >> 8);
+    uint8_t byte0 = (word & 0x00ff);
+    uint8_t byte1 = (word & 0xff00) >> 8;
 
-    irq_handler_init(&g_irq_handler, irq_handler_func);
-    install_irq_handler(0, &g_irq_handler);
+    io_outb(i8254_DATA(counter), byte0);
+    io_outb(i8254_DATA(counter), byte1);
+
+    i8254->counter_freq[counter] = freq;
 }

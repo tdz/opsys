@@ -36,6 +36,12 @@
 #include "vmem.h"
 
 /*
+ * Platform drivers
+ */
+
+static struct i8254_drv g_i8254_drv;
+
+/*
  * Platform entry points for ISR handlers
  *
  * The platform_ functions below are the entry points from the
@@ -117,10 +123,15 @@ general_init(struct task **tsk, void *stack)
                 console_perror("kbd_init", -err);
         }
 
-        /*
-         * setup PIT for system timer
-         */
-        pit_install(0, SCHED_FREQ, PIT_MODE_RATEGEN);
+        /* setup PIT for system timer */
+
+        int res = i8254_init(&g_i8254_drv);
+        if (res < 0) {
+            goto err_i8254_init;
+        }
+
+        i8254_set_up(&g_i8254_drv, PIT_COUNTER_TIMER, SCHED_FREQ,
+                     PIT_MODE_RATEGEN);
 
         /*
          * build initial task and address space
@@ -205,6 +216,7 @@ err_sched_init:
 err_tcb_helper_allocate_tcb:
 err_allocator_init:
 err_task_helper_init_kernel_task:
+err_i8254_init:
         return err;
 }
 

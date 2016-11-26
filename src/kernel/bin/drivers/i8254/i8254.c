@@ -35,7 +35,7 @@
  * \see http://www.stanford.edu/class/cs140/projects/pintos/specs/8254.pdf
  */
 
-#include "pit.h"
+#include "i8254.h"
 #include <stdint.h>
 #include "idt.h"
 #include "ioports.h"

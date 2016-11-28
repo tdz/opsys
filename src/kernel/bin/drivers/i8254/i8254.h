@@ -20,6 +20,7 @@
 #pragma once
 
 #include "irq.h"
+#include "drivers/timer/timer.h"
 
 enum pit_counter {
     PIT_COUNTER_TIMER = 0,
@@ -37,6 +38,8 @@ enum pit_mode {
 };
 
 struct i8254_drv {
+    struct timer_drv drv;
+
     unsigned long counter_freq[3];
 
     struct irq_handler irq_handler;

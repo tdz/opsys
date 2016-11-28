@@ -49,28 +49,22 @@ alarm_has_expired(const struct alarm* alarm, timestamp_t timestamp_ns)
 }
 
 struct timer {
+    struct timer_drv* drv;
     /* timestamp of when the timer last fired */
     timestamp_t timestamp_ns;
-
     struct list alarm_list;
-
-    int (*set_timeout)(timeout_t);
-    void (*clear_timeout)(void);
 };
 
 static struct timer g_timer;
 
 int
-init_timer(int (*set_timeout)(timeout_t), void (*clear_timeout)(void))
+init_timer(struct timer_drv* drv)
 {
-    assert(set_timeout);
-    assert(clear_timeout);
+    assert(drv);
 
+    g_timer.drv = drv;
     g_timer.timestamp_ns = 0;
     list_init_head(&g_timer.alarm_list);
-
-    g_timer.set_timeout = set_timeout;
-    g_timer.clear_timeout = clear_timeout;
 
     return 0;
 }
@@ -136,9 +130,9 @@ handle_timeout()
     if (item != list_end(&g_timer.alarm_list)) {
         const struct alarm* alarm = alarm_of_list(item);
         timeout_t timeout_ns = alarm->timestamp_ns - timestamp_ns;
-        g_timer.set_timeout(timeout_ns);
+        timer_drv_set_timeout(g_timer.drv, timeout_ns);
     } else {
-        g_timer.clear_timeout();
+        timer_drv_clear_timeout(g_timer.drv);
     }
 }
 
@@ -150,7 +144,7 @@ timer_add_alarm(struct alarm* alarm, timeout_t reltime_ns)
     bool ints_on = cli_if_on();
 
     if (list_is_empty(&g_timer.alarm_list)) {
-        g_timer.set_timeout(reltime_ns);
+        timer_drv_set_timeout(g_timer.drv, reltime_ns);
     }
 
     alarm->timestamp_ns = g_timer.timestamp_ns + reltime_ns;
@@ -173,7 +167,7 @@ timer_remove_alarm(struct alarm* alarm)
     list_dequeue(&alarm->timer_entry);
 
     if (list_is_empty(&g_timer.alarm_list)) {
-        g_timer.clear_timeout();
+        timer_drv_clear_timeout(g_timer.drv);
     }
 
     sti_if_on(ints_on);

@@ -18,36 +18,30 @@
 
 #pragma once
 
-#include "drivers/timer/timer.h"
-#include "list.h"
+/* relative timeout in nanoseconds */
+typedef unsigned long timeout_t;
 
-/* relative timestamp in nanoseconds */
-typedef unsigned long timestamp_t;
-
-struct alarm {
-    struct list timer_entry;
-
-    timestamp_t timestamp_ns;
-    timeout_t (*func)(struct alarm*);
+struct timer_drv {
+    int (*set_timeout)(struct timer_drv*, timeout_t);
+    void (*clear_timeout)(struct timer_drv*);
 };
 
 int
-alarm_init(struct alarm* alarm, timeout_t (*func)(struct alarm*));
-
-bool
-alarm_has_expired(const struct alarm* alarm, timestamp_t timestamp_ns);
-
-int
-init_timer(struct timer_drv* drv);
+timer_drv_init(struct timer_drv* drv,
+              int (*set_timeout)(struct timer_drv*, timeout_t),
+              void (*clear_timeout)(struct timer_drv*));
 
 void
-uninit_timer(void);
+timer_drv_uninit(struct timer_drv* timer_drv);
 
-void
-handle_timeout(void);
+static inline int
+timer_drv_set_timeout(struct timer_drv* timer_drv, timeout_t reltime_ns)
+{
+    return timer_drv->set_timeout(timer_drv, reltime_ns);
+}
 
-int
-timer_add_alarm(struct alarm* alarm, timeout_t reltime_ns);
-
-void
-timer_remove_alarm(struct alarm* alarm);
+static inline void
+timer_drv_clear_timeout(struct timer_drv* timer_drv)
+{
+    timer_drv->clear_timeout(timer_drv);
+}

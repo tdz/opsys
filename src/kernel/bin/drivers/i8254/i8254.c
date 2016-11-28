@@ -69,13 +69,13 @@ irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
 }
 
 static int
-set_timeout(timeout_t timeout_ns)
+set_timeout(struct timer_drv* drv, timeout_t timeout_ns)
 {
     return 0;
 }
 
 static void
-clear_timeout(void)
+clear_timeout(struct timer_drv* drv)
 { }
 
 int
@@ -83,9 +83,14 @@ i8254_init(struct i8254_drv* i8254)
 {
     assert(i8254);
 
-    int res = init_timer(set_timeout, clear_timeout);
+    int res = timer_drv_init(&i8254->drv, set_timeout, clear_timeout);
     if (res < 0) {
         return res;
+    }
+
+    res = init_timer(&i8254->drv);
+    if (res < 0) {
+        goto err_init_timer;
     }
 
     for (size_t i = 0; i < ARRAY_NELEMS(i8254->counter_freq); ++i) {
@@ -103,6 +108,8 @@ i8254_init(struct i8254_drv* i8254)
 
 err_install_irq_handler:
     uninit_timer();
+err_init_timer:
+    timer_drv_uninit(&i8254->drv);
     return res;
 }
 
@@ -113,6 +120,7 @@ i8254_uninit(struct i8254_drv* i8254)
 
     remove_irq_handler(i8254_IRQNO, &i8254->irq_handler);
     uninit_timer();
+    timer_drv_uninit(&i8254->drv);
 }
 
 /**

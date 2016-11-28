@@ -16,38 +16,24 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "drivers/timer/timer.h"
-#include "list.h"
-
-/* relative timestamp in nanoseconds */
-typedef unsigned long timestamp_t;
-
-struct alarm {
-    struct list timer_entry;
-
-    timestamp_t timestamp_ns;
-    timeout_t (*func)(struct alarm*);
-};
+#include "timer.h"
+#include <assert.h>
 
 int
-alarm_init(struct alarm* alarm, timeout_t (*func)(struct alarm*));
+timer_drv_init(struct timer_drv* timer_drv,
+              int (*set_timeout)(struct timer_drv*, timeout_t),
+              void (*clear_timeout)(struct timer_drv*))
+{
+    assert(timer_drv);
 
-bool
-alarm_has_expired(const struct alarm* alarm, timestamp_t timestamp_ns);
+    timer_drv->set_timeout = set_timeout;
+    timer_drv->clear_timeout = clear_timeout;
 
-int
-init_timer(struct timer_drv* drv);
-
-void
-uninit_timer(void);
-
-void
-handle_timeout(void);
-
-int
-timer_add_alarm(struct alarm* alarm, timeout_t reltime_ns);
+    return 0;
+}
 
 void
-timer_remove_alarm(struct alarm* alarm);
+timer_drv_uninit(struct timer_drv* timer_drv)
+{
+    assert(timer_drv);
+}

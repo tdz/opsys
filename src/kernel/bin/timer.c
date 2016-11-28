@@ -85,10 +85,8 @@ cmp_timestamp(struct list* newitem, struct list* item)
 }
 
 void
-handle_timeout()
+handle_timeout(timestamp_t timestamp_ns)
 {
-    timestamp_t timestamp_ns = 0;
-
     /* We fetch items from the list of alarms and loop while
      * the timestamp is in the past. This way, we handle all
      * alarms that have expired. */
@@ -99,11 +97,8 @@ handle_timeout()
 
         struct alarm* alarm = alarm_of_list(item);
 
-        if (!timestamp_ns) {
-            /* First iteration: save earliest timestamp */
-            timestamp_ns = alarm->timestamp_ns;
-        } else if (!alarm_has_expired(alarm, timestamp_ns)) {
-            /* We've handled all expired alarms */
+        if (!alarm_has_expired(alarm, timestamp_ns)) {
+            /* We've handled all expired alarms. */
             break;
         }
 

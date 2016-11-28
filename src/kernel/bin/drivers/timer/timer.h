@@ -21,6 +21,9 @@
 /* relative timeout in nanoseconds */
 typedef unsigned long timeout_t;
 
+/* relative timestamp in nanoseconds */
+typedef unsigned long timestamp_t;
+
 struct timer_drv {
     int (*set_timeout)(struct timer_drv*, timeout_t);
     void (*clear_timeout)(struct timer_drv*);

@@ -43,6 +43,7 @@ struct i8254_drv {
     unsigned long counter_freq[3];
 
     struct irq_handler irq_handler;
+    timestamp_t timestamp;
 };
 
 int

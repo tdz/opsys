@@ -21,8 +21,11 @@
 #include "drivers/timer/timer.h"
 #include "list.h"
 
-/* relative timestamp in nanoseconds */
-typedef unsigned long timestamp_t;
+#define S_TO_MS(_s)     (1000 * (_s))
+#define MS_TO_uS(_ms)   (1000 * (_ms))
+#define uS_TO_NS(_us)   (1000 * (_us))
+
+#define S_TO_NS(_s)     uS_TO_NS(MS_TO_uS(S_TO_MS(_s)))
 
 struct alarm {
     struct list timer_entry;
@@ -44,7 +47,7 @@ void
 uninit_timer(void);
 
 void
-handle_timeout(void);
+handle_timeout(timestamp_t timestamp_ns);
 
 int
 timer_add_alarm(struct alarm* alarm, timeout_t reltime_ns);

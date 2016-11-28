@@ -37,8 +37,9 @@
 
 #include "i8254.h"
 #include <assert.h>
-#include <string.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include "ioports.h"
 #include "timer.h"
 
@@ -56,14 +57,21 @@ enum {
 #define i8254_DATA(_counter) \
     ( i8254_DATA0 + ((_counter) & 0x03) )
 
+struct i8254_drv*
+i8254_of_irq_handler(struct irq_handler* irqh)
+{
+    return containerof(irqh, struct i8254_drv, irq_handler);
+}
+
 static enum irq_status
 irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
 {
-    static unsigned long tickcounter = 0;
+    struct i8254_drv* i8254 = i8254_of_irq_handler(irqh);
 
-    ++tickcounter;
+    unsigned long freq = i8254->counter_freq[PIT_COUNTER_TIMER];
 
-    handle_timeout();
+    i8254->timestamp += S_TO_NS(1) / freq;
+    handle_timeout(i8254->timestamp);
 
     return IRQ_NOT_HANDLED;
 }

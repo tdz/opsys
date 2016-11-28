@@ -40,6 +40,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include "interupt.h"
 #include "ioports.h"
 #include "timer.h"
 
@@ -54,6 +55,10 @@ enum {
     i8254_CMD   = 0x43
 };
 
+enum {
+    i8254_TICKS_PER_S = 1193182
+};
+
 #define i8254_DATA(_counter) \
     ( i8254_DATA0 + ((_counter) & 0x03) )
 
@@ -61,6 +66,27 @@ struct i8254_drv*
 i8254_of_irq_handler(struct irq_handler* irqh)
 {
     return containerof(irqh, struct i8254_drv, irq_handler);
+}
+
+void
+wreg_ticks(enum pit_counter counter, enum pit_mode mode, uint16_t ticks)
+{
+    /* setup PIT control word */
+    uint8_t cmd = ((counter & 0x3) << 6) |
+                    0x30 |                  /* write LSB, then MSB */
+                  ((mode & 0x7) << 1);
+
+    /* setup PIT counter */
+    uint8_t lsb = (ticks & 0x00ff);
+    uint8_t msb = (ticks & 0xff00) >> 8;
+
+    bool ints_on = cli_if_on();
+
+    io_outb(i8254_CMD, cmd);
+    io_outb(i8254_DATA(counter), lsb);
+    io_outb(i8254_DATA(counter), msb);
+
+    sti_if_on(ints_on);
 }
 
 static enum irq_status
@@ -143,23 +169,8 @@ i8254_set_up(struct i8254_drv* i8254, enum pit_counter counter,
 {
     assert(i8254);
 
-    /* setup PIT control word */
-
-    uint8_t byte = ((counter & 0x3) << 6) |
-                   (0x3 << 4) |            /* LSB, then MSB */
-                   ((mode & 0x7) << 1);
-
-    io_outb(i8254_CMD, byte);
-
-    /* setup PIT counter */
-
-    uint16_t word = 1193180 / freq;
-
-    uint8_t byte0 = (word & 0x00ff);
-    uint8_t byte1 = (word & 0xff00) >> 8;
-
-    io_outb(i8254_DATA(counter), byte0);
-    io_outb(i8254_DATA(counter), byte1);
-
     i8254->counter_freq[counter] = freq;
+
+    /* Program PIT ticks between IRQs */
+    wreg_ticks(counter, mode, i8254_TICKS_PER_S / freq);
 }

@@ -99,7 +99,7 @@ irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
     i8254->timestamp += S_TO_NS(1) / freq;
     handle_timeout(i8254->timestamp);
 
-    return IRQ_NOT_HANDLED;
+    return IRQ_HANDLED;
 }
 
 static int

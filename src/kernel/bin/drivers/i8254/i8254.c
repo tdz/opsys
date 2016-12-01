@@ -44,6 +44,21 @@
 #include "ioports.h"
 #include "timer.h"
 
+enum i8254_counter {
+    i8254_COUNTER_TIMER = 0,
+    i8254_COUNTER_DRAM  = 1,
+    i8254_COUNTER_SPKR  = 2
+};
+
+enum i8254_mode {
+    i8254_MODE_TERMINAL = 0x00,
+    i8254_MODE_ONESHOT  = 0x01,
+    i8254_MODE_RATEGEN  = 0x02,
+    i8254_MODE_WAVEGEN  = 0x03,
+    i8254_MODE_SWSTROBE = 0x04,
+    i8254_MODE_HWSTROBE = 0x05
+};
+
 enum {
     i8254_IRQNO = 0
 };
@@ -69,7 +84,7 @@ i8254_of_irq_handler(struct irq_handler* irqh)
 }
 
 void
-wreg_ticks(enum pit_counter counter, enum pit_mode mode, uint16_t ticks)
+wreg_ticks(enum i8254_counter counter, enum i8254_mode mode, uint16_t ticks)
 {
     /* setup PIT control word */
     uint8_t cmd = ((counter & 0x3) << 6) |
@@ -94,7 +109,7 @@ irq_handler_func(unsigned char irqno, struct irq_handler* irqh)
 {
     struct i8254_drv* i8254 = i8254_of_irq_handler(irqh);
 
-    unsigned long freq = i8254->counter_freq[PIT_COUNTER_TIMER];
+    unsigned long freq = i8254->counter_freq[i8254_COUNTER_TIMER];
 
     i8254->timestamp += S_TO_NS(1) / freq;
     handle_timeout(i8254->timestamp);
@@ -158,19 +173,17 @@ i8254_uninit(struct i8254_drv* i8254)
 }
 
 /**
- * \brief program PIT
- * \param counter the PIT counter to use
+ * \brief program i8254 timer channel
  * \param freq the trigger frequency
- * \param mode the mode
  */
 void
-i8254_set_up(struct i8254_drv* i8254, enum pit_counter counter,
-             unsigned long freq, enum pit_mode mode)
+i8254_install_timer(struct i8254_drv* i8254, unsigned long freq)
 {
     assert(i8254);
 
-    i8254->counter_freq[counter] = freq;
+    i8254->counter_freq[i8254_COUNTER_TIMER] = freq;
 
-    /* Program PIT ticks between IRQs */
-    wreg_ticks(counter, mode, i8254_TICKS_PER_S / freq);
+    /* Program number of PIT ticks between IRQs */
+    wreg_ticks(i8254_COUNTER_TIMER, i8254_MODE_RATEGEN,
+               i8254_TICKS_PER_S / freq);
 }

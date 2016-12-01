@@ -130,8 +130,7 @@ general_init(struct task **tsk, void *stack)
             goto err_i8254_init;
         }
 
-        i8254_set_up(&g_i8254_drv, PIT_COUNTER_TIMER, SCHED_FREQ,
-                     PIT_MODE_RATEGEN);
+        i8254_install_timer(&g_i8254_drv, SCHED_FREQ);
 
         /*
          * build initial task and address space

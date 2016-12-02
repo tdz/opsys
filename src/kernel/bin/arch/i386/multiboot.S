@@ -24,7 +24,8 @@
 multiboot_header:
         .long 0x1badb002 /* MULTIBOOT_HEADER_MAGIC */
         .long 0x00000007 /* MULTIBOOT_HEADER_FLAG_ALIGNED |
-                            MULTIBOOT_HEADER_FLAG_MEMINFO */
+                            MULTIBOOT_HEADER_FLAG_MEMINFO |
+                            MULTIBOOT_HEADER_FLAG_VIDMODE */
         .long -(0x1badb002 + 0x00000007)
         /* address fields */
         .long multiboot_header
@@ -35,7 +36,7 @@ multiboot_header:
         /* graphics fields */
         .long 1
         .long 80
-        .long 43
+        .long 25
         .long 0
 
 .text

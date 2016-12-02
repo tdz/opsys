@@ -20,6 +20,7 @@
 #pragma once
 
 #include <sys/types.h>
+#include "drivers/crt/crt.h"
 
 ssize_t
 vga_write(volatile unsigned char *vidmem,
@@ -38,3 +39,13 @@ vga_setpos(unsigned short row, unsigned short col);
 
 volatile unsigned char *
 vga_getaddress(unsigned short row, unsigned short col);
+
+struct vga_drv {
+    struct crt_drv drv;
+};
+
+int
+vga_init(struct vga_drv* vga);
+
+void
+vga_uninit(struct vga_drv* vga);

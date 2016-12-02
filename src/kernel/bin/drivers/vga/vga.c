@@ -27,13 +27,13 @@ enum {
 };
 
 static unsigned long
-crt_getindex(unsigned short row, unsigned short col)
+vga_getindex(unsigned short row, unsigned short col)
 {
     return col + row * MAX_COL;
 }
 
 ssize_t
-crt_write(volatile unsigned char *vidmem,
+vga_write(volatile unsigned char *vidmem,
           const void *buf, size_t count, unsigned char attr)
 {
     size_t i;
@@ -51,7 +51,7 @@ crt_write(volatile unsigned char *vidmem,
 }
 
 int
-crt_getpos(unsigned short *row, unsigned short *col)
+vga_getpos(unsigned short *row, unsigned short *col)
 {
     unsigned long curh = io_inb_index(0x3d4, 0x0e, 0x03d5);
     unsigned long curl = io_inb_index(0x3d4, 0x0f, 0x03d5);
@@ -65,7 +65,7 @@ crt_getpos(unsigned short *row, unsigned short *col)
 }
 
 int
-crt_getmaxpos(unsigned short *row, unsigned short *col)
+vga_getmaxpos(unsigned short *row, unsigned short *col)
 {
     *row = MAX_ROW;
     *col = MAX_COL;
@@ -74,9 +74,9 @@ crt_getmaxpos(unsigned short *row, unsigned short *col)
 }
 
 int
-crt_setpos(unsigned short row, unsigned short col)
+vga_setpos(unsigned short row, unsigned short col)
 {
-    unsigned long cur = crt_getindex(row, col);
+    unsigned long cur = vga_getindex(row, col);
 
     io_outb_index(0x03d4, 0x0e, 0x03d5, (cur >> 8) & 0xff);
     io_outb_index(0x03d4, 0x0f, 0x03d5, cur & 0xff);
@@ -85,11 +85,11 @@ crt_setpos(unsigned short row, unsigned short col)
 }
 
 volatile unsigned char *
-crt_getaddress(unsigned short row, unsigned short col)
+vga_getaddress(unsigned short row, unsigned short col)
 {
     if ((row >= MAX_ROW) || (col >= MAX_COL)) {
         return NULL;
     }
 
-    return ((volatile unsigned char *)0xb8000) + 2 * crt_getindex(row, col);
+    return ((volatile unsigned char *)0xb8000) + 2 * vga_getindex(row, col);
 }

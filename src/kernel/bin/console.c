@@ -85,10 +85,10 @@ console_printf(const char *str, ...)
                 {
 
                         len = str - strbeg;
-                        crt_getpos(&row, &col);
-                        crt_write(crt_getaddress(row, col), strbeg, len,
+                        vga_getpos(&row, &col);
+                        vga_write(vga_getaddress(row, col), strbeg, len,
                                   0x07);
-                        crt_setpos(row, col + len);
+                        vga_setpos(row, col + len);
                         strbeg = ++str;
 
                         switch (*str)
@@ -101,11 +101,11 @@ console_printf(const char *str, ...)
 
                                                 len = strlen(a);
 
-                                                crt_getpos(&row, &col);
-                                                crt_write(crt_getaddress
+                                                vga_getpos(&row, &col);
+                                                vga_write(vga_getaddress
                                                           (row, col), a, len,
                                                           0x07);
-                                                crt_setpos(row, col + len);
+                                                vga_setpos(row, col + len);
                                                 strbeg = str + 1;
                                         }
                                         break;
@@ -121,11 +121,11 @@ console_printf(const char *str, ...)
                                                 len = console_hextostr(a,
                                                                        astr);
 
-                                                crt_getpos(&row, &col);
-                                                crt_write(crt_getaddress
+                                                vga_getpos(&row, &col);
+                                                vga_write(vga_getaddress
                                                           (row, col), astr,
                                                           len, 0x07);
-                                                crt_setpos(row, col + len);
+                                                vga_setpos(row, col + len);
                                                 strbeg = str + 1;
                                         }
                                         break;
@@ -141,12 +141,12 @@ console_printf(const char *str, ...)
 
                         len = str - strbeg;
 
-                        crt_getpos(&row, &col);
-                        crt_write(crt_getaddress(row, col), strbeg, len,
+                        vga_getpos(&row, &col);
+                        vga_write(vga_getaddress(row, col), strbeg, len,
                                   0x07);
-                        crt_setpos(row, col + len);
-                        crt_getpos(&row, &col);
-                        crt_setpos((row + 1) % 25, 0);
+                        vga_setpos(row, col + len);
+                        vga_getpos(&row, &col);
+                        vga_setpos((row + 1) % 25, 0);
 
                         strbeg = str + 1;
 
@@ -156,10 +156,10 @@ console_printf(const char *str, ...)
 
                         len = str - strbeg;
 
-                        crt_getpos(&row, &col);
-                        crt_write(crt_getaddress(row, col), strbeg, len,
+                        vga_getpos(&row, &col);
+                        vga_write(vga_getaddress(row, col), strbeg, len,
                                   0x07);
-                        crt_setpos(row, col + len + 8);
+                        vga_setpos(row, col + len + 8);
 
                         strbeg = str + 1;
                 }
@@ -169,9 +169,9 @@ console_printf(const char *str, ...)
 
         len = str - strbeg;
 
-        crt_getpos(&row, &col);
-        crt_write(crt_getaddress(row, col), strbeg, len, 0x07);
-        crt_setpos(row, col + len);
+        vga_getpos(&row, &col);
+        vga_write(vga_getaddress(row, col), strbeg, len, 0x07);
+        vga_setpos(row, col + len);
 
         return 0;
 }

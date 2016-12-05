@@ -20,6 +20,7 @@
 #include "multiboot.h"
 #include <errno.h>
 #include "main.h"
+#include "page.h"
 #include "pageframe.h"
 #include "pmem.h"
 
@@ -162,24 +163,13 @@ static int
 multiboot_init_pmem(const struct multiboot_header *mb_header,
                        const struct multiboot_info *mb_info)
 {
-        int err;
-        unsigned long pfindex, pfcount;
+    unsigned long pfcount = pageframe_span(0, (mb_info->mem_upper + 1024) << 10);
 
-        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MEM))
-        {
-                err = -EINVAL;
-                goto err_multiboot_info_flag_mem;
-        }
+    unsigned long pfindex = find_unused_area(mb_header,
+                                             mb_info,
+                                             pfcount >> PAGEFRAME_SHIFT);
 
-        pfcount = pageframe_span(0, (mb_info->mem_upper + 1024) << 10);
-
-        pfindex = find_unused_area(mb_header,
-                                   mb_info, pfcount >> PAGEFRAME_SHIFT);
-
-        return pmem_init(pfindex, pfcount);
-
-err_multiboot_info_flag_mem:
-        return err;
+    return pmem_init(pfindex, pfcount);
 }
 
 static int
@@ -197,11 +187,6 @@ multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
 {
         size_t i;
         unsigned long mmap_addr;
-
-        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MMAP))
-        {
-                return 0;
-        }
 
         mmap_addr = mb_info->mmap_addr;
 
@@ -243,11 +228,6 @@ multiboot_init_pmem_modules(const struct multiboot_info *mb_info)
         int err;
         const struct multiboot_module *mod, *modend;
 
-        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MODS))
-        {
-                return 0;
-        }
-
         err = 0;
         mod = (const struct multiboot_module *)mb_info->mods_addr;
         modend = mod + mb_info->mods_count;
@@ -265,10 +245,6 @@ static int
 multiboot_load_modules(struct task *parent,
                        const struct multiboot_info *mb_info)
 {
-    if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MODS)) {
-        return 0;
-    }
-
     const struct multiboot_module* mod =
         (const struct multiboot_module *)mb_info->mods_addr;
 
@@ -286,46 +262,55 @@ void
 multiboot_init(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info, void *stack)
 {
-        int err;
-        struct task *tsk;
+    const static size_t NPAGES = (4 * 1024 * 1024) / PAGE_SIZE;
 
-        /* init physical memory with lowest 4 MiB reserved for DMA,
-         * kernel, etc
-         */
+    /* init physical memory with lowest 4 MiB reserved for DMA,
+     * kernel, etc */
 
-        if ((err = multiboot_init_pmem(mb_header, mb_info)) < 0)
-        {
-                return;
+    if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MEM)) {
+        return;
+    }
+
+    int res = multiboot_init_pmem(mb_header, mb_info);
+    if (res < 0) {
+        return;
+    }
+
+    pmem_set_flags(0, NPAGES, PMEM_FLAG_RESERVED);
+
+    res = multiboot_init_pmem_kernel(mb_header);
+    if (res < 0) {
+        return;
+    }
+
+    if (mb_info->flags & MULTIBOOT_INFO_FLAG_MMAP) {
+        res = multiboot_init_pmem_mmap(mb_info);
+        if (res < 0) {
+            return;
         }
+    }
 
-        pmem_set_flags(0, 1024, PMEM_FLAG_RESERVED);
-
-        if ((err = multiboot_init_pmem_kernel(mb_header)) < 0)
-        {
-                return;
+    if (mb_info->flags & MULTIBOOT_INFO_FLAG_MODS) {
+        res = multiboot_init_pmem_modules(mb_info);
+        if (res < 0) {
+            return;
         }
-        if ((err = multiboot_init_pmem_mmap(mb_info)) < 0)
-        {
-                return;
-        }
-        if ((err = multiboot_init_pmem_modules(mb_info)) < 0)
-        {
-                return;
-        }
+    }
 
-        /* setup virtual memory and system services
-         */
+    /* setup virtual memory and system services */
 
-        if ((err = general_init(&tsk, &stack)) < 0)
-        {
-                return;
+    struct task* task;
+    res = general_init(&task, &stack);
+    if (res < 0) {
+        return;
+    }
+
+    /* load modules as ELF binaries */
+
+    if (mb_info->flags & MULTIBOOT_INFO_FLAG_MODS) {
+        res = multiboot_load_modules(task, mb_info);
+        if (res < 0) {
+            return;
         }
-
-        /* load modules as ELF binaries
-         */
-
-        if ((err = multiboot_load_modules(tsk, mb_info)) < 0)
-        {
-                return;
-        }
+    }
 }

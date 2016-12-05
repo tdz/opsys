@@ -27,6 +27,7 @@
 #include "gdt.h"
 #include "idt.h"
 #include "interupt.h"
+#include "loader.h"
 #include "sched.h"
 #include "syscall.h"
 #include "syssrv.h"
@@ -219,3 +220,73 @@ err_i8254_init:
         return err;
 }
 
+int
+execute_module(struct task* parent, uintptr_t start, size_t len,
+               const char* name)
+{
+    if (name) {
+        console_printf("loading module '\%s'\n", name);
+    } else {
+        console_printf("loading module at address 0x%x\n", start);
+    }
+
+    /* allocate task */
+
+    struct task* task;
+    int res = task_helper_allocate_task_from_parent(parent, &task);
+
+    if (res < 0) {
+        console_perror("task_helper_allocate_task_from_parent", -res);
+        goto err_task_helper_allocate_task_from_parent;
+    }
+
+    /* allocate TCB */
+
+    struct tcb* tcb;
+    res = tcb_helper_allocate_tcb_and_stack(task, 1, &tcb);
+
+    if (res < 0) {
+        console_perror("tcb_helper_allocate_tcb_and_stack" , -res);
+        goto err_tcb_helper_allocate_tcb_and_stack;
+    }
+
+    /* load binary image */
+
+    void* ip;
+    res = loader_exec(tcb, (void *)start, &ip, tcb);
+
+    if (res < 0) {
+        console_perror("loader_exec", -res);
+        goto err_loader_exec;
+    }
+
+    /* set thread to starting state */
+
+    res = tcb_helper_run_user_thread(sched_get_current_thread(cpuid()),
+                                     tcb, ip);
+    if (res < 0) {
+        goto err_tcb_helper_run_user_thread;
+    }
+
+    /* schedule thread */
+
+    res = sched_add_thread(tcb, 64);
+
+    if (res < 0) {
+        console_perror("sched_add_thread", -res);
+        goto err_sched_add_thread;
+    }
+
+    console_printf("scheduled as %x.\n", res);
+
+    return 0;
+
+err_sched_add_thread:
+err_tcb_helper_run_user_thread:
+err_loader_exec:
+    /* FIXME: free tcb */
+err_tcb_helper_allocate_tcb_and_stack:
+    /* FIXME: free task */
+err_task_helper_allocate_task_from_parent:
+    return res;
+}

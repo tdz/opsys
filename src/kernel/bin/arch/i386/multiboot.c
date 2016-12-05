@@ -19,16 +19,10 @@
 
 #include "multiboot.h"
 #include <errno.h>
-#include <stdint.h>
 #include "console.h"
-#include "cpu.h"
-#include "loader.h"
 #include "main.h"
 #include "pageframe.h"
 #include "pmem.h"
-#include "sched.h"
-#include "taskhlp.h"
-#include "tcbhlp.h"
 
 static void *
 mmap_base_addr(const struct multiboot_mmap *mmap)
@@ -276,109 +270,21 @@ static int
 multiboot_load_modules(struct task *parent,
                        const struct multiboot_info *mb_info)
 {
-        int err;
-        const struct multiboot_module *mod;
-        size_t i;
-
-        if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MODS))
-        {
-                return 0;
-        }
-
-        mod = (const struct multiboot_module *)mb_info->mods_addr;
-
-        for (i = 0; i < mb_info->mods_count; ++i, ++mod)
-        {
-                struct task *tsk;
-                struct tcb *tcb;
-                void *ip;
-
-                if (mod->string)
-                {
-                        console_printf("loading module '\%s'\n", mod->string);
-                }
-                else
-                {
-                        console_printf("loading module %x\n", i);
-                }
-
-                /*
-                 * allocate task
-                 */
-
-                err = task_helper_allocate_task_from_parent(parent, &tsk);
-
-                if (err < 0)
-                {
-                        console_perror
-                                ("task_helper_allocate_task_from_parent",
-                                 -err);
-                        goto err_task_helper_allocate_task_from_parent;
-                }
-
-                /*
-                 * allocate tcb
-                 */
-
-                err = tcb_helper_allocate_tcb_and_stack(tsk, 1, &tcb);
-
-                if (err < 0)
-                {
-                        console_perror("tcb_helper_allocate_tcb_and_stack",
-                                       -err);
-                        goto err_tcb_helper_allocate_tcb_and_stack;
-                }
-
-                /*
-                 * load binary image
-                 */
-
-                if ((err =
-                     loader_exec(tcb, (void *)mod->mod_start, &ip, tcb)) < 0)
-                {
-                        console_perror("loader_exec", -err);
-                        goto err_loader_exec;
-                }
-
-                /*
-                 * set thread to starting state
-                 */
-                err = tcb_helper_run_user_thread(sched_get_current_thread(cpuid()),
-                                                 tcb, ip);
-
-                if (err < 0)
-                {
-                        goto err_tcb_helper_run_user_thread;
-                }
-
-                /*
-                 * schedule thread
-                 */
-                if ((err = sched_add_thread(tcb, 64)) < 0)
-                {
-                        console_perror("sched_add_thread", -err);
-                        goto err_sched_add_thread;
-                }
-
-                console_printf("scheduled as %x.\n", err);
-
-                continue;
-
-        err_sched_add_thread:
-        err_tcb_helper_run_user_thread:
-        err_loader_exec:
-                /*
-                 * FIXME: free tcb
-                 */
-        err_tcb_helper_allocate_tcb_and_stack:
-                /*
-                 * FIXME: free task
-                 */
-        err_task_helper_allocate_task_from_parent:
-                continue;
-        }
-
+    if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MODS)) {
         return 0;
+    }
+
+    const struct multiboot_module* mod =
+        (const struct multiboot_module *)mb_info->mods_addr;
+
+    for (size_t i = 0; i < mb_info->mods_count; ++i, ++mod) {
+
+        size_t len = mod->mod_end - mod->mod_start + 1;
+
+        execute_module(parent, mod->mod_start, len, (const char*)mod->string);
+    }
+
+    return 0;
 }
 
 void

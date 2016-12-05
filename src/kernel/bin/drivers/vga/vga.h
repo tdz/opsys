@@ -23,6 +23,10 @@
 
 struct vga_drv {
     struct crt_drv drv;
+
+    unsigned short fb_w;
+    unsigned short fb_h;
+    unsigned char* vmem;
 };
 
 int

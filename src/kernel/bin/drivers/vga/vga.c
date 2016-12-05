@@ -29,18 +29,26 @@ enum {
     MAX_COL = 80
 };
 
-static void*
-get_addr(struct crt_drv* drv, unsigned long off)
+static struct vga_drv*
+vga_drv_of_crt_drv(struct crt_drv* drv)
 {
-    return ((unsigned char *)0xb8000) + 2 * off;
+    return containerof(drv, struct vga_drv, drv);
+}
+
+static void*
+get_addr(const struct vga_drv* vga, unsigned long off)
+{
+    return vga->vmem + 2 * off;
 }
 
 static int
 get_fb_resolution(struct crt_drv* drv,
                   unsigned short* r, unsigned short* c)
 {
-    *r = MAX_ROW;
-    *c = MAX_COL;
+    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+
+    *r = vga->fb_h;
+    *c = vga->fb_w;
 
     return 0;
 }
@@ -49,13 +57,17 @@ static long
 get_fb_offset(struct crt_drv* drv,
               unsigned short r, unsigned short c)
 {
-    return c + r * MAX_COL;
+    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+
+    return c + r * vga->fb_w;
 }
 
 static int
 set_cursor_offset(struct crt_drv* drv, unsigned long off)
 {
-    off %= MAX_ROW * MAX_COL;
+    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+
+    off %= vga->fb_w * vga->fb_h;
 
     uint8_t cr0e = (off >> 8) & 0xff;
     uint8_t cr0f = off & 0xff;
@@ -80,29 +92,35 @@ get_cursor_offset(struct crt_drv* drv)
 static int
 put_LF(struct crt_drv* drv)
 {
+    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+
     ssize_t res = get_cursor_offset(drv);
     if (res < 0) {
         return res;
     }
-    return set_cursor_offset(drv, res + MAX_COL);
+    return set_cursor_offset(drv, res + vga->fb_w);
 }
 
 static int
 put_CR(struct crt_drv* drv)
 {
+    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+
     ssize_t res = get_cursor_offset(drv);
     if (res < 0) {
         return res;
     }
-    return set_cursor_offset(drv, res - (res % MAX_COL));
+    return set_cursor_offset(drv, res - (res % vga->fb_w));
 }
 
 static int
 put_char(struct crt_drv* drv, unsigned long off, int c)
 {
-    off %= MAX_ROW * MAX_COL;
+    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
 
-    unsigned char* vmem = get_addr(drv, off);
+    off %= vga->fb_w * vga->fb_h;
+
+    unsigned char* vmem = get_addr(vga, off);
 
     if (!vmem) {
         return -EFAULT;
@@ -133,6 +151,10 @@ vga_init(struct vga_drv* vga)
     if (res < 0) {
         return res;
     }
+
+    vga->fb_w = MAX_COL;
+    vga->fb_h = MAX_ROW;
+    vga->vmem = (unsigned char*)0xb8000;
 
     return 0;
 }

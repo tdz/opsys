@@ -19,7 +19,6 @@
 
 #include "multiboot.h"
 #include <errno.h>
-#include "console.h"
 #include "main.h"
 #include "pageframe.h"
 #include "pmem.h"
@@ -177,8 +176,6 @@ multiboot_init_pmem(const struct multiboot_header *mb_header,
         pfindex = find_unused_area(mb_header,
                                    mb_info, pfcount >> PAGEFRAME_SHIFT);
 
-        console_printf("found physmap area at %x\n", (unsigned long)pfindex);
-
         return pmem_init(pfindex, pfcount);
 
 err_multiboot_info_flag_mem:
@@ -218,8 +215,6 @@ multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
 
                 pfindex = pageframe_index(mmap_base_addr(mmap));
                 nframes = pageframe_count(mmap_length(mmap));
-
-                console_printf("pfindex=%x nframes=%x type=%x\n",pfindex, nframes, mmap->type);
 
                 pmem_set_flags(pfindex,
                                nframes,
@@ -294,15 +289,12 @@ multiboot_init(const struct multiboot_header *mb_header,
         int err;
         struct task *tsk;
 
-        console_printf("opsys booting...\n");
-
         /* init physical memory with lowest 4 MiB reserved for DMA,
          * kernel, etc
          */
 
         if ((err = multiboot_init_pmem(mb_header, mb_info)) < 0)
         {
-                console_perror("multiboot_init_pmem", -err);
                 return;
         }
 
@@ -310,17 +302,14 @@ multiboot_init(const struct multiboot_header *mb_header,
 
         if ((err = multiboot_init_pmem_kernel(mb_header)) < 0)
         {
-                console_perror("multiboot_init_pmem_kernel", -err);
                 return;
         }
         if ((err = multiboot_init_pmem_mmap(mb_info)) < 0)
         {
-                console_perror("multiboot_init_pmem_mmap", -err);
                 return;
         }
         if ((err = multiboot_init_pmem_modules(mb_info)) < 0)
         {
-                console_perror("multiboot_init_pmem_modules", -err);
                 return;
         }
 
@@ -329,7 +318,6 @@ multiboot_init(const struct multiboot_header *mb_header,
 
         if ((err = general_init(&tsk, &stack)) < 0)
         {
-                console_perror("general_init", -err);
                 return;
         }
 
@@ -338,8 +326,6 @@ multiboot_init(const struct multiboot_header *mb_header,
 
         if ((err = multiboot_load_modules(tsk, mb_info)) < 0)
         {
-                console_perror("multiboot_load_modules", -err);
                 return;
         }
 }
-

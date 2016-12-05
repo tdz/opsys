@@ -116,6 +116,10 @@ general_init(struct task **tsk, void *stack)
          */
         pic_install();
 
+        /* At this point we have a console ready, so display
+         * something to the user. */
+        console_printf("opsys booting...\n");
+
         /*
          * setup keyboard
          */

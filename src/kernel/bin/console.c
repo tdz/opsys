@@ -18,10 +18,30 @@
  */
 
 #include "console.h"
+#include <assert.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <string.h>
 #include "drivers/vga/vga.h"
+
+static struct crt_drv* g_crt;
+
+int
+init_console(struct crt_drv* crt)
+{
+    assert(crt);
+
+    g_crt = crt;
+
+    return 0;
+}
+
+void
+uninit_console()
+{
+    g_crt = NULL;
+}
 
 static size_t
 console_hextostr(unsigned long v, char *str)
@@ -71,7 +91,6 @@ int
 console_printf(const char *str, ...)
 {
         const char *strbeg;
-        unsigned short row, col;
         size_t len;
 
         va_list args;
@@ -85,10 +104,9 @@ console_printf(const char *str, ...)
                 {
 
                         len = str - strbeg;
-                        vga_getpos(&row, &col);
-                        vga_write(vga_getaddress(row, col), strbeg, len,
-                                  0x07);
-                        vga_setpos(row, col + len);
+                        ssize_t off = crt_drv_get_cursor_offset(g_crt);
+                        crt_drv_put_str(g_crt, off, strbeg, len);
+                        crt_drv_set_cursor_offset(g_crt, off + len);
                         strbeg = ++str;
 
                         switch (*str)
@@ -101,11 +119,9 @@ console_printf(const char *str, ...)
 
                                                 len = strlen(a);
 
-                                                vga_getpos(&row, &col);
-                                                vga_write(vga_getaddress
-                                                          (row, col), a, len,
-                                                          0x07);
-                                                vga_setpos(row, col + len);
+                                                off = crt_drv_get_cursor_offset(g_crt);
+                                                crt_drv_put_str(g_crt, off, a, len);
+                                                crt_drv_set_cursor_offset(g_crt, off + len);
                                                 strbeg = str + 1;
                                         }
                                         break;
@@ -121,11 +137,9 @@ console_printf(const char *str, ...)
                                                 len = console_hextostr(a,
                                                                        astr);
 
-                                                vga_getpos(&row, &col);
-                                                vga_write(vga_getaddress
-                                                          (row, col), astr,
-                                                          len, 0x07);
-                                                vga_setpos(row, col + len);
+                                                off = crt_drv_get_cursor_offset(g_crt);
+                                                crt_drv_put_str(g_crt, off, astr, len);
+                                                crt_drv_set_cursor_offset(g_crt, off + len);
                                                 strbeg = str + 1;
                                         }
                                         break;
@@ -141,12 +155,11 @@ console_printf(const char *str, ...)
 
                         len = str - strbeg;
 
-                        vga_getpos(&row, &col);
-                        vga_write(vga_getaddress(row, col), strbeg, len,
-                                  0x07);
-                        vga_setpos(row, col + len);
-                        vga_getpos(&row, &col);
-                        vga_setpos((row + 1) % 25, 0);
+                        ssize_t off = crt_drv_get_cursor_offset(g_crt);
+                        crt_drv_put_str(g_crt, off, strbeg, len);
+                        crt_drv_set_cursor_offset(g_crt, off + len);
+                        crt_drv_put_LF(g_crt);
+                        crt_drv_put_CR(g_crt);
 
                         strbeg = str + 1;
 
@@ -156,10 +169,9 @@ console_printf(const char *str, ...)
 
                         len = str - strbeg;
 
-                        vga_getpos(&row, &col);
-                        vga_write(vga_getaddress(row, col), strbeg, len,
-                                  0x07);
-                        vga_setpos(row, col + len + 8);
+                        ssize_t off = crt_drv_get_cursor_offset(g_crt);
+                        crt_drv_put_str(g_crt, off, strbeg, len);
+                        crt_drv_set_cursor_offset(g_crt, off + len + 8);
 
                         strbeg = str + 1;
                 }
@@ -169,9 +181,9 @@ console_printf(const char *str, ...)
 
         len = str - strbeg;
 
-        vga_getpos(&row, &col);
-        vga_write(vga_getaddress(row, col), strbeg, len, 0x07);
-        vga_setpos(row, col + len);
+        ssize_t off = crt_drv_get_cursor_offset(g_crt);
+        crt_drv_put_str(g_crt, off, strbeg, len);
+        crt_drv_set_cursor_offset(g_crt, off + len);
 
         return 0;
 }

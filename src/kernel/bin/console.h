@@ -19,6 +19,14 @@
 
 #pragma once
 
+struct crt_drv;
+
+int
+init_console(struct crt_drv* crt);
+
+void
+uninit_console(void);
+
 int
 console_printf(const char *str, ...);
 

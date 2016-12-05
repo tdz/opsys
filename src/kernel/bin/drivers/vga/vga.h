@@ -19,26 +19,7 @@
 
 #pragma once
 
-#include <sys/types.h>
 #include "drivers/crt/crt.h"
-
-ssize_t
-vga_write(volatile unsigned char *vidmem,
-          const void *buf,
-          size_t count,
-          unsigned char attr);
-
-int
-vga_getmaxpos(unsigned short *row, unsigned short *col);
-
-int
-vga_getpos(unsigned short *row, unsigned short *col);
-
-int
-vga_setpos(unsigned short row, unsigned short col);
-
-volatile unsigned char *
-vga_getaddress(unsigned short row, unsigned short col);
 
 struct vga_drv {
     struct crt_drv drv;

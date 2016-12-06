@@ -163,15 +163,42 @@ find_unused_area(const struct multiboot_header *mb_header,
     return pfoffset;
 }
 
+static size_t
+available_mem(const struct multiboot_info* info)
+{
+    size_t mem = 0;
+
+    for (const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
+            mmap;
+            mmap = next_mmap_entry(info, mmap)) {
+
+        size_t end = mmap->addr + mmap->len;
+
+        if (end > mem) {
+            mem = end;
+        }
+    }
+
+    return mem;
+}
+
 static int
 multiboot_init_pmem(const struct multiboot_header *mb_header,
                        const struct multiboot_info *mb_info)
 {
-    unsigned long pfcount = pageframe_span(0, (mb_info->mem_upper + 1024) << 10);
+    size_t mem = available_mem(mb_info);
+    if (!mem) {
+        return -ENOMEM;
+    }
+
+    unsigned long pfcount = pageframe_span(0, mem);
 
     unsigned long pfindex = find_unused_area(mb_header,
                                              mb_info,
                                              pfcount >> PAGEFRAME_SHIFT);
+    if (!pfindex) {
+        return -ENOMEM;
+    }
 
     return pmem_init(pfindex, pfcount);
 }
@@ -263,10 +290,6 @@ multiboot_init(const struct multiboot_header *mb_header,
 
     /* init physical memory with lowest 4 MiB reserved for DMA,
      * kernel, etc */
-
-    if (!(mb_info->flags & MULTIBOOT_INFO_MEMORY)) {
-        return;
-    }
 
     int res = multiboot_init_pmem(mb_header, mb_info);
     if (res < 0) {

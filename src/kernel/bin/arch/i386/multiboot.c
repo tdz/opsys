@@ -24,6 +24,7 @@
 
 #include <errno.h>
 #include <multiboot.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include "main.h"
 #include "page.h"
@@ -110,87 +111,103 @@ next_mod_list(const struct multiboot_info* info,
     return mod;
 }
 
-static int
-range_order(unsigned long beg1, unsigned long end1,
-            unsigned long beg2, unsigned long end2)
+/*
+ * PMEM initialization
+ *
+ * PMEM requires a memory map to keep track of the available page
+ * frames. This map must be allocated from available page frames,
+ * which results in a chicken-and-egg problem.
+ *
+ * To get an idea of the map size, we calculate the size of the
+ * available memory, from the Multiboot mmap entries. To allocate
+ * the memory map, we search the mmap entries for available space,
+ * carefully avoiding locations that are occupied by the kernel or
+ * modules.
+ *
+ * We give the allocated map to PMEM and mark all pre-allocated
+ * areas, such as kernel and module frames, using PMEM interfaces.
+ */
+
+static bool
+overlaps_with(unsigned long beg1, unsigned long len1,
+              unsigned long beg2, unsigned long len2)
 {
-    if (end1 <= beg2) {
-        return -1;
-    } else if (end2 <= beg1) {
-        return 1;
-    }
-    return 0;
+    unsigned long end1 = beg1 + len1;
+    unsigned long end2 = beg2 + len2;
+
+    return !((end1 <= beg2) || (end2 <= beg1));
 }
 
-static unsigned long
-find_unused_area(const struct multiboot_header *mb_header,
-                 const struct multiboot_info *mb_info, unsigned long nframes)
+static bool
+is_within(unsigned long inner_beg, unsigned long inner_len,
+          unsigned long outer_beg, unsigned long outer_len)
+{
+    unsigned long inner_end = inner_beg + inner_len;
+    unsigned long outer_end = outer_beg + outer_len;
+
+    return (inner_beg >= outer_beg) && (inner_end <= outer_end);
+}
+
+static uintptr_t
+find_unused_area(const struct multiboot_header* header,
+                 const struct multiboot_info* info,
+                 unsigned long nframes)
 {
     os_index_t kernel_pfindex =
-        pageframe_index((void*)mb_header->load_addr);
+        pageframe_index((void*)(uintptr_t)header->load_addr);
 
     size_t kernel_nframes =
-        pageframe_span((void*)mb_header->load_addr,
-                       mb_header->bss_end_addr - mb_header->load_addr + 1);
-
-    unsigned long pfoffset = 0;
+        pageframe_span((void*)(uintptr_t)header->load_addr,
+                       header->bss_end_addr - header->load_addr + 1);
 
     for (const struct multiboot_mmap_entry* mmap =
-                first_mmap_entry_of_type(mb_info, MULTIBOOT_MEMORY_AVAILABLE);
-            mmap && !pfoffset;
-            mmap = next_mmap_entry_of_type(mb_info, mmap, MULTIBOOT_MEMORY_AVAILABLE)) {
+                first_mmap_entry_of_type(info, MULTIBOOT_MEMORY_AVAILABLE);
+            mmap;
+            mmap = next_mmap_entry_of_type(info, mmap, MULTIBOOT_MEMORY_AVAILABLE)) {
 
         /* area page index and length */
 
-        os_index_t area_pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
-        size_t area_nframes = pageframe_count(mmap->len);
+        os_index_t mmap_pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
+        size_t mmap_nframes = pageframe_count(mmap->len);
 
         /* area at address 0, or too small */
-        if (!area_pfindex || (area_nframes < nframes)) {
+        if (!mmap_pfindex || (mmap_nframes < nframes)) {
             continue;
         }
 
         /* possible index */
-
-        os_index_t pfindex = area_pfindex;
+        os_index_t pfindex = mmap_pfindex;
 
         /* check for intersection with kernel */
 
-        if (!range_order(kernel_pfindex, kernel_pfindex + kernel_nframes,
-                         pfindex, pfindex + nframes)) {
+        if (overlaps_with(pfindex, nframes, kernel_pfindex, kernel_nframes)) {
             pfindex = kernel_pfindex + kernel_nframes;
         }
 
         /* check for intersection with modules */
 
-        while (!pfoffset &&
-               ((pfindex + nframes) < (area_pfindex + area_nframes))) {
+        for (const struct multiboot_mod_list* mod = first_mod_list(info);
+                mod;
+                mod = next_mod_list(info, mod)) {
 
-            for (const struct multiboot_mod_list* mod = first_mod_list(mb_info);
-                    mod;
-                    mod = next_mod_list(mb_info, mod)) {
+            os_index_t mod_pfindex =
+                pageframe_index((void *)mod->mod_start);
 
-                os_index_t mod_pfindex =
-                    pageframe_index((void *)mod->mod_start);
+            size_t mod_nframes =
+                pageframe_count(mod->mod_end - mod->mod_start + 1);
 
-                size_t mod_nframes =
-                    pageframe_count(mod->mod_end - mod->mod_start);
-
-                /* check intersection */
-
-                if (range_order(mod_pfindex,
-                                mod_pfindex + mod_nframes,
-                                pfindex, pfindex + nframes)) {
-                    /* no intersection, offset found */
-                    pfoffset = pageframe_offset(pfindex);
-                } else {
-                    pfindex = mod_pfindex + mod_nframes;
-                }
+            if (overlaps_with(pfindex, nframes, mod_pfindex, mod_nframes)) {
+                pfindex = mod_pfindex + mod_nframes;
             }
+        }
+
+        if (is_within(pfindex, nframes, mmap_pfindex, mmap_nframes)) {
+            /* found an unused area within mmap entry */
+            return pageframe_offset(pfindex);
         }
     }
 
-    return pfoffset;
+    return 0; /* not found */
 }
 
 static size_t
@@ -213,42 +230,11 @@ available_mem(const struct multiboot_info* info)
 }
 
 static int
-multiboot_init_pmem(const struct multiboot_header *mb_header,
-                       const struct multiboot_info *mb_info)
+mark_mmap_areas(const struct multiboot_info* info)
 {
-    size_t mem = available_mem(mb_info);
-    if (!mem) {
-        return -ENOMEM;
-    }
-
-    unsigned long pfcount = pageframe_span(0, mem);
-
-    unsigned long pfindex = find_unused_area(mb_header,
-                                             mb_info,
-                                             pfcount >> PAGEFRAME_SHIFT);
-    if (!pfindex) {
-        return -ENOMEM;
-    }
-
-    return pmem_init(pfindex, pfcount);
-}
-
-static int
-multiboot_init_pmem_kernel(const struct multiboot_header *mb_header)
-{
-        return pmem_set_flags(pageframe_index
-                              ((void *)mb_header->load_addr),
-                              pageframe_count(mb_header->bss_end_addr -
-                                              mb_header->load_addr),
-                              PMEM_FLAG_RESERVED);
-}
-
-static int
-multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
-{
-    for (const struct multiboot_mmap_entry* mmap = first_mmap_entry(mb_info);
+    for (const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
             mmap;
-            mmap = next_mmap_entry(mb_info, mmap)) {
+            mmap = next_mmap_entry(info, mmap)) {
 
         os_index_t pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
         size_t nframes = pageframe_count(mmap->len);
@@ -257,37 +243,107 @@ multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
                                 PMEM_FLAG_USEABLE :
                                 PMEM_FLAG_RESERVED;
 
-        pmem_set_flags(pfindex, nframes, flags);
+        int res = pmem_set_flags(pfindex, nframes, flags);
+        if (res < 0) {
+            return res;
+        }
     }
 
     return 0;
 }
 
 static int
-multiboot_init_pmem_module(const struct multiboot_mod_list* mod)
+claim_kernel_frames(const struct multiboot_header* header)
 {
-        return pmem_set_flags(pageframe_index((void *)mod->mod_start),
-                              pageframe_count(mod->mod_end -
-                                              mod->mod_start),
-                              PMEM_FLAG_RESERVED);
+    return pmem_set_flags(pageframe_index((void*)(uintptr_t)header->load_addr),
+                          pageframe_count(header->bss_end_addr -
+                                          header->load_addr),
+                          PMEM_FLAG_RESERVED);
 }
 
 static int
-multiboot_init_pmem_modules(const struct multiboot_info *mb_info)
+claim_modules_frames(const struct multiboot_info* info)
 {
-    int res = 0;
-
-    for (const struct multiboot_mod_list* mod = first_mod_list(mb_info);
+    for (const struct multiboot_mod_list* mod = first_mod_list(info);
             mod;
-            mod = next_mod_list(mb_info, mod)) {
-        res = multiboot_init_pmem_module(mod);
+            mod = next_mod_list(info, mod)) {
+
+        os_index_t pfindex = pageframe_index((void*)(uintptr_t)mod->mod_start);
+        size_t nframes = pageframe_count(mod->mod_end - mod->mod_start);
+
+        int res = pmem_set_flags(pfindex, nframes, PMEM_FLAG_RESERVED);
         if (res < 0) {
-            break;
+            return res;
         }
     }
 
-    return res;
+    return 0;
 }
+
+static int
+claim_stack_frames(const void* stack)
+{
+    return pmem_set_flags(pageframe_index(stack), 1, PMEM_FLAG_RESERVED);
+}
+
+static int
+init_pmem_from_multiboot(const struct multiboot_header* header,
+                         const struct multiboot_info* info,
+                         const void* stack)
+{
+    const static size_t NPAGES = (4 * 1024 * 1024) / PAGE_SIZE;
+
+    /* init physical memory */
+
+    size_t mem = available_mem(info);
+    if (!mem) {
+        return -ENOMEM;
+    }
+
+    unsigned long pfcount = pageframe_span(0, mem);
+    unsigned long pfindex = find_unused_area(header,
+                                             info,
+                                             pfcount >> PAGEFRAME_SHIFT);
+    if (!pfindex) {
+        return -ENOMEM;
+    }
+
+    int res = pmem_init(pfindex, pfcount);
+    if (res < 0) {
+        return res;
+    }
+
+    res = mark_mmap_areas(info);
+    if (res < 0) {
+        return res;
+    }
+
+    /* claim frames with lowest 4 MiB reserved for DMA,
+     * kernel, etc */
+
+    pmem_set_flags(0, NPAGES, PMEM_FLAG_RESERVED);
+
+    res = claim_kernel_frames(header);
+    if (res < 0) {
+        return res;
+    }
+
+    res = claim_modules_frames(info);
+    if (res < 0) {
+        return res;
+    }
+
+    res = claim_stack_frames(stack);
+    if (res < 0) {
+        return res;
+    }
+
+    return 0;
+}
+
+/*
+ * Module loader
+ */
 
 static int
 multiboot_load_modules(struct task *parent,
@@ -306,6 +362,10 @@ multiboot_load_modules(struct task *parent,
     return 0;
 }
 
+/*
+ * Entry point
+ */
+
 /**
  * The function |multiboot_init| is called from multiboot.S as the entry
  * point into the C code. Don't declare it 'static.'
@@ -314,29 +374,9 @@ void
 multiboot_init(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info, void *stack)
 {
-    const static size_t NPAGES = (4 * 1024 * 1024) / PAGE_SIZE;
+    /* init physical memory */
 
-    /* init physical memory with lowest 4 MiB reserved for DMA,
-     * kernel, etc */
-
-    int res = multiboot_init_pmem(mb_header, mb_info);
-    if (res < 0) {
-        return;
-    }
-
-    pmem_set_flags(0, NPAGES, PMEM_FLAG_RESERVED);
-
-    res = multiboot_init_pmem_kernel(mb_header);
-    if (res < 0) {
-        return;
-    }
-
-    res = multiboot_init_pmem_mmap(mb_info);
-    if (res < 0) {
-        return;
-    }
-
-    res = multiboot_init_pmem_modules(mb_info);
+    int res = init_pmem_from_multiboot(mb_header, mb_info, stack);
     if (res < 0) {
         return;
     }

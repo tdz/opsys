@@ -24,10 +24,60 @@
 
 #include <errno.h>
 #include <multiboot.h>
+#include <stddef.h>
 #include "main.h"
 #include "page.h"
 #include "pageframe.h"
 #include "pmem.h"
+
+/*
+ * Mmap-entry iteration
+ */
+
+const struct multiboot_mmap_entry*
+first_mmap_entry(const struct multiboot_info* info)
+{
+    if (!(info->flags & MULTIBOOT_INFO_MEM_MAP)) {
+        return NULL;
+    }
+    return (const struct multiboot_mmap_entry*)((uintptr_t)info->mmap_addr);
+}
+
+const struct multiboot_mmap_entry*
+next_mmap_entry(const struct multiboot_info* info,
+                const struct multiboot_mmap_entry* entry)
+{
+    uintptr_t next = ((uintptr_t)entry) + sizeof(entry->size) + entry->size;
+
+    if (next >= info->mmap_addr + info->mmap_length) {
+        return NULL;
+    }
+    return (const struct multiboot_mmap_entry*)next;
+}
+
+const struct multiboot_mmap_entry*
+next_mmap_entry_of_type(const struct multiboot_info* info,
+                        const struct multiboot_mmap_entry* entry,
+                        multiboot_uint32_t type)
+{
+    do {
+        entry = next_mmap_entry(info, entry);
+    } while (entry && entry->type != type);
+
+    return entry; // either of correct type or NULL
+}
+
+const struct multiboot_mmap_entry*
+first_mmap_entry_of_type(const struct multiboot_info* info,
+                         multiboot_uint32_t type)
+{
+    const struct multiboot_mmap_entry* entry = first_mmap_entry(info);
+
+    if (entry && entry->type == type) {
+        return entry;
+    }
+    return next_mmap_entry_of_type(info, entry, type);
+}
 
 static int
 range_order(unsigned long beg1, unsigned long end1,
@@ -52,24 +102,12 @@ find_unused_area(const struct multiboot_header *mb_header,
         pageframe_span((void*)mb_header->load_addr,
                        mb_header->bss_end_addr - mb_header->load_addr + 1);
 
-    multiboot_uint64_t mmap_addr = mb_info->mmap_addr;
-
     unsigned long pfoffset = 0;
 
-    for (size_t i = 0; !pfoffset && (i < mb_info->mmap_length);)  {
-
-        const struct multiboot_mmap_entry* mmap =
-            (const struct multiboot_mmap_entry*)(uintptr_t)mmap_addr;
-
-        /* next entry address  */
-
-        mmap_addr += mmap->size + 4;
-        i += mmap->size + 4;
-
-        /* area is not usable */
-        if (mmap->type != MULTIBOOT_MEMORY_AVAILABLE) {
-                continue;
-        }
+    for (const struct multiboot_mmap_entry* mmap =
+                first_mmap_entry_of_type(mb_info, MULTIBOOT_MEMORY_AVAILABLE);
+            mmap && !pfoffset;
+            mmap = next_mmap_entry_of_type(mb_info, mmap, MULTIBOOT_MEMORY_AVAILABLE)) {
 
         /* area page index and length */
 
@@ -87,8 +125,7 @@ find_unused_area(const struct multiboot_header *mb_header,
 
         /* check for intersection with kernel */
 
-        if (!range_order(kernel_pfindex,
-                         kernel_pfindex + kernel_nframes,
+        if (!range_order(kernel_pfindex, kernel_pfindex + kernel_nframes,
                          pfindex, pfindex + nframes)) {
             pfindex = kernel_pfindex + kernel_nframes;
         }
@@ -102,9 +139,6 @@ find_unused_area(const struct multiboot_header *mb_header,
                 (const struct multiboot_mod_list*)mb_info->mods_addr;
 
             for (size_t j = 0; j < mb_info->mods_count; ++j, ++mod) {
-
-                os_index_t mod_pfindex;
-                unsignedlong mod_nframes;
 
                 os_index_t mod_pfindex =
                     pageframe_index((void *)mod->mod_start);
@@ -155,32 +189,21 @@ multiboot_init_pmem_kernel(const struct multiboot_header *mb_header)
 static int
 multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
 {
-        size_t i;
-        unsigned long mmap_addr;
+    for (const struct multiboot_mmap_entry* mmap = first_mmap_entry(mb_info);
+            mmap;
+            mmap = next_mmap_entry(mb_info, mmap)) {
 
-        mmap_addr = mb_info->mmap_addr;
+        os_index_t pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
+        size_t nframes = pageframe_count(mmap->len);
 
-        for (i = 0; i < mb_info->mmap_length;)
-        {
-                unsigned long pfindex;
-                unsigned long nframes;
+        unsigned char flags = mmap->type == MULTIBOOT_MEMORY_AVAILABLE ?
+                                PMEM_FLAG_USEABLE :
+                                PMEM_FLAG_RESERVED;
 
-                const struct multiboot_mmap_entry* mmap =
-                    (const struct multiboot_mmap_entry*)mmap_addr;
+        pmem_set_flags(pfindex, nframes, flags);
+    }
 
-                pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
-                nframes = pageframe_count(mmap->len);
-
-                pmem_set_flags(pfindex,
-                               nframes,
-                               mmap->type == 1 ? PMEM_FLAG_USEABLE
-                                               : PMEM_FLAG_RESERVED);
-
-                mmap_addr += mmap->size + 4;
-                i += mmap->size + 4;
-        }
-
-        return 0;
+    return 0;
 }
 
 static int
@@ -257,11 +280,9 @@ multiboot_init(const struct multiboot_header *mb_header,
         return;
     }
 
-    if (mb_info->flags & MULTIBOOT_INFO_MEM_MAP) {
-        res = multiboot_init_pmem_mmap(mb_info);
-        if (res < 0) {
-            return;
-        }
+    res = multiboot_init_pmem_mmap(mb_info);
+    if (res < 0) {
+        return;
     }
 
     if (mb_info->flags & MULTIBOOT_INFO_MODS) {

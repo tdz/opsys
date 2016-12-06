@@ -19,13 +19,13 @@
 
 .section .multiboot
 
-.align 4
+.align 4    /* MULTIBOOT_HEADER_ALIGN */
 
 multiboot_header:
-        .long 0x1badb002 /* MULTIBOOT_HEADER_MAGIC */
-        .long 0x00000007 /* MULTIBOOT_HEADER_FLAG_ALIGNED |
-                            MULTIBOOT_HEADER_FLAG_MEMINFO |
-                            MULTIBOOT_HEADER_FLAG_VIDMODE */
+        .long 0x1badb002    /* MULTIBOOT_HEADER_MAGIC */
+        .long 0x00000007    /* MULTIBOOT_PAGE_ALIGN |
+                               MULTIBOOT_MEMORY_INFO |
+                               MULTIBOOT_VIDEO_MODE */
         .long -(0x1badb002 + 0x00000007)
         /* address fields */
         .long multiboot_header
@@ -54,7 +54,6 @@ multiboot_entry:
         popf
 
         /* call C main function for multiboot */
-
         pushl %esp
         pushl %ebx
         pushl $multiboot_header

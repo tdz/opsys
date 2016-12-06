@@ -17,25 +17,28 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "multiboot.h"
+/* required by multiboot.h */
+#define grub_uint16_t   multiboot_uint16_t
+#define grub_uint32_t   multiboot_uint32_t
+#define GRUB_PACKED     __attribute__((packed))
+
 #include <errno.h>
+#include <multiboot.h>
 #include "main.h"
 #include "page.h"
 #include "pageframe.h"
 #include "pmem.h"
 
-static void *
-mmap_base_addr(const struct multiboot_mmap *mmap)
+static void*
+mmap_base_addr(const struct multiboot_mmap_entry* mmap)
 {
-        /* only lowest 4 byte are available in 32-bit protected mode */
-        return (void *)(intptr_t) ((((uint64_t) mmap->base_addr_high) << 32)
-                                   + mmap->base_addr_low);
+    return (void*)(uintptr_t)mmap->addr;
 }
 
 static uint64_t
-mmap_length(const struct multiboot_mmap *mmap)
+mmap_length(const struct multiboot_mmap_entry* mmap)
 {
-        return (((uint64_t) mmap->length_high) << 32) + mmap->length_low;
+    return mmap->len;
 }
 
 static int
@@ -72,12 +75,12 @@ find_unused_area(const struct multiboot_header *mb_header,
 
         for (pfoffset = 0, i = 0; !pfoffset && (i < mb_info->mmap_length);)
         {
-                const struct multiboot_mmap *mmap;
+                const struct multiboot_mmap_entry *mmap;
                 unsigned long area_pfindex;
                 unsigned long area_nframes;
                 unsigned long pfindex;
 
-                mmap = (const struct multiboot_mmap *)mmap_addr;
+                mmap = (const struct multiboot_mmap_entry*)mmap_addr;
 
                 /* next entry address  */
 
@@ -85,7 +88,7 @@ find_unused_area(const struct multiboot_header *mb_header,
                 i += mmap->size + 4;
 
                 /* area is not useable */
-                if (mmap->type != 1)
+                if (mmap->type != MULTIBOOT_MEMORY_AVAILABLE)
                 {
                         continue;
                 }
@@ -121,13 +124,10 @@ find_unused_area(const struct multiboot_header *mb_header,
                        ((pfindex + nframes) < (area_pfindex + area_nframes)))
                 {
 
-                        size_t j;
-                        const struct multiboot_module *mod;
+                        const struct multiboot_mod_list* mod =
+                            (const struct multiboot_mod_list*)mb_info->mods_addr;
 
-                        mod = (const struct multiboot_module *)mb_info->
-                                mods_addr;
-
-                        for (j = 0; j < mb_info->mods_count; ++j, ++mod)
+                        for (size_t j = 0; j < mb_info->mods_count; ++j, ++mod)
                         {
                                 unsigned long mod_pfindex;
                                 unsigned long mod_nframes;
@@ -192,11 +192,11 @@ multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
 
         for (i = 0; i < mb_info->mmap_length;)
         {
-                const struct multiboot_mmap *mmap;
                 unsigned long pfindex;
                 unsigned long nframes;
 
-                mmap = (const struct multiboot_mmap *)mmap_addr;
+                const struct multiboot_mmap_entry* mmap =
+                    (const struct multiboot_mmap_entry*)mmap_addr;
 
                 pfindex = pageframe_index(mmap_base_addr(mmap));
                 nframes = pageframe_count(mmap_length(mmap));
@@ -214,7 +214,7 @@ multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
 }
 
 static int
-multiboot_init_pmem_module(const struct multiboot_module *mod)
+multiboot_init_pmem_module(const struct multiboot_mod_list* mod)
 {
         return pmem_set_flags(pageframe_index((void *)mod->mod_start),
                               pageframe_count(mod->mod_end -
@@ -226,10 +226,10 @@ static int
 multiboot_init_pmem_modules(const struct multiboot_info *mb_info)
 {
         int err;
-        const struct multiboot_module *mod, *modend;
+        const struct multiboot_mod_list* mod, *modend;
 
         err = 0;
-        mod = (const struct multiboot_module *)mb_info->mods_addr;
+        mod = (const struct multiboot_mod_list*)mb_info->mods_addr;
         modend = mod + mb_info->mods_count;
 
         while ((mod < modend)
@@ -245,19 +245,23 @@ static int
 multiboot_load_modules(struct task *parent,
                        const struct multiboot_info *mb_info)
 {
-    const struct multiboot_module* mod =
-        (const struct multiboot_module *)mb_info->mods_addr;
+    const struct multiboot_mod_list* mod =
+        (const struct multiboot_mod_list*)mb_info->mods_addr;
 
     for (size_t i = 0; i < mb_info->mods_count; ++i, ++mod) {
 
         size_t len = mod->mod_end - mod->mod_start + 1;
 
-        execute_module(parent, mod->mod_start, len, (const char*)mod->string);
+        execute_module(parent, mod->mod_start, len, (const char*)mod->cmdline);
     }
 
     return 0;
 }
 
+/**
+ * The function |multiboot_init| is called from multiboot.S as the entry
+ * point into the C code. Don't declare it 'static.'
+ */
 void
 multiboot_init(const struct multiboot_header *mb_header,
                const struct multiboot_info *mb_info, void *stack)
@@ -267,7 +271,7 @@ multiboot_init(const struct multiboot_header *mb_header,
     /* init physical memory with lowest 4 MiB reserved for DMA,
      * kernel, etc */
 
-    if (!(mb_info->flags & MULTIBOOT_INFO_FLAG_MEM)) {
+    if (!(mb_info->flags & MULTIBOOT_INFO_MEMORY)) {
         return;
     }
 
@@ -283,14 +287,14 @@ multiboot_init(const struct multiboot_header *mb_header,
         return;
     }
 
-    if (mb_info->flags & MULTIBOOT_INFO_FLAG_MMAP) {
+    if (mb_info->flags & MULTIBOOT_INFO_MEM_MAP) {
         res = multiboot_init_pmem_mmap(mb_info);
         if (res < 0) {
             return;
         }
     }
 
-    if (mb_info->flags & MULTIBOOT_INFO_FLAG_MODS) {
+    if (mb_info->flags & MULTIBOOT_INFO_MODS) {
         res = multiboot_init_pmem_modules(mb_info);
         if (res < 0) {
             return;
@@ -307,7 +311,7 @@ multiboot_init(const struct multiboot_header *mb_header,
 
     /* load modules as ELF binaries */
 
-    if (mb_info->flags & MULTIBOOT_INFO_FLAG_MODS) {
+    if (mb_info->flags & MULTIBOOT_INFO_MODS) {
         res = multiboot_load_modules(task, mb_info);
         if (res < 0) {
             return;

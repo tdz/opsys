@@ -22,4 +22,5 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         vmemhlp.c \
 	)
 
+oskernel_INCLUDES += external/multiboot/include
 oskernel_LDSCRIPTS += $(archdir)/oskernel.ld

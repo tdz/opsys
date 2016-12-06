@@ -371,12 +371,13 @@ multiboot_load_modules(struct task *parent,
  * point into the C code. Don't declare it 'static.'
  */
 void
-multiboot_init(const struct multiboot_header *mb_header,
-               const struct multiboot_info *mb_info, void *stack)
+multiboot_init(const struct multiboot_header* header,
+               const struct multiboot_info* info,
+               void* stack)
 {
     /* init physical memory */
 
-    int res = init_pmem_from_multiboot(mb_header, mb_info, stack);
+    int res = init_pmem_from_multiboot(header, info, stack);
     if (res < 0) {
         return;
     }
@@ -391,7 +392,7 @@ multiboot_init(const struct multiboot_header *mb_header,
 
     /* load modules as ELF binaries */
 
-    res = multiboot_load_modules(task, mb_info);
+    res = multiboot_load_modules(task, info);
     if (res < 0) {
         return;
     }

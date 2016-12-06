@@ -22,48 +22,47 @@
 .align 4    /* MULTIBOOT_HEADER_ALIGN */
 
 multiboot_header:
-        .long 0x1badb002    /* MULTIBOOT_HEADER_MAGIC */
-        .long 0x00000007    /* MULTIBOOT_PAGE_ALIGN |
-                               MULTIBOOT_MEMORY_INFO |
-                               MULTIBOOT_VIDEO_MODE */
-        .long -(0x1badb002 + 0x00000007)
-        /* address fields */
-        .long multiboot_header
-        .long _start
-        .long _edata
-        .long _end
-        .long multiboot_entry
-        /* graphics fields */
-        .long 1
-        .long 80
-        .long 25
-        .long 0
+    .long 0x1badb002    /* MULTIBOOT_HEADER_MAGIC */
+    .long 0x00000007    /* MULTIBOOT_PAGE_ALIGN |
+                           MULTIBOOT_MEMORY_INFO |
+                           MULTIBOOT_VIDEO_MODE */
+    .long -(0x1badb002 + 0x00000007)
+    /* address fields */
+    .long multiboot_header
+    .long _start
+    .long _edata
+    .long _end
+    .long multiboot_entry
+    /* graphics fields */
+    .long 1
+    .long 80
+    .long 25
+    .long 0
 
 .text
 
 .global _start
 
 _start:
-        jmp multiboot_entry
+    jmp multiboot_entry
 
 multiboot_entry:
-        movl $(stack+4096), %esp
+    movl $(stack+4096), %esp
 
-        /* reset eflags */
-        pushl $0
-        popf
+    /* reset eflags */
+    pushl $0
+    popf
 
-        /* call C main function for multiboot */
-        pushl %esp
-        pushl %ebx
-        pushl $multiboot_header
-        call multiboot_init
+    /* call C main function for multiboot */
+    pushl %esp
+    pushl %ebx
+    pushl $multiboot_header
+    call multiboot_init
 
 hltloop:
-        hlt
-        jmp hltloop
+    hlt
+    jmp hltloop
 
 .data
 
 .comm stack,4096
-

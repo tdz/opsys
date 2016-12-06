@@ -29,18 +29,6 @@
 #include "pageframe.h"
 #include "pmem.h"
 
-static void*
-mmap_base_addr(const struct multiboot_mmap_entry* mmap)
-{
-    return (void*)(uintptr_t)mmap->addr;
-}
-
-static uint64_t
-mmap_length(const struct multiboot_mmap_entry* mmap)
-{
-    return mmap->len;
-}
-
 static int
 range_order(unsigned long beg1, unsigned long end1,
             unsigned long beg2, unsigned long end2)
@@ -95,8 +83,8 @@ find_unused_area(const struct multiboot_header *mb_header,
 
                 /* area page index and length */
 
-                area_pfindex = pageframe_index(mmap_base_addr(mmap));
-                area_nframes = pageframe_count(mmap_length(mmap));
+                area_pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
+                area_nframes = pageframe_count(mmap->len);
 
                 /* area at address 0, or too small */
 
@@ -198,8 +186,8 @@ multiboot_init_pmem_mmap(const struct multiboot_info *mb_info)
                 const struct multiboot_mmap_entry* mmap =
                     (const struct multiboot_mmap_entry*)mmap_addr;
 
-                pfindex = pageframe_index(mmap_base_addr(mmap));
-                nframes = pageframe_count(mmap_length(mmap));
+                pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
+                nframes = pageframe_count(mmap->len);
 
                 pmem_set_flags(pfindex,
                                nframes,

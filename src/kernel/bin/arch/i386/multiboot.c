@@ -79,6 +79,37 @@ first_mmap_entry_of_type(const struct multiboot_info* info,
     return next_mmap_entry_of_type(info, entry, type);
 }
 
+/*
+ * Module iteration
+ */
+
+const struct multiboot_mod_list*
+first_mod_list(const struct multiboot_info* info)
+{
+    if (!(info->flags != MULTIBOOT_INFO_MODS)) {
+        return NULL;
+    }
+    if (!info->mods_count) {
+        return NULL;
+    }
+    return (const struct multiboot_mod_list*)(uintptr_t)info->mods_addr;
+}
+
+const struct multiboot_mod_list*
+next_mod_list(const struct multiboot_info* info,
+              const struct multiboot_mod_list* mod)
+{
+    const struct multiboot_mod_list* first =
+        (const struct multiboot_mod_list*)(uintptr_t)info->mods_addr;
+
+    ++mod;
+
+    if (mod - first >= info->mods_count) {
+        return NULL;
+    }
+    return mod;
+}
+
 static int
 range_order(unsigned long beg1, unsigned long end1,
             unsigned long beg2, unsigned long end2)
@@ -135,10 +166,9 @@ find_unused_area(const struct multiboot_header *mb_header,
         while (!pfoffset &&
                ((pfindex + nframes) < (area_pfindex + area_nframes))) {
 
-            const struct multiboot_mod_list* mod =
-                (const struct multiboot_mod_list*)mb_info->mods_addr;
-
-            for (size_t j = 0; j < mb_info->mods_count; ++j, ++mod) {
+            for (const struct multiboot_mod_list* mod = first_mod_list(mb_info);
+                    mod;
+                    mod = next_mod_list(mb_info, mod)) {
 
                 os_index_t mod_pfindex =
                     pageframe_index((void *)mod->mod_start);
@@ -245,34 +275,32 @@ multiboot_init_pmem_module(const struct multiboot_mod_list* mod)
 static int
 multiboot_init_pmem_modules(const struct multiboot_info *mb_info)
 {
-        int err;
-        const struct multiboot_mod_list* mod, *modend;
+    int res = 0;
 
-        err = 0;
-        mod = (const struct multiboot_mod_list*)mb_info->mods_addr;
-        modend = mod + mb_info->mods_count;
-
-        while ((mod < modend)
-               && ((err = multiboot_init_pmem_module(mod)) < 0))
-        {
-                ++mod;
+    for (const struct multiboot_mod_list* mod = first_mod_list(mb_info);
+            mod;
+            mod = next_mod_list(mb_info, mod)) {
+        res = multiboot_init_pmem_module(mod);
+        if (res < 0) {
+            break;
         }
+    }
 
-        return err;
+    return res;
 }
 
 static int
 multiboot_load_modules(struct task *parent,
                        const struct multiboot_info *mb_info)
 {
-    const struct multiboot_mod_list* mod =
-        (const struct multiboot_mod_list*)mb_info->mods_addr;
-
-    for (size_t i = 0; i < mb_info->mods_count; ++i, ++mod) {
-
-        size_t len = mod->mod_end - mod->mod_start + 1;
-
-        execute_module(parent, mod->mod_start, len, (const char*)mod->cmdline);
+    for (const struct multiboot_mod_list* mod = first_mod_list(mb_info);
+            mod;
+            mod = next_mod_list(mb_info, mod)) {
+        /* ignore errors */
+        execute_module(parent,
+                       mod->mod_start,
+                       mod->mod_end - mod->mod_start + 1,
+                       (const char*)mod->cmdline);
     }
 
     return 0;
@@ -308,11 +336,9 @@ multiboot_init(const struct multiboot_header *mb_header,
         return;
     }
 
-    if (mb_info->flags & MULTIBOOT_INFO_MODS) {
-        res = multiboot_init_pmem_modules(mb_info);
-        if (res < 0) {
-            return;
-        }
+    res = multiboot_init_pmem_modules(mb_info);
+    if (res < 0) {
+        return;
     }
 
     /* setup virtual memory and system services */
@@ -325,10 +351,8 @@ multiboot_init(const struct multiboot_header *mb_header,
 
     /* load modules as ELF binaries */
 
-    if (mb_info->flags & MULTIBOOT_INFO_MODS) {
-        res = multiboot_load_modules(task, mb_info);
-        if (res < 0) {
-            return;
-        }
+    res = multiboot_load_modules(task, mb_info);
+    if (res < 0) {
+        return;
     }
 }

@@ -33,118 +33,100 @@ static int
 range_order(unsigned long beg1, unsigned long end1,
             unsigned long beg2, unsigned long end2)
 {
-        if (end1 <= beg2)
-        {
-                return -1;
-        }
-        else if (end2 <= beg1)
-        {
-                return 1;
-        }
-
-        return 0;
+    if (end1 <= beg2) {
+        return -1;
+    } else if (end2 <= beg1) {
+        return 1;
+    }
+    return 0;
 }
 
 static unsigned long
 find_unused_area(const struct multiboot_header *mb_header,
                  const struct multiboot_info *mb_info, unsigned long nframes)
 {
-        size_t i;
-        unsigned long mmap_addr;
-        unsigned long kernel_pfindex, kernel_nframes;
-        unsigned long pfoffset;
+    os_index_t kernel_pfindex =
+        pageframe_index((void*)mb_header->load_addr);
 
-        kernel_pfindex = pageframe_index((void *)mb_header->load_addr);
-        kernel_nframes = pageframe_span((void *)mb_header->load_addr,
-                                        mb_header->bss_end_addr -
-                                        mb_header->load_addr + 1);
+    size_t kernel_nframes =
+        pageframe_span((void*)mb_header->load_addr,
+                       mb_header->bss_end_addr - mb_header->load_addr + 1);
 
-        mmap_addr = mb_info->mmap_addr;
+    multiboot_uint64_t mmap_addr = mb_info->mmap_addr;
 
-        for (pfoffset = 0, i = 0; !pfoffset && (i < mb_info->mmap_length);)
-        {
-                const struct multiboot_mmap_entry *mmap;
-                unsigned long area_pfindex;
-                unsigned long area_nframes;
-                unsigned long pfindex;
+    unsigned long pfoffset = 0;
 
-                mmap = (const struct multiboot_mmap_entry*)mmap_addr;
+    for (size_t i = 0; !pfoffset && (i < mb_info->mmap_length);)  {
 
-                /* next entry address  */
+        const struct multiboot_mmap_entry* mmap =
+            (const struct multiboot_mmap_entry*)(uintptr_t)mmap_addr;
 
-                mmap_addr += mmap->size + 4;
-                i += mmap->size + 4;
+        /* next entry address  */
 
-                /* area is not useable */
-                if (mmap->type != MULTIBOOT_MEMORY_AVAILABLE)
-                {
-                        continue;
-                }
+        mmap_addr += mmap->size + 4;
+        i += mmap->size + 4;
 
-                /* area page index and length */
-
-                area_pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
-                area_nframes = pageframe_count(mmap->len);
-
-                /* area at address 0, or too small */
-
-                if (!area_pfindex || (area_nframes < nframes))
-                {
-                        continue;
-                }
-
-                /* possible index */
-
-                pfindex = area_pfindex;
-
-                /* check for intersection with kernel */
-
-                if (!range_order(kernel_pfindex,
-                                 kernel_pfindex + kernel_nframes,
-                                 pfindex, pfindex + nframes))
-                {
-                        pfindex = kernel_pfindex + kernel_nframes;
-                }
-
-                /* check for intersection with modules */
-
-                while (!pfoffset &&
-                       ((pfindex + nframes) < (area_pfindex + area_nframes)))
-                {
-
-                        const struct multiboot_mod_list* mod =
-                            (const struct multiboot_mod_list*)mb_info->mods_addr;
-
-                        for (size_t j = 0; j < mb_info->mods_count; ++j, ++mod)
-                        {
-                                unsigned long mod_pfindex;
-                                unsigned long mod_nframes;
-
-                                mod_pfindex =
-                                        pageframe_index((void *)mod->
-                                                        mod_start);
-                                mod_nframes =
-                                        pageframe_count(mod->mod_end -
-                                                        mod->mod_start);
-
-                                /* check intersection */
-
-                                if (range_order(mod_pfindex,
-                                                mod_pfindex + mod_nframes,
-                                                pfindex, pfindex + nframes))
-                                {
-                                        /* no intersection, offset found */
-                                        pfoffset = pageframe_offset(pfindex);
-                                }
-                                else
-                                {
-                                        pfindex = mod_pfindex + mod_nframes;
-                                }
-                        }
-                }
+        /* area is not usable */
+        if (mmap->type != MULTIBOOT_MEMORY_AVAILABLE) {
+                continue;
         }
 
-        return pfoffset;
+        /* area page index and length */
+
+        os_index_t area_pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
+        size_t area_nframes = pageframe_count(mmap->len);
+
+        /* area at address 0, or too small */
+        if (!area_pfindex || (area_nframes < nframes)) {
+            continue;
+        }
+
+        /* possible index */
+
+        os_index_t pfindex = area_pfindex;
+
+        /* check for intersection with kernel */
+
+        if (!range_order(kernel_pfindex,
+                         kernel_pfindex + kernel_nframes,
+                         pfindex, pfindex + nframes)) {
+            pfindex = kernel_pfindex + kernel_nframes;
+        }
+
+        /* check for intersection with modules */
+
+        while (!pfoffset &&
+               ((pfindex + nframes) < (area_pfindex + area_nframes))) {
+
+            const struct multiboot_mod_list* mod =
+                (const struct multiboot_mod_list*)mb_info->mods_addr;
+
+            for (size_t j = 0; j < mb_info->mods_count; ++j, ++mod) {
+
+                os_index_t mod_pfindex;
+                unsignedlong mod_nframes;
+
+                os_index_t mod_pfindex =
+                    pageframe_index((void *)mod->mod_start);
+
+                size_t mod_nframes =
+                    pageframe_count(mod->mod_end - mod->mod_start);
+
+                /* check intersection */
+
+                if (range_order(mod_pfindex,
+                                mod_pfindex + mod_nframes,
+                                pfindex, pfindex + nframes)) {
+                    /* no intersection, offset found */
+                    pfoffset = pageframe_offset(pfindex);
+                } else {
+                    pfindex = mod_pfindex + mod_nframes;
+                }
+            }
+        }
+    }
+
+    return pfoffset;
 }
 
 static int

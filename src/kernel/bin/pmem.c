@@ -25,7 +25,7 @@
 #include "semaphore.h"
 
 static struct semaphore g_physmap_sem;
-static unsigned char *g_physmap = NULL;
+static pmem_map_t *g_physmap = NULL;
 static unsigned long g_physmap_nframes = 0;
 
 static int
@@ -39,7 +39,7 @@ pmem_set_flags_self(void)
 }
 
 int
-pmem_init(unsigned long physmap, unsigned long nframes)
+pmem_init(pmem_map_t* physmap, unsigned long nframes)
 {
         int err;
 
@@ -48,7 +48,7 @@ pmem_init(unsigned long physmap, unsigned long nframes)
                 goto err_semaphore_init;
         }
 
-        g_physmap = (unsigned char *)physmap;
+        g_physmap = physmap;
 
         memset(g_physmap, 0, nframes * sizeof(g_physmap[0]));
         g_physmap_nframes = nframes;
@@ -70,8 +70,8 @@ int
 pmem_set_flags(unsigned long pfindex, unsigned long nframes,
                unsigned char flags)
 {
-        unsigned char *beg;
-        const unsigned char *end;
+        pmem_map_t *beg;
+        const pmem_map_t *end;
 
         semaphore_enter(&g_physmap_sem);
 
@@ -93,8 +93,8 @@ unsigned long
 pmem_alloc_frames(unsigned long nframes)
 {
         unsigned long pfindex;
-        unsigned char *beg;
-        const unsigned char *end;
+        pmem_map_t *beg;
+        const pmem_map_t *end;
 
         semaphore_enter(&g_physmap_sem);
 
@@ -123,8 +123,8 @@ pmem_alloc_frames(unsigned long nframes)
                  * empty page found
                  */
                 {
-                        unsigned char *beg2;
-                        const unsigned char *end2;
+                        pmem_map_t *beg2;
+                        const pmem_map_t *end2;
 
                         beg2 = beg;
                         end2 = beg + nframes;
@@ -165,8 +165,8 @@ pmem_alloc_frames(unsigned long nframes)
 unsigned long
 pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 {
-        unsigned char *beg;
-        const unsigned char *end;
+        pmem_map_t *beg;
+        const pmem_map_t *end;
 
         semaphore_enter(&g_physmap_sem);
 
@@ -219,8 +219,8 @@ pmem_claim_frames(unsigned long pfindex, unsigned long nframes)
 
     int res = 0;
 
-    unsigned char* beg = g_physmap + pfindex;
-    const unsigned char* end = beg + nframes;
+    pmem_map_t* beg = g_physmap + pfindex;
+    const pmem_map_t* end = beg + nframes;
 
     /* increment refcount */
 
@@ -255,7 +255,7 @@ int
 pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
 {
         unsigned long i;
-        unsigned char *physmap;
+        pmem_map_t *physmap;
 
         semaphore_enter(&g_physmap_sem);
 
@@ -292,7 +292,7 @@ pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
 void
 pmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 {
-        unsigned char *physmap;
+        pmem_map_t *physmap;
 
         semaphore_enter(&g_physmap_sem);
 

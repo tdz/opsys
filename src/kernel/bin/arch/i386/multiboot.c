@@ -315,7 +315,9 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
         return -ENOMEM;
     }
 
-    int res = pmem_init(pfindex, pfcount);
+    pmem_map_t* memmap = (pmem_map_t*)(uintptr_t)pfindex;
+
+    int res = pmem_init(memmap, pfcount);
     if (res < 0) {
         return res;
     }

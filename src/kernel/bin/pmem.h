@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <stdint.h>
 #include <sys/types.h>
 
 enum
@@ -29,8 +30,11 @@ enum
                              PMEM_FLAG_RESERVED
 };
 
+/** represents individual entries in the memory map */
+typedef uint8_t pmem_map_t;
+
 int
-pmem_init(unsigned long physmap, unsigned long nframes);
+pmem_init(pmem_map_t* physmap, unsigned long nframes);
 
 int
 pmem_set_flags(unsigned long pfindex, unsigned long pfcount,

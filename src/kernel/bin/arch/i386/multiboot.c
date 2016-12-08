@@ -302,6 +302,7 @@ claim_multiboot_frames(const struct multiboot_header* header,
 static int
 claim_kernel_frames(const struct multiboot_header* header)
 {
+    /* includes initial stack */
     return pmem_claim_frames(pageframe_index((void*)(uintptr_t)header->load_addr),
                              pageframe_count(header->bss_end_addr -
                                              header->load_addr));
@@ -327,15 +328,8 @@ claim_modules_frames(const struct multiboot_info* info)
 }
 
 static int
-claim_stack_frames(const void* stack)
-{
-    return pmem_claim_frames(pageframe_index(stack), 1);
-}
-
-static int
 init_pmem_from_multiboot(const struct multiboot_header* header,
-                         const struct multiboot_info* info,
-                         const void* stack)
+                         const struct multiboot_info* info)
 {
     const static size_t NPAGES = (4 * 1024 * 1024) / PAGE_SIZE;
 
@@ -397,11 +391,6 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
         return res;
     }
 
-    res = claim_stack_frames(stack);
-    if (res < 0) {
-        return res;
-    }
-
     return 0;
 }
 
@@ -459,7 +448,7 @@ multiboot_init(const struct multiboot_header* header,
 
     /* init physical memory */
 
-    res = init_pmem_from_multiboot(header, info, stack);
+    res = init_pmem_from_multiboot(header, info);
     if (res < 0) {
         return;
     }

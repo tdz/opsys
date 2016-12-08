@@ -261,6 +261,45 @@ mark_mmap_areas(const struct multiboot_info* info)
 }
 
 static int
+claim_multiboot_frames(const struct multiboot_header* header,
+                       const struct multiboot_info* info)
+{
+    int res = pmem_claim_frames(pageframe_index(header),
+                                pageframe_span(header, sizeof(*header)));
+    if (res < 0) {
+        return res;
+    }
+
+    res = pmem_claim_frames(pageframe_index(info),
+                            pageframe_span(info, sizeof(*info)));
+    if (res < 0) {
+        return res;
+    }
+
+    const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
+
+    if (mmap) {
+        res = pmem_claim_frames(pageframe_index(mmap),
+                                pageframe_span(mmap, info->mmap_length));
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    const struct multiboot_mod_list* mod = first_mod_list(info);
+
+    if (mod) {
+        res = pmem_claim_frames(pageframe_index(mod),
+                                pageframe_span(mod, info->mods_count * sizeof(*mod)));
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    return 0;
+}
+
+static int
 claim_kernel_frames(const struct multiboot_header* header)
 {
     return pmem_claim_frames(pageframe_index((void*)(uintptr_t)header->load_addr),
@@ -339,6 +378,11 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
      * kernel, etc */
 
     pmem_set_flags(0, NPAGES, PMEM_FLAG_RESERVED);
+
+    res = claim_multiboot_frames(header, info);
+    if (res < 0) {
+        return res;
+    }
 
     res = claim_kernel_frames(header);
     if (res < 0) {

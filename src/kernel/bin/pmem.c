@@ -18,6 +18,7 @@
  */
 
 #include "pmem.h"
+#include <errno.h>
 #include <stddef.h>
 #include <string.h>
 #include "pageframe.h"
@@ -30,24 +31,11 @@ static unsigned long g_physmap_nframes = 0;
 static int
 pmem_set_flags_self(void)
 {
-        /*
-         * add global variables of pmem
-         */
-        pmem_set_flags(pageframe_index(&g_physmap),
-                       pageframe_count(sizeof(g_physmap)),
-                       PMEM_FLAG_RESERVED);
-        pmem_set_flags(pageframe_index(&g_physmap_nframes),
-                       pageframe_count(sizeof(g_physmap_nframes)),
-                       PMEM_FLAG_RESERVED);
+    /* claim physmap; global variables of pmem claimed by kernel image */
 
-        /*
-         * add physmap
-         */
-        pmem_set_flags(pageframe_index(g_physmap),
-                       pageframe_count(g_physmap_nframes*sizeof(g_physmap[0])),
-                       PMEM_FLAG_RESERVED);
-
-        return 0;
+    return pmem_claim_frames(pageframe_index(g_physmap),
+                             pageframe_count(g_physmap_nframes *
+                                             sizeof(g_physmap[0])));
 }
 
 int
@@ -218,6 +206,49 @@ pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 err_beg_lt_end:
         semaphore_leave(&g_physmap_sem);
         return 0;
+}
+
+int
+pmem_claim_frames(unsigned long pfindex, unsigned long nframes)
+{
+    if (nframes > g_physmap_nframes) {
+        return -ENOMEM;
+    } else if (g_physmap_nframes - nframes < pfindex) {
+        return -ENOMEM;
+    }
+
+    int res = 0;
+
+    unsigned char* beg = g_physmap + pfindex;
+    const unsigned char* end = beg + nframes;
+
+    /* increment refcount */
+
+    semaphore_enter(&g_physmap_sem);
+
+    while (beg < end) {
+        if (*beg == 0x3f) {
+            res = -EOVERFLOW;
+            goto err_max_incr;
+        }
+
+        *beg = (PMEM_FLAG_RESERVED << 7) | ((*beg & 0x7f) + 1);
+        ++(*beg) ;
+        ++beg;
+    }
+
+    semaphore_leave(&g_physmap_sem);
+
+    return 0;
+
+err_max_incr:
+    end = g_physmap + pfindex;
+    while (beg > end) {
+        --beg;
+        --(*beg);
+    }
+    semaphore_leave(&g_physmap_sem);
+    return res;
 }
 
 int

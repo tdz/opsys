@@ -43,6 +43,9 @@ unsigned long
 pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes);
 
 int
+pmem_claim_frames(unsigned long pfindex, unsigned long nframes);
+
+int
 pmem_ref_frames(unsigned long pfindex, unsigned long nframes);
 
 void

@@ -22,12 +22,10 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-enum
-{
-        PMEM_FLAG_USEABLE  = 0,    /**< available for use */
-        PMEM_FLAG_RESERVED = 1<<0, /**< reserved by system */
-        PMEM_ALL_FLAGS     = PMEM_FLAG_USEABLE|
-                             PMEM_FLAG_RESERVED
+enum pmem_type {
+    PMEM_TYPE_NONE      = 0,            /**< no memory installed */
+    PMEM_TYPE_AVAILABLE = 0x01 << 6,    /**< available for use */
+    PMEM_TYPE_SYSTEM    = 0x02 << 6     /**< used by system */
 };
 
 /** represents individual entries in the memory map */
@@ -37,8 +35,8 @@ int
 pmem_init(pmem_map_t* physmap, unsigned long nframes);
 
 int
-pmem_set_flags(unsigned long pfindex, unsigned long pfcount,
-               unsigned char flags);
+pmem_set_type(unsigned long pfindex, unsigned long pfcount,
+              enum pmem_type type);
 
 unsigned long
 pmem_alloc_frames(unsigned long nframes);

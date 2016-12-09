@@ -28,6 +28,88 @@ static struct semaphore g_physmap_sem;
 static pmem_map_t *g_physmap = NULL;
 static unsigned long g_physmap_nframes = 0;
 
+//
+// pmem_map_t helpers
+//
+
+static pmem_map_t
+set_type(pmem_map_t memmap, enum pmem_type type)
+{
+    return (memmap & 0x3f) | type;
+}
+
+static enum pmem_type
+get_type(pmem_map_t memmap)
+{
+    return memmap & 0xc0; // highest two bits contain flag
+}
+
+static bool
+has_type(pmem_map_t memmap, enum pmem_type type)
+{
+    return get_type(memmap) == type;
+}
+
+static unsigned long
+get_ref(pmem_map_t memmap)
+{
+    return memmap & 0x3f;
+}
+
+static bool
+can_ref(pmem_map_t memmap)
+{
+    return get_ref(memmap) < 0x3f;
+}
+
+static bool
+can_unref(pmem_map_t memmap)
+{
+    return !!get_ref(memmap);
+}
+
+static pmem_map_t
+ref_frame(pmem_map_t memmap)
+{
+    return memmap + 1;
+}
+
+static pmem_map_t
+unref_frame(pmem_map_t memmap)
+{
+    return memmap - 1;
+}
+
+static bool
+checked_ref_frame(pmem_map_t* memmap)
+{
+    if (!can_ref(*memmap)) {
+        return false;
+    }
+    *memmap = ref_frame(*memmap);
+    return true;
+}
+
+static bool
+checked_unref_frame(pmem_map_t* memmap)
+{
+    if (!can_unref(*memmap)) {
+        return false;
+    }
+    --(*memmap);
+    return true;
+}
+
+static bool
+is_allocable(pmem_map_t memmap)
+{
+    return has_type(memmap, PMEM_TYPE_AVAILABLE) && !get_ref(memmap);
+}
+
+//
+// PMEM
+//
+
 int
 pmem_init(pmem_map_t* physmap, unsigned long nframes)
 {
@@ -50,8 +132,8 @@ err_semaphore_init:
 }
 
 int
-pmem_set_flags(unsigned long pfindex, unsigned long nframes,
-               unsigned char flags)
+pmem_set_type(unsigned long pfindex, unsigned long nframes,
+            enum pmem_type type)
 {
         pmem_map_t *beg;
         const pmem_map_t *end;
@@ -63,7 +145,7 @@ pmem_set_flags(unsigned long pfindex, unsigned long nframes,
 
         while ((beg < end) && (beg < g_physmap + g_physmap_nframes))
         {
-                *beg |= (flags & PMEM_ALL_FLAGS) << 7;
+                *beg = set_type(*beg, type);
                 ++beg;
         }
 
@@ -90,7 +172,7 @@ pmem_alloc_frames(unsigned long nframes)
                 /*
                  * find next useable page
                  */
-                for (; (beg < end) && (*beg); ++beg)
+                for (; (beg < end) && !is_allocable(*beg); ++beg)
                 {
                 }
 
@@ -115,7 +197,7 @@ pmem_alloc_frames(unsigned long nframes)
                         /*
                          * check empty block
                          */
-                        for (; (beg2 < end2) && !(*beg2); ++beg2)
+                        for (; (beg2 < end2) && is_allocable(*beg2); ++beg2)
                         {
                         }
 
@@ -133,7 +215,7 @@ pmem_alloc_frames(unsigned long nframes)
                          */
                         for (beg2 = beg; beg2 < end2; ++beg2)
                         {
-                                *beg2 = (PMEM_FLAG_RESERVED << 7) + 1;
+                                *beg2 = ref_frame(*beg2);
                         }
 
                         pfindex = beg - g_physmap;
@@ -159,7 +241,7 @@ pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
         /*
          * find next useable page
          */
-        for (; (beg < end) && !(*beg); ++beg)
+        for (; (beg < end) && is_allocable(*beg); ++beg)
         {
         }
 
@@ -179,7 +261,7 @@ pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 
         for (beg = g_physmap + pfindex; beg < end; ++beg)
         {
-                *beg = (PMEM_FLAG_RESERVED << 7) + 1;
+                *beg = ref_frame(*beg);
         }
 
         semaphore_leave(&g_physmap_sem);
@@ -210,13 +292,10 @@ pmem_claim_frames(unsigned long pfindex, unsigned long nframes)
     semaphore_enter(&g_physmap_sem);
 
     while (beg < end) {
-        if (*beg == 0x3f) {
+        if (!checked_ref_frame(beg)) {
             res = -EOVERFLOW;
-            goto err_max_incr;
+            goto err_checked_ref_frame;
         }
-
-        *beg = (PMEM_FLAG_RESERVED << 7) | ((*beg & 0x7f) + 1);
-        ++(*beg) ;
         ++beg;
     }
 
@@ -224,11 +303,11 @@ pmem_claim_frames(unsigned long pfindex, unsigned long nframes)
 
     return 0;
 
-err_max_incr:
+err_checked_ref_frame:
     end = g_physmap + pfindex;
     while (beg > end) {
         --beg;
-        --(*beg);
+        *beg = unref_frame(*beg);
     }
     semaphore_leave(&g_physmap_sem);
     return res;
@@ -249,7 +328,7 @@ pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
          */
         for (i = 0; i < nframes; ++i)
         {
-                if (((*physmap) == 0xff) || !(*physmap))
+                if (!can_ref(*physmap))
                 {
                         semaphore_leave(&g_physmap_sem);
                         return -1;
@@ -263,7 +342,7 @@ pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
          */
         for (i = 0; i < nframes; ++i)
         {
-                *physmap = (PMEM_FLAG_RESERVED << 7) + ((*physmap) & 0x7f) + 1;
+                *physmap = ref_frame(*physmap);
                 ++physmap;
         }
 
@@ -283,15 +362,7 @@ pmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 
         while (nframes--)
         {
-                if ((*physmap) == ((PMEM_FLAG_RESERVED << 7) | 1))
-                {
-                        *physmap = PMEM_FLAG_USEABLE << 7;
-                }
-                else
-                {
-                        *physmap = (PMEM_FLAG_RESERVED << 7) +
-                                ((*physmap) & 0x7f) - 1;
-                }
+                checked_unref_frame(physmap); // ignore errors
                 ++physmap;
         }
 

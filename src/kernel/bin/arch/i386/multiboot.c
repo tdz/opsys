@@ -263,11 +263,11 @@ mark_mmap_areas(const struct multiboot_info* info)
         os_index_t pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
         size_t nframes = pageframe_count(mmap->len);
 
-        unsigned char flags = mmap->type == MULTIBOOT_MEMORY_AVAILABLE ?
-                                PMEM_FLAG_USEABLE :
-                                PMEM_FLAG_RESERVED;
+        enum pmem_type type = mmap->type == MULTIBOOT_MEMORY_AVAILABLE ?
+                                PMEM_TYPE_AVAILABLE :
+                                PMEM_TYPE_SYSTEM;
 
-        int res = pmem_set_flags(pfindex, nframes, flags);
+        int res = pmem_set_type(pfindex, nframes, type);
         if (res < 0) {
             return res;
         }

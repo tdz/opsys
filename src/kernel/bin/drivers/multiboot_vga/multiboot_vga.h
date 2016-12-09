@@ -30,7 +30,9 @@ struct multiboot_vga_drv {
 };
 
 int
-multiboot_vga_init(struct multiboot_vga_drv* vga);
+multiboot_vga_init(struct multiboot_vga_drv* vga,
+                   unsigned short fb_w,
+                   unsigned short fb_h);
 
 void
 multiboot_vga_uninit(struct multiboot_vga_drv* vga);

@@ -385,7 +385,9 @@ multiboot_init(const struct multiboot_header* header,
 {
     /* init VGA and console */
 
-    int res = multiboot_vga_init(&g_mb_vga_drv);
+    int res = multiboot_vga_init(&g_mb_vga_drv,
+                                 header->width,
+                                 header->height);
     if (res < 0) {
         return;
     }

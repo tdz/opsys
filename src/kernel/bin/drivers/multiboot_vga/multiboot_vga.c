@@ -24,11 +24,6 @@
 #include <stdint.h>
 #include "ioports.h"
 
-enum {
-    MAX_ROW = 25,
-    MAX_COL = 80
-};
-
 static struct multiboot_vga_drv*
 multiboot_vga_drv_of_crt_drv(struct crt_drv* drv)
 {
@@ -133,7 +128,9 @@ put_char(struct crt_drv* drv, unsigned long off, int c)
 }
 
 int
-multiboot_vga_init(struct multiboot_vga_drv* mb_vga)
+multiboot_vga_init(struct multiboot_vga_drv* mb_vga,
+                   unsigned short fb_w,
+                   unsigned short fb_h)
 {
     static const struct crt_drv_funcs funcs = {
         get_fb_resolution,
@@ -152,8 +149,8 @@ multiboot_vga_init(struct multiboot_vga_drv* mb_vga)
         return res;
     }
 
-    mb_vga->fb_w = MAX_COL;
-    mb_vga->fb_h = MAX_ROW;
+    mb_vga->fb_w = fb_w;
+    mb_vga->fb_h = fb_h;
     mb_vga->vmem = (unsigned char*)0xb8000;
 
     return 0;

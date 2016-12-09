@@ -28,16 +28,6 @@ static struct semaphore g_physmap_sem;
 static pmem_map_t *g_physmap = NULL;
 static unsigned long g_physmap_nframes = 0;
 
-static int
-pmem_set_flags_self(void)
-{
-    /* claim physmap; global variables of pmem claimed by kernel image */
-
-    return pmem_claim_frames(pageframe_index(g_physmap),
-                             pageframe_count(g_physmap_nframes *
-                                             sizeof(g_physmap[0])));
-}
-
 int
 pmem_init(pmem_map_t* physmap, unsigned long nframes)
 {
@@ -53,15 +43,8 @@ pmem_init(pmem_map_t* physmap, unsigned long nframes)
         memset(g_physmap, 0, nframes * sizeof(g_physmap[0]));
         g_physmap_nframes = nframes;
 
-        if ((err = pmem_set_flags_self()) < 0)
-        {
-                goto err_pmem_set_flags_self;
-        }
-
         return 0;
 
-err_pmem_set_flags_self:
-        semaphore_uninit(&g_physmap_sem);
 err_semaphore_init:
         return err;
 }

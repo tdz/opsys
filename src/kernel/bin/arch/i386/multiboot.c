@@ -327,6 +327,14 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
         return res;
     }
 
+    /* claim memory map; global variables of pmem claimed
+     * by kernel image */
+    res = pmem_claim_frames(pageframe_index(memmap),
+                            pageframe_count(pfcount * sizeof(*memmap)));
+    if (res < 0) {
+        return res;
+    }
+
     /* claim frames with lowest 4 MiB reserved for DMA,
      * kernel, etc */
 

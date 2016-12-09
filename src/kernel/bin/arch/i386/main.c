@@ -24,7 +24,6 @@
 #include "drivers/i8042/kbd.h"
 #include "drivers/i8254/i8254.h"
 #include "drivers/i8259/pic.h"
-#include "drivers/vga/vga.h"
 #include "gdt.h"
 #include "idt.h"
 #include "interupt.h"
@@ -42,7 +41,6 @@
  */
 
 static struct i8254_drv g_i8254_drv;
-static struct vga_drv   g_vga_drv;
 
 /*
  * Platform entry points for ISR handlers
@@ -118,22 +116,6 @@ general_init(struct task **tsk, void *stack)
          */
         pic_install();
 
-        /* create CRT and run console */
-
-        int res = vga_init(&g_vga_drv);
-        if (res < 0) {
-            return res;
-        }
-
-        res = init_console(&g_vga_drv.drv);
-        if (res < 0) {
-            goto err_init_console;
-        }
-
-        /* At this point we have a console ready, so display
-         * something to the user. */
-        console_printf("opsys booting...\n");
-
         /*
          * setup keyboard
          */
@@ -144,7 +126,7 @@ general_init(struct task **tsk, void *stack)
 
         /* setup PIT for system timer */
 
-        res = i8254_init(&g_i8254_drv);
+        int res = i8254_init(&g_i8254_drv);
         if (res < 0) {
             goto err_i8254_init;
         }
@@ -236,8 +218,6 @@ err_allocator_init:
 err_task_helper_init_kernel_task:
 err_i8254_init:
         uninit_console();
-err_init_console:
-        vga_uninit(&g_vga_drv);
         return err;
 }
 

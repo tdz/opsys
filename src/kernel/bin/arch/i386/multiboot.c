@@ -26,10 +26,18 @@
 #include <multiboot.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "console.h"
+#include "drivers/vga/vga.h"
 #include "main.h"
 #include "page.h"
 #include "pageframe.h"
 #include "pmem.h"
+
+/*
+ * Platform drivers that depend in Multiboot
+ */
+
+static struct vga_drv   g_vga_drv;
 
 /*
  * Mmap-entry iteration
@@ -375,9 +383,25 @@ multiboot_init(const struct multiboot_header* header,
                const struct multiboot_info* info,
                void* stack)
 {
+    /* init VGA and console */
+
+    int res = vga_init(&g_vga_drv);
+    if (res < 0) {
+        return;
+    }
+
+    res = init_console(&g_vga_drv.drv);
+    if (res < 0) {
+        return;
+    }
+
+    /* At this point we have a console ready, so display
+     * something to the user. */
+    console_printf("opsys booting...\n");
+
     /* init physical memory */
 
-    int res = init_pmem_from_multiboot(header, info, stack);
+    res = init_pmem_from_multiboot(header, info, stack);
     if (res < 0) {
         return;
     }

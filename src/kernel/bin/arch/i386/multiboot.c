@@ -377,7 +377,10 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
     /* claim frames with lowest 4 MiB reserved for DMA,
      * kernel, etc */
 
-    pmem_set_flags(0, NPAGES, PMEM_FLAG_RESERVED);
+    res = pmem_claim_frames(pageframe_index(0), NPAGES);
+    if (res < 0) {
+        return res;
+    }
 
     res = claim_multiboot_frames(header, info);
     if (res < 0) {

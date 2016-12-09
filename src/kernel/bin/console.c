@@ -23,7 +23,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
-#include "drivers/vga/vga.h"
+#include "drivers/crt/crt.h"
 
 static struct crt_drv* g_crt;
 

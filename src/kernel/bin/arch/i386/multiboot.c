@@ -27,7 +27,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "console.h"
-#include "drivers/vga/vga.h"
+#include "drivers/multiboot_vga/multiboot_vga.h"
 #include "main.h"
 #include "page.h"
 #include "pageframe.h"
@@ -37,7 +37,7 @@
  * Platform drivers that depend in Multiboot
  */
 
-static struct vga_drv   g_vga_drv;
+static struct multiboot_vga_drv g_mb_vga_drv;
 
 /*
  * Mmap-entry iteration
@@ -385,12 +385,12 @@ multiboot_init(const struct multiboot_header* header,
 {
     /* init VGA and console */
 
-    int res = vga_init(&g_vga_drv);
+    int res = multiboot_vga_init(&g_mb_vga_drv);
     if (res < 0) {
         return;
     }
 
-    res = init_console(&g_vga_drv.drv);
+    res = init_console(&g_mb_vga_drv.drv);
     if (res < 0) {
         return;
     }

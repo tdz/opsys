@@ -21,7 +21,7 @@
 
 #include "drivers/crt/crt.h"
 
-struct vga_drv {
+struct multiboot_vga_drv {
     struct crt_drv drv;
 
     unsigned short fb_w;
@@ -30,7 +30,7 @@ struct vga_drv {
 };
 
 int
-vga_init(struct vga_drv* vga);
+multiboot_vga_init(struct multiboot_vga_drv* vga);
 
 void
-vga_uninit(struct vga_drv* vga);
+multiboot_vga_uninit(struct multiboot_vga_drv* vga);

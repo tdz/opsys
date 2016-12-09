@@ -17,7 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "vga.h"
+#include "multiboot_vga.h"
 #include <assert.h>
 #include <errno.h>
 #include <stddef.h>
@@ -29,26 +29,26 @@ enum {
     MAX_COL = 80
 };
 
-static struct vga_drv*
-vga_drv_of_crt_drv(struct crt_drv* drv)
+static struct multiboot_vga_drv*
+multiboot_vga_drv_of_crt_drv(struct crt_drv* drv)
 {
-    return containerof(drv, struct vga_drv, drv);
+    return containerof(drv, struct multiboot_vga_drv, drv);
 }
 
 static void*
-get_addr(const struct vga_drv* vga, unsigned long off)
+get_addr(const struct multiboot_vga_drv* mb_vga, unsigned long off)
 {
-    return vga->vmem + 2 * off;
+    return mb_vga->vmem + 2 * off;
 }
 
 static int
 get_fb_resolution(struct crt_drv* drv,
                   unsigned short* r, unsigned short* c)
 {
-    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+    const struct multiboot_vga_drv* mb_vga = multiboot_vga_drv_of_crt_drv(drv);
 
-    *r = vga->fb_h;
-    *c = vga->fb_w;
+    *r = mb_vga->fb_h;
+    *c = mb_vga->fb_w;
 
     return 0;
 }
@@ -57,17 +57,17 @@ static long
 get_fb_offset(struct crt_drv* drv,
               unsigned short r, unsigned short c)
 {
-    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+    const struct multiboot_vga_drv* mb_vga = multiboot_vga_drv_of_crt_drv(drv);
 
-    return c + r * vga->fb_w;
+    return c + r * mb_vga->fb_w;
 }
 
 static int
 set_cursor_offset(struct crt_drv* drv, unsigned long off)
 {
-    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+    const struct multiboot_vga_drv* mb_vga = multiboot_vga_drv_of_crt_drv(drv);
 
-    off %= vga->fb_w * vga->fb_h;
+    off %= mb_vga->fb_w * mb_vga->fb_h;
 
     uint8_t cr0e = (off >> 8) & 0xff;
     uint8_t cr0f = off & 0xff;
@@ -92,35 +92,35 @@ get_cursor_offset(struct crt_drv* drv)
 static int
 put_LF(struct crt_drv* drv)
 {
-    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+    const struct multiboot_vga_drv* mb_vga = multiboot_vga_drv_of_crt_drv(drv);
 
     ssize_t res = get_cursor_offset(drv);
     if (res < 0) {
         return res;
     }
-    return set_cursor_offset(drv, res + vga->fb_w);
+    return set_cursor_offset(drv, res + mb_vga->fb_w);
 }
 
 static int
 put_CR(struct crt_drv* drv)
 {
-    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+    const struct multiboot_vga_drv* mb_vga = multiboot_vga_drv_of_crt_drv(drv);
 
     ssize_t res = get_cursor_offset(drv);
     if (res < 0) {
         return res;
     }
-    return set_cursor_offset(drv, res - (res % vga->fb_w));
+    return set_cursor_offset(drv, res - (res % mb_vga->fb_w));
 }
 
 static int
 put_char(struct crt_drv* drv, unsigned long off, int c)
 {
-    const struct vga_drv* vga = vga_drv_of_crt_drv(drv);
+    const struct multiboot_vga_drv* mb_vga = multiboot_vga_drv_of_crt_drv(drv);
 
-    off %= vga->fb_w * vga->fb_h;
+    off %= mb_vga->fb_w * mb_vga->fb_h;
 
-    unsigned char* vmem = get_addr(vga, off);
+    unsigned char* vmem = get_addr(mb_vga, off);
 
     if (!vmem) {
         return -EFAULT;
@@ -133,7 +133,7 @@ put_char(struct crt_drv* drv, unsigned long off, int c)
 }
 
 int
-vga_init(struct vga_drv* vga)
+multiboot_vga_init(struct multiboot_vga_drv* mb_vga)
 {
     static const struct crt_drv_funcs funcs = {
         get_fb_resolution,
@@ -145,24 +145,24 @@ vga_init(struct vga_drv* vga)
         put_char,
     };
 
-    assert(vga);
+    assert(mb_vga);
 
-    int res = crt_drv_init(&vga->drv, &funcs);
+    int res = crt_drv_init(&mb_vga->drv, &funcs);
     if (res < 0) {
         return res;
     }
 
-    vga->fb_w = MAX_COL;
-    vga->fb_h = MAX_ROW;
-    vga->vmem = (unsigned char*)0xb8000;
+    mb_vga->fb_w = MAX_COL;
+    mb_vga->fb_h = MAX_ROW;
+    mb_vga->vmem = (unsigned char*)0xb8000;
 
     return 0;
 }
 
 void
-vga_uninit(struct vga_drv* vga)
+multiboot_vga_uninit(struct multiboot_vga_drv* mb_vga)
 {
-    assert(vga);
+    assert(mb_vga);
 
-    crt_drv_uninit(&vga->drv);
+    crt_drv_uninit(&mb_vga->drv);
 }

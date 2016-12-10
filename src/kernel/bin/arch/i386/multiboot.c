@@ -218,23 +218,24 @@ find_unused_area(const struct multiboot_header* header,
     return 0; /* not found */
 }
 
-static size_t
-available_mem(const struct multiboot_info* info)
+static unsigned long
+available_frames(const struct multiboot_info* info)
 {
-    size_t mem = 0;
+    unsigned long nframes = 0;
 
     for (const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
             mmap;
             mmap = next_mmap_entry(info, mmap)) {
 
-        size_t end = mmap->addr + mmap->len;
+        unsigned long end = pageframe_index((void*)(uintptr_t)mmap->addr) +
+                            pageframe_count(mmap->len);
 
-        if (end > mem) {
-            mem = end;
+        if (end > nframes) {
+            nframes = end;
         }
     }
 
-    return mem;
+    return nframes;
 }
 
 static int
@@ -328,15 +329,15 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
 
     /* init physical memory */
 
-    size_t mem = available_mem(info);
-    if (!mem) {
+    unsigned long pfcount = available_frames(info);
+    if (!pfcount) {
         return -ENOMEM;
     }
 
-    unsigned long pfcount = pageframe_span(0, mem);
-    unsigned long pfindex = find_unused_area(header,
-                                             info,
-                                             pfcount >> PAGEFRAME_SHIFT);
+    unsigned long pfindex =
+        find_unused_area(header,
+                         info,
+                         pageframe_count(pfcount * sizeof(pmem_map_t)));
     if (!pfindex) {
         return -ENOMEM;
     }

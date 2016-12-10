@@ -32,7 +32,7 @@ enum pmem_type {
 typedef uint8_t pmem_map_t;
 
 int
-pmem_init(pmem_map_t* physmap, unsigned long nframes);
+pmem_init(pmem_map_t* memmap, unsigned long nframes);
 
 int
 pmem_set_type(unsigned long pfindex, unsigned long pfcount,

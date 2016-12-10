@@ -223,9 +223,10 @@ available_frames(const struct multiboot_info* info)
 {
     unsigned long nframes = 0;
 
-    for (const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
+    for (const struct multiboot_mmap_entry* mmap =
+                first_mmap_entry_of_type(info, MULTIBOOT_MEMORY_AVAILABLE);
             mmap;
-            mmap = next_mmap_entry(info, mmap)) {
+            mmap = next_mmap_entry_of_type(info, mmap, MULTIBOOT_MEMORY_AVAILABLE)) {
 
         unsigned long end = pageframe_index((void*)(uintptr_t)mmap->addr) +
                             pageframe_count(mmap->len);
@@ -256,18 +257,15 @@ alloc_memmap(const struct multiboot_header* header,
 static int
 mark_mmap_areas(const struct multiboot_info* info)
 {
-    for (const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
+    for (const struct multiboot_mmap_entry* mmap =
+                first_mmap_entry_of_type(info, MULTIBOOT_MEMORY_AVAILABLE);
             mmap;
-            mmap = next_mmap_entry(info, mmap)) {
+            mmap = next_mmap_entry_of_type(info, mmap, MULTIBOOT_MEMORY_AVAILABLE)) {
 
         os_index_t pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
         size_t nframes = pageframe_count(mmap->len);
 
-        enum pmem_type type = mmap->type == MULTIBOOT_MEMORY_AVAILABLE ?
-                                PMEM_TYPE_AVAILABLE :
-                                PMEM_TYPE_SYSTEM;
-
-        int res = pmem_set_type(pfindex, nframes, type);
+        int res = pmem_set_type(pfindex, nframes, PMEM_TYPE_AVAILABLE);
         if (res < 0) {
             return res;
         }

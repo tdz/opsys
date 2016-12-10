@@ -238,6 +238,21 @@ available_frames(const struct multiboot_info* info)
     return nframes;
 }
 
+static pmem_map_t*
+alloc_memmap(const struct multiboot_header* header,
+             const struct multiboot_info* info,
+             unsigned long pfcount)
+{
+    unsigned long nframes = pageframe_count(pfcount * sizeof(pmem_map_t));
+
+    unsigned long pfindex = find_unused_area(header, info, nframes);
+    if (!pfindex) {
+        return NULL;
+    }
+
+    return (pmem_map_t*)(uintptr_t)pfindex;
+}
+
 static int
 mark_mmap_areas(const struct multiboot_info* info)
 {
@@ -334,15 +349,10 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
         return -ENOMEM;
     }
 
-    unsigned long pfindex =
-        find_unused_area(header,
-                         info,
-                         pageframe_count(pfcount * sizeof(pmem_map_t)));
-    if (!pfindex) {
+    pmem_map_t* memmap = alloc_memmap(header, info, pfcount);
+    if (!memmap) {
         return -ENOMEM;
     }
-
-    pmem_map_t* memmap = (pmem_map_t*)(uintptr_t)pfindex;
 
     int res = pmem_init(memmap, pfcount);
     if (res < 0) {

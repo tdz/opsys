@@ -167,128 +167,104 @@ pmem_set_type(unsigned long pfindex, unsigned long nframes,
     return 0;
 }
 
+static pmem_map_t*
+find_allocable_frame(pmem_map_t* beg, const pmem_map_t* end)
+{
+    while (beg < end && !is_allocable(*beg)) {
+        ++beg;
+    }
+    return beg;
+}
+
+static pmem_map_t*
+find_non_allocable_frame(pmem_map_t* beg, const pmem_map_t* end)
+{
+    while (beg < end && is_allocable(*beg)) {
+        ++beg;
+    }
+    return beg;
+}
+
+static pmem_map_t*
+ref_frame_range(pmem_map_t* beg, const pmem_map_t* end)
+{
+    while (beg < end) {
+        *beg = ref_frame(*beg);
+        ++beg;
+    }
+    return beg;
+}
+
+static pmem_map_t*
+alloc_frame_range(pmem_map_t* beg, const pmem_map_t* end)
+{
+    pmem_map_t* end2 = find_non_allocable_frame(beg, end);
+    if (end2 != end) {
+        return end2;
+    }
+    return ref_frame_range(beg, end);
+}
+
 unsigned long
 pmem_alloc_frames(unsigned long nframes)
 {
-        unsigned long pfindex;
-        pmem_map_t* beg;
-        const pmem_map_t* end;
+    if (nframes > memmap_len(&g_pmem)) {
+        return 0; // ENOMEM
+    }
 
-        if (nframes > memmap_len(&g_pmem)) {
-            return 0; // ENOMEM
+    semaphore_enter(&g_pmem.map_sem);
+
+    unsigned long pfindex = 0;
+    pmem_map_t* beg = g_pmem.map + 1; // first page frame is never used
+    const pmem_map_t* end = g_pmem.map_end - nframes + 1;
+
+    while (beg < end) {
+
+        // find next unused page frame
+        beg = find_allocable_frame(beg, end);
+        if (beg == end) {
+            break; // no unused page frame found, return ENOMEM
         }
 
-        semaphore_enter(&g_pmem.map_sem);
-
-        pfindex = 0;
-        beg = g_pmem.map + 1;   /* first page frame is never used */
-        end = g_pmem.map_end - nframes;
-
-        while (!pfindex && (beg < end))
-        {
-                /*
-                 * find next useable page
-                 */
-                for (; (beg < end) && !is_allocable(*beg); ++beg)
-                {
-                }
-
-                /*
-                 * end reached
-                 */
-
-                if (beg == end)
-                {
-                        break;
-                }
-
-                /*
-                 * empty page found
-                 */
-                {
-                        pmem_map_t *beg2;
-                        const pmem_map_t *end2;
-
-                        beg2 = beg;
-                        end2 = beg + nframes;
-
-                        /*
-                         * check empty block
-                         */
-                        for (; (beg2 < end2) && is_allocable(*beg2); ++beg2)
-                        {
-                        }
-
-                        /*
-                         * block not empty
-                         */
-                        if (beg2 < end2)
-                        {
-                                beg = beg2 + 1; /* next possible empty block */
-                                continue;
-                        }
-
-                        /*
-                         * reference page frames
-                         */
-                        for (beg2 = beg; beg2 < end2; ++beg2)
-                        {
-                                *beg2 = ref_frame(*beg2);
-                        }
-
-                        pfindex = beg - g_pmem.map;
-                }
+        pmem_map_t* range_end = alloc_frame_range(beg, beg + nframes);
+        if (nframes == range_end - beg) {
+            pfindex = beg - g_pmem.map;
+            break; // alloc'ed range of correct size
         }
 
-        semaphore_leave(&g_pmem.map_sem);
+        beg = range_end + 1;
+    }
 
-        return pfindex;
+    semaphore_leave(&g_pmem.map_sem);
+
+    return pfindex;
 }
 
 unsigned long
 pmem_alloc_frames_at(unsigned long pfindex, unsigned long nframes)
 {
-        pmem_map_t *beg;
-        const pmem_map_t *end;
+    if (nframes > memmap_len(&g_pmem)) {
+        return -ENOMEM;
+    } else if (pfindex > memmap_len(&g_pmem) - nframes) {
+        return -ENOMEM;
+    }
 
-        semaphore_enter(&g_pmem.map_sem);
+    semaphore_enter(&g_pmem.map_sem);
 
-        beg = g_pmem.map + pfindex;
-        end = g_pmem.map + nframes;
+    pmem_map_t* beg = g_pmem.map + pfindex;
 
-        /*
-         * find next useable page
-         */
-        for (; (beg < end) && is_allocable(*beg); ++beg)
-        {
-        }
+    const pmem_map_t* end2 = alloc_frame_range(beg, beg + nframes);
+    if (nframes != end2 - beg) {
+        goto err_alloc_frame_range;
+    }
 
-        /*
-         * stopped too early, pages already allocated
-         */
-        if (beg < end)
-        {
-                goto err_beg_lt_end;
-        }
+    semaphore_leave(&g_pmem.map_sem);
 
-        /*
-         * reference page frames
-         */
+    return pfindex;
 
-        beg = g_pmem.map + pfindex;
-
-        for (beg = g_pmem.map + pfindex; beg < end; ++beg)
-        {
-                *beg = ref_frame(*beg);
-        }
-
-        semaphore_leave(&g_pmem.map_sem);
-
-        return pfindex;
-
-err_beg_lt_end:
-        semaphore_leave(&g_pmem.map_sem);
-        return 0;
+err_alloc_frame_range:
+    semaphore_leave(&g_pmem.map_sem);
+    return 0;
 }
 
 int
@@ -304,8 +280,6 @@ pmem_claim_frames(unsigned long pfindex, unsigned long nframes)
 
     pmem_map_t* beg = g_pmem.map + pfindex;
     const pmem_map_t* end = beg + nframes;
-
-    /* increment refcount */
 
     semaphore_enter(&g_pmem.map_sem);
 
@@ -334,57 +308,66 @@ err_checked_ref_frame:
 int
 pmem_ref_frames(unsigned long pfindex, unsigned long nframes)
 {
-        unsigned long i;
-        pmem_map_t *physmap;
+    if (nframes > memmap_len(&g_pmem)) {
+        return -ENOMEM;
+    } else if (pfindex > memmap_len(&g_pmem) - nframes) {
+        return -ENOMEM;
+    }
 
-        semaphore_enter(&g_pmem.map_sem);
+    int res = 0;
 
-        physmap = g_pmem.map + pfindex;
+    pmem_map_t* beg = g_pmem.map + pfindex;
+    const pmem_map_t* end = beg + nframes;
 
-        /*
-         * check for allocation and max refcount
-         */
-        for (i = 0; i < nframes; ++i)
-        {
-                if (!can_ref(*physmap))
-                {
-                        semaphore_leave(&g_pmem.map_sem);
-                        return -1;
-                }
+    semaphore_enter(&g_pmem.map_sem);
+
+    while (beg < end) {
+        if (!get_ref(*beg)) {
+            res = -ENODEV;
+            goto err_get_ref;
         }
-
-        physmap = g_pmem.map + pfindex;
-
-        /*
-         * increment refcount
-         */
-        for (i = 0; i < nframes; ++i)
-        {
-                *physmap = ref_frame(*physmap);
-                ++physmap;
+        if (!checked_ref_frame(beg)) {
+            res = -EOVERFLOW;
+            goto err_checked_ref_frame;
         }
+        ++beg;
+    }
 
-        semaphore_leave(&g_pmem.map_sem);
+    semaphore_leave(&g_pmem.map_sem);
 
-        return 0;
+    return 0;
+
+err_checked_ref_frame:
+err_get_ref:
+    end = g_pmem.map + pfindex;
+    while (beg > end) {
+        --beg;
+        *beg = unref_frame(*beg);
+    }
+    semaphore_leave(&g_pmem.map_sem);
+    return res;
 }
 
 void
 pmem_unref_frames(unsigned long pfindex, unsigned long nframes)
 {
-        pmem_map_t *physmap;
+    if (nframes > memmap_len(&g_pmem)) {
+        return;
+    } else if (pfindex > memmap_len(&g_pmem) - nframes) {
+        return;
+    }
 
-        semaphore_enter(&g_pmem.map_sem);
+    pmem_map_t* beg = g_pmem.map + pfindex;
+    const pmem_map_t* end = beg + nframes;
 
-        physmap = g_pmem.map + pfindex;
+    semaphore_enter(&g_pmem.map_sem);
 
-        while (nframes--)
-        {
-                checked_unref_frame(physmap); // ignore errors
-                ++physmap;
-        }
+    while (beg < end) {
+        checked_unref_frame(beg); // ignore errors
+        ++beg;
+    }
 
-        semaphore_leave(&g_pmem.map_sem);
+    semaphore_leave(&g_pmem.map_sem);
 }
 
 size_t
@@ -396,6 +379,5 @@ pmem_get_nframes()
 size_t
 pmem_get_size()
 {
-        return pmem_get_nframes() * PAGEFRAME_SIZE;
+    return pmem_get_nframes() * PAGEFRAME_SIZE;
 }
-

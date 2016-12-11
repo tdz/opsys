@@ -28,6 +28,7 @@
 #include <stddef.h>
 #include "console.h"
 #include "drivers/multiboot_vga/multiboot_vga.h"
+#include "elf.h"
 #include "main.h"
 #include "page.h"
 #include "pageframe.h"
@@ -86,6 +87,55 @@ first_mmap_entry_of_type(const struct multiboot_info* info,
         return entry;
     }
     return next_mmap_entry_of_type(info, entry, type);
+}
+
+/*
+ * ELF-segment iteration
+ */
+
+static const Elf32_Shdr*
+first_elf32_shdr(const struct multiboot_info* info)
+{
+    if (!(info->flags & MULTIBOOT_INFO_ELF_SHDR)) {
+        return NULL;
+    }
+    return (const Elf32_Shdr*)(uintptr_t)info->u.elf_sec.addr;
+}
+
+static const Elf32_Shdr*
+next_elf32_shdr(const struct multiboot_info* info, const Elf32_Shdr* shdr)
+{
+    const Elf32_Shdr* first =
+        (const Elf32_Shdr*)(uintptr_t)info->u.elf_sec.addr;
+
+    ++shdr;
+
+    if (info->u.elf_sec.num <= shdr - first) {
+        return NULL;
+    }
+    return shdr;
+}
+
+static const Elf32_Shdr*
+next_elf32_shdr_in_memory(const struct multiboot_info* info,
+                          const Elf32_Shdr* shdr)
+{
+    do {
+        shdr = next_elf32_shdr(info, shdr);
+    } while (shdr && !shdr->sh_addr);
+
+    return shdr; // either memory-mapped section or NULL
+}
+
+static const Elf32_Shdr*
+first_elf32_shdr_in_memory(const struct multiboot_info* info)
+{
+    const Elf32_Shdr* shdr = first_elf32_shdr(info);
+
+    if (shdr && shdr->sh_addr) {
+        return shdr;
+    }
+    return next_elf32_shdr_in_memory(info, shdr);
 }
 
 /*
@@ -157,17 +207,9 @@ is_within(unsigned long inner_beg, unsigned long inner_len,
 }
 
 static uintptr_t
-find_unused_area(const struct multiboot_header* header,
-                 const struct multiboot_info* info,
+find_unused_area(const struct multiboot_info* info,
                  unsigned long nframes)
 {
-    os_index_t kernel_pfindex =
-        pageframe_index((void*)(uintptr_t)header->load_addr);
-
-    size_t kernel_nframes =
-        pageframe_span((void*)(uintptr_t)header->load_addr,
-                       header->bss_end_addr - header->load_addr + 1);
-
     for (const struct multiboot_mmap_entry* mmap =
                 first_mmap_entry_of_type(info, MULTIBOOT_MEMORY_AVAILABLE);
             mmap;
@@ -188,8 +230,18 @@ find_unused_area(const struct multiboot_header* header,
 
         /* check for intersection with kernel */
 
-        if (overlaps_with(pfindex, nframes, kernel_pfindex, kernel_nframes)) {
-            pfindex = kernel_pfindex + kernel_nframes;
+        for (const Elf32_Shdr* shdr = first_elf32_shdr_in_memory(info);
+                shdr;
+                shdr = next_elf32_shdr_in_memory(info, shdr)) {
+
+            const void* addr = (const void*)(uintptr_t)shdr->sh_addr;
+
+            os_index_t shdr_pfindex = pageframe_index(addr);
+            size_t     shdr_nframes = pageframe_span(addr, shdr->sh_size);
+
+            if (overlaps_with(pfindex, nframes, shdr_pfindex, shdr_nframes)) {
+                pfindex = shdr_pfindex + shdr_nframes;
+            }
         }
 
         /* check for intersection with modules */
@@ -240,13 +292,12 @@ available_frames(const struct multiboot_info* info)
 }
 
 static pmem_map_t*
-alloc_memmap(const struct multiboot_header* header,
-             const struct multiboot_info* info,
+alloc_memmap(const struct multiboot_info* info,
              unsigned long pfcount)
 {
     unsigned long nframes = pageframe_count(pfcount * sizeof(pmem_map_t));
 
-    unsigned long pfindex = find_unused_area(header, info, nframes);
+    unsigned long pfindex = find_unused_area(info, nframes);
     if (!pfindex) {
         return NULL;
     }
@@ -307,12 +358,26 @@ claim_multiboot_frames(const struct multiboot_info* info)
 }
 
 static int
-claim_kernel_frames(const struct multiboot_header* header)
+claim_kernel_frames(const struct multiboot_info* info)
 {
     /* kernel includes initial stack and Multiboot header */
-    return pmem_claim_frames(pageframe_index((void*)(uintptr_t)header->load_addr),
-                             pageframe_count(header->bss_end_addr -
-                                             header->load_addr));
+
+    for (const Elf32_Shdr* shdr = first_elf32_shdr_in_memory(info);
+            shdr;
+            shdr = next_elf32_shdr_in_memory(info, shdr)) {
+
+        const void* addr = (const void*)(uintptr_t)shdr->sh_addr;
+
+        os_index_t pfindex = pageframe_index(addr);
+        size_t     nframes = pageframe_span(addr, shdr->sh_size);
+
+        int res = pmem_claim_frames(pfindex, nframes);
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    return 0;
 }
 
 static int
@@ -335,8 +400,7 @@ claim_modules_frames(const struct multiboot_info* info)
 }
 
 static int
-init_pmem_from_multiboot(const struct multiboot_header* header,
-                         const struct multiboot_info* info)
+init_pmem_from_multiboot(const struct multiboot_info* info)
 {
     const static size_t NPAGES = (4 * 1024 * 1024) / PAGE_SIZE;
 
@@ -347,7 +411,7 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
         return -ENOMEM;
     }
 
-    pmem_map_t* memmap = alloc_memmap(header, info, pfcount);
+    pmem_map_t* memmap = alloc_memmap(info, pfcount);
     if (!memmap) {
         return -ENOMEM;
     }
@@ -383,7 +447,7 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
         return res;
     }
 
-    res = claim_kernel_frames(header);
+    res = claim_kernel_frames(info);
     if (res < 0) {
         return res;
     }
@@ -450,7 +514,7 @@ multiboot_init(const struct multiboot_header* header,
 
     /* init physical memory */
 
-    res = init_pmem_from_multiboot(header, info);
+    res = init_pmem_from_multiboot(info);
     if (res < 0) {
         return;
     }

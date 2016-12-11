@@ -261,17 +261,10 @@ mark_mmap_areas(const struct multiboot_info* info)
 }
 
 static int
-claim_multiboot_frames(const struct multiboot_header* header,
-                       const struct multiboot_info* info)
+claim_multiboot_frames(const struct multiboot_info* info)
 {
-    int res = pmem_claim_frames(pageframe_index(header),
-                                pageframe_span(header, sizeof(*header)));
-    if (res < 0) {
-        return res;
-    }
-
-    res = pmem_claim_frames(pageframe_index(info),
-                            pageframe_span(info, sizeof(*info)));
+    int res = pmem_claim_frames(pageframe_index(info),
+                                pageframe_span(info, sizeof(*info)));
     if (res < 0) {
         return res;
     }
@@ -302,7 +295,7 @@ claim_multiboot_frames(const struct multiboot_header* header,
 static int
 claim_kernel_frames(const struct multiboot_header* header)
 {
-    /* includes initial stack */
+    /* kernel includes initial stack and Multiboot header */
     return pmem_claim_frames(pageframe_index((void*)(uintptr_t)header->load_addr),
                              pageframe_count(header->bss_end_addr -
                                              header->load_addr));
@@ -376,7 +369,7 @@ init_pmem_from_multiboot(const struct multiboot_header* header,
         return res;
     }
 
-    res = claim_multiboot_frames(header, info);
+    res = claim_multiboot_frames(info);
     if (res < 0) {
         return res;
     }

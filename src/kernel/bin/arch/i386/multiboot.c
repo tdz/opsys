@@ -31,6 +31,7 @@
 #include "console.h"
 #include "drivers/multiboot_vga/multiboot_vga.h"
 #include "elf.h"
+#include "gdt.h"
 #include "main.h"
 #include "page.h"
 #include "pageframe.h"
@@ -553,6 +554,9 @@ multiboot_init(const struct multiboot_header* header,
     console_printf("opsys booting...\n");
 
     /* init memory */
+
+    gdt_init();
+    gdt_install();
 
     res = init_pmem_from_multiboot(info);
     if (res < 0) {

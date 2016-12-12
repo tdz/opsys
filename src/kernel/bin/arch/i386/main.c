@@ -23,7 +23,6 @@
 #include "drivers/i8042/kbd.h"
 #include "drivers/i8254/i8254.h"
 #include "drivers/i8259/pic.h"
-#include "gdt.h"
 #include "idt.h"
 #include "interupt.h"
 #include "loader.h"
@@ -99,12 +98,6 @@ general_init(struct task **tsk, struct vmem* vmem, void *stack)
 {
         int err;
         struct tcb *tcb;
-
-        /*
-         * setup GDT for protected mode
-         */
-        gdt_init();
-        gdt_install();
 
         /* setup IDT for protected mode */
         init_idt();

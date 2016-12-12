@@ -7,7 +7,6 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         idtentry.c \
         interupt.c \
         ioports.c \
-        main.c \
         multiboot.c \
         multiboot.S \
         pagedir.c \

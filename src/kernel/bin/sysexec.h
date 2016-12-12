@@ -26,7 +26,8 @@ struct task;
 struct vmem;
 
 int
-general_init(struct task **tsk, struct vmem* vmem, void *stack);
+schedule_kernel_threads(struct vmem* vmem, void* stack,
+                        struct task** task_out);
 
 int
 execute_module(struct task* parent, uintptr_t start, size_t len, const char* name);

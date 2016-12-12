@@ -17,7 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "main.h"
+#include "sysexec.h"
 #include "console.h"
 #include "cpu.h"
 #include "loader.h"
@@ -35,82 +35,66 @@
  * \return 0 on success, or a negative error code otherwise
  */
 int
-general_init(struct task **tsk, struct vmem* vmem, void *stack)
+schedule_kernel_threads(struct vmem* vmem, void* stack, struct task** task_out)
 {
-        int err;
-        struct tcb *tcb;
+    /* build kernel task with idle thread around current execution
+     * context */
 
-        /*
-         * build initial task and address space
-         */
+    struct task* task;
+    int res = task_helper_allocate_task(vmem, &task);
+    if (res < 0) {
+        console_perror("task_helper_allocate_task", -res);
+        return res;
+    }
 
-        if ((err = task_helper_allocate_task(vmem, tsk)) < 0)
-        {
-                console_perror("task_helper_init_kernel_task", -err);
-                goto err_task_helper_init_kernel_task;
-        }
+    struct tcb *tcb;
+    res = tcb_helper_allocate_tcb(task, stack, &tcb);
+    if (res < 0) {
+        console_perror("tcb_helper_allocate_tcb", -res);
+        goto err_tcb_helper_allocate_tcb;
+    }
 
-        /*
-         * setup current execution as thread 0 of kernel task
-         */
+    tcb_set_state(tcb, THREAD_STATE_READY);
 
-        if ((err = tcb_helper_allocate_tcb(*tsk, stack, &tcb)) < 0)
-        {
-                console_perror("tcb_helper_allocate_tcb", -err);
-                goto err_tcb_helper_allocate_tcb;
-        }
+    /* setup scheduler */
 
-        tcb_set_state(tcb, THREAD_STATE_READY);
+    res = sched_init(tcb);
+    if (res < 0) {
+        console_perror("sched_init", -res);
+        goto err_sched_init;
+    }
 
-        /*
-         * setup scheduler
-         */
+    /* create and schedule system-service thread */
 
-        if ((err = sched_init(tcb)) < 0)
-        {
-                console_perror("sched_init", -err);
-                goto err_sched_init;
-        }
+    res = tcb_helper_allocate_tcb_and_stack(task, 1, &tcb);
+    if (res < 0) {
+        console_perror("tcb_helper_allocate_tcb_and_stack", -res);
+        goto err_tcb_helper_allocate_tcb_and_stack;
+    }
 
-/*
-        if ((err = sched_add_thread(tcb, 0)) < 0)
-        {
-                console_perror("sched_add_idle_thread", -err);
-                goto err_sched_add_idle_thread;
-        }*/
+    res = tcb_helper_run_kernel_thread(tcb, system_srv_start);
+    if (res < 0) {
+        console_perror("tcb_helper_run_kernel_thread", -res);
+        goto err_tcb_helper_run_kernel_thread;
+    }
 
+    res = sched_add_thread(tcb, 255);
+    if (res < 0) {
+        console_perror("sched_add_service_thread", -res);
+        goto err_sched_add_thread;
+    }
 
-        /*
-         * create and schedule system service
-         */
+    *task_out = task;
 
-        if ((err = tcb_helper_allocate_tcb_and_stack(*tsk, 1, &tcb)) < 0)
-        {
-                console_perror("tcb_helper_allocate_tcb_and_stack", -err);
-                goto err_tcb_helper_allocate_tcb_and_stack;
-        }
+    return 0;
 
-        if ((err = tcb_helper_run_kernel_thread(tcb, system_srv_start)) < 0)
-        {
-                console_perror("tcb_set_initial_ready_state", -err);
-                goto err_tcb_set_initial_ready_state;
-        }
-
-        if ((err = sched_add_thread(tcb, 255)) < 0)
-        {
-                console_perror("sched_add_service_thread", -err);
-                goto err_sched_add_service_thread;
-        }
-
-        return 0;
-
-err_sched_add_service_thread:
-err_tcb_set_initial_ready_state:
+err_sched_add_thread:
+err_tcb_helper_run_kernel_thread:
 err_tcb_helper_allocate_tcb_and_stack:
 err_sched_init:
 err_tcb_helper_allocate_tcb:
-err_task_helper_init_kernel_task:
-        return err;
+    // TODO: clean up
+    return res;
 }
 
 int

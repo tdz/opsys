@@ -37,12 +37,12 @@
 #include "interupt.h"
 #include "elf.h"
 #include "gdt.h"
-#include "main.h"
 #include "page.h"
 #include "pageframe.h"
 #include "pmem.h"
 #include "sched.h" // for SCHED_FREQ
 #include "syscall.h"
+#include "sysexec.h"
 #include "vmem.h"
 #include "vmemhlp.h"
 
@@ -654,7 +654,7 @@ multiboot_init(const struct multiboot_header* header,
     /* setup system services */
 
     struct task* task;
-    res = general_init(&task, &g_kernel_vmem, &stack);
+    res = schedule_kernel_threads(&g_kernel_vmem, &stack, &task);
     if (res < 0) {
         return;
     }

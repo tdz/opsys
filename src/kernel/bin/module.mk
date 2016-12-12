@@ -23,6 +23,7 @@ oskernel_SRCS = alloc.c \
                 semaphore.c \
                 spinlock.c \
                 syscall.c \
+                sysexec.c \
                 syssrv.c \
                 task.c \
                 taskhlp.c \

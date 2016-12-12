@@ -27,40 +27,25 @@
 #include "vmemhlp.h"
 
 int
-task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
+task_helper_allocate_task(struct vmem* kernel_as, struct task** task_out)
 {
-        int err;
-        os_index_t pgindex;
+    struct task* task = kmalloc(sizeof(*task));
+    if (!task) {
+        return -ENOMEM;
+    }
 
-        /*
-         * create kernel task
-         */
+    int res = task_init(task, kernel_as);
+    if (res < 0) {
+        goto err_task_init;
+    }
 
-        pgindex = vmem_helper_alloc_pages_in_area(kernel_as,
-                                                  VMEM_AREA_KERNEL,
-                                                  page_count(0, sizeof(**tsk)),
-                                                  PTE_FLAG_PRESENT|
-                                                  PTE_FLAG_WRITEABLE);
-        if (pgindex < 0)
-        {
-                err = pgindex;
-                goto err_vmem_helper_alloc_pages_in_area_tsk;
-        }
+    *task_out = task;
 
-        *tsk = page_address(pgindex);
-
-        if ((err = task_init(*tsk, kernel_as)) < 0)
-        {
-                goto err_task_init;
-        }
-
-        return 0;
+    return 0;
 
 err_task_init:
-/*        pmem_unref_frames(pageframe_index(*tsk),
-                             pageframe_count(sizeof(**tsk)));*/
-err_vmem_helper_alloc_pages_in_area_tsk:
-        return err;
+    kfree(task);
+    return res;
 }
 
 int

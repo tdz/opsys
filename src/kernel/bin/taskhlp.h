@@ -23,7 +23,7 @@ struct task;
 struct vmem;
 
 int
-task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk);
+task_helper_allocate_task(struct vmem* kernel_as, struct task** task_out);
 
 int
 task_helper_allocate_task_from_parent(const struct task *parent,

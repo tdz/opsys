@@ -135,7 +135,7 @@ general_init(struct task **tsk, struct vmem* vmem, void *stack)
          * build initial task and address space
          */
 
-        if ((err = task_helper_init_kernel_task(vmem, tsk)) < 0)
+        if ((err = task_helper_allocate_task(vmem, tsk)) < 0)
         {
                 console_perror("task_helper_init_kernel_task", -err);
                 goto err_task_helper_init_kernel_task;

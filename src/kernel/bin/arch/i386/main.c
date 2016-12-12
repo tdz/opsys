@@ -20,7 +20,6 @@
 #include "main.h"
 #include "console.h"
 #include "cpu.h"
-#include "interupt.h"
 #include "loader.h"
 #include "sched.h"
 #include "syssrv.h"
@@ -80,7 +79,6 @@ general_init(struct task **tsk, struct vmem* vmem, void *stack)
                 goto err_sched_add_idle_thread;
         }*/
 
-        sti();
 
         /*
          * create and schedule system service
@@ -109,7 +107,6 @@ general_init(struct task **tsk, struct vmem* vmem, void *stack)
 err_sched_add_service_thread:
 err_tcb_set_initial_ready_state:
 err_tcb_helper_allocate_tcb_and_stack:
-        cli();
 err_sched_init:
 err_tcb_helper_allocate_tcb:
 err_task_helper_init_kernel_task:

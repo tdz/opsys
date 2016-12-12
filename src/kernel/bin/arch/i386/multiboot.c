@@ -34,6 +34,7 @@
 #include "drivers/i8259/pic.h"
 #include "drivers/multiboot_vga/multiboot_vga.h"
 #include "idt.h"
+#include "interupt.h"
 #include "elf.h"
 #include "gdt.h"
 #include "main.h"
@@ -657,6 +658,8 @@ multiboot_init(const struct multiboot_header* header,
     if (res < 0) {
         return;
     }
+
+    sti(); // TODO: should be enabled right after pic_install()
 
     /* load modules as ELF binaries */
 

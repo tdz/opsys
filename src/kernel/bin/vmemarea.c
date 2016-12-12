@@ -35,19 +35,19 @@ static const struct vmem_area g_vmem_area[LAST_VMEM_AREA] =
                                             VMEM_AREA_FLAG_POLUTE |
                                             VMEM_AREA_FLAG_PAGETABLES |
                                             VMEM_AREA_FLAG_GLOBAL},
-        /* 4 MiB - 3 GiB */
-        [VMEM_AREA_USER]       = { .pgindex = 1024, .npages = 785408,
-                                   .flags = VMEM_AREA_FLAG_USER},
-        /* > 3 GiB */
-        [VMEM_AREA_TMPMAP]     = { .pgindex = 786432, .npages = 1024,
+        /* < 1 GiB */
+        [VMEM_AREA_KERNEL]     = { .pgindex = 1024, .npages = 260096,
                                    .flags = VMEM_AREA_FLAG_KERNEL |
                                             VMEM_AREA_FLAG_PAGETABLES |
                                             VMEM_AREA_FLAG_GLOBAL},
-        /* > 3 GiB */
-        [VMEM_AREA_KERNEL]     = { .pgindex = 787456, .npages = 261120,
+        /* < 1 GiB */
+        [VMEM_AREA_TMPMAP]     = { .pgindex = 261120, .npages = 1024,
                                    .flags = VMEM_AREA_FLAG_KERNEL |
                                             VMEM_AREA_FLAG_PAGETABLES |
-                                            VMEM_AREA_FLAG_GLOBAL}
+                                            VMEM_AREA_FLAG_GLOBAL},
+        /* >= 1 GiB */
+        [VMEM_AREA_USER]       = { .pgindex = 262144, .npages = 786432,
+                                   .flags = VMEM_AREA_FLAG_USER}
 };
 
 /* INDENT-ON */

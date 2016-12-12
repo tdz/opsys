@@ -33,22 +33,6 @@ task_helper_init_kernel_task(struct vmem *kernel_as, struct task **tsk)
         os_index_t pgindex;
 
         /*
-         * init page directory and address space for kernel task
-         */
-
-        err = vmem_helper_init_kernel_vmem(kernel_as);
-
-        if (err < 0)
-        {
-                goto err_vmem_helper_init_kernel_vmem;
-        }
-
-        /*
-         * enable paging
-         */
-        vmem_enable(kernel_as);
-
-        /*
          * create kernel task
          */
 
@@ -76,10 +60,6 @@ err_task_init:
 /*        pmem_unref_frames(pageframe_index(*tsk),
                              pageframe_count(sizeof(**tsk)));*/
 err_vmem_helper_alloc_pages_in_area_tsk:
-        /*
-         * TODO: uninit kernel address space
-         */
-err_vmem_helper_init_kernel_vmem:
         return err;
 }
 

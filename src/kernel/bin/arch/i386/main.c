@@ -18,7 +18,6 @@
  */
 
 #include "main.h"
-#include "alloc.h"
 #include "console.h"
 #include "cpu.h"
 #include "drivers/i8042/kbd.h"
@@ -91,14 +90,13 @@ platform_handle_syscall(unsigned long* r0, unsigned long* r1,
 /**
  * \brief sets up virtual memory and system services
  * \param[in, out] tsk return the kernel task
+ * \param[in] vmem kernel-task virtual address space
  * \param[in] stack initial address of the idle thread's stack
  * \return 0 on success, or a negative error code otherwise
  */
 int
-general_init(struct task **tsk, void *stack)
+general_init(struct task **tsk, struct vmem* vmem, void *stack)
 {
-        static struct vmem g_kernel_as;
-
         int err;
         struct tcb *tcb;
 
@@ -137,20 +135,10 @@ general_init(struct task **tsk, void *stack)
          * build initial task and address space
          */
 
-        if ((err = task_helper_init_kernel_task(&g_kernel_as, tsk)) < 0)
+        if ((err = task_helper_init_kernel_task(vmem, tsk)) < 0)
         {
                 console_perror("task_helper_init_kernel_task", -err);
                 goto err_task_helper_init_kernel_task;
-        }
-
-        /*
-         * setup memory allocator
-         */
-
-        if ((err = allocator_init(&g_kernel_as)) < 0)
-        {
-                console_perror("allocator_init", -err);
-                goto err_allocator_init;
         }
 
         /*
@@ -214,7 +202,6 @@ err_tcb_helper_allocate_tcb_and_stack:
         cli();
 err_sched_init:
 err_tcb_helper_allocate_tcb:
-err_allocator_init:
 err_task_helper_init_kernel_task:
 err_i8254_init:
         uninit_console();

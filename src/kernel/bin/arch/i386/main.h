@@ -23,9 +23,10 @@
 #include <sys/types.h>
 
 struct task;
+struct vmem;
 
 int
-general_init(struct task **tsk, void *stack);
+general_init(struct task **tsk, struct vmem* vmem, void *stack);
 
 int
 execute_module(struct task* parent, uintptr_t start, size_t len, const char* name);

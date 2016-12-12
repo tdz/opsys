@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include "alloc.h"
 #include "console.h"
 #include "drivers/multiboot_vga/multiboot_vga.h"
 #include "elf.h"
@@ -34,6 +35,14 @@
 #include "page.h"
 #include "pageframe.h"
 #include "pmem.h"
+#include "vmem.h"
+#include "vmemhlp.h"
+
+/*
+ * Virtual address space for kernel task
+ */
+
+static struct vmem g_kernel_vmem;
 
 /*
  * Platform drivers that depend in Multiboot
@@ -476,6 +485,22 @@ init_pmem_from_multiboot(const struct multiboot_info* info)
 }
 
 /*
+ * VMEM
+ */
+
+static int
+init_vmem_from_multiboot(struct vmem* vmem)
+{
+    /* init page directory and address space for kernel task */
+    int res = vmem_helper_init_kernel_vmem(vmem);
+    if (res < 0) {
+        return res;
+    }
+
+    return 0;
+}
+
+/*
  * Module loader
  */
 
@@ -527,17 +552,29 @@ multiboot_init(const struct multiboot_header* header,
      * something to the user. */
     console_printf("opsys booting...\n");
 
-    /* init physical memory */
+    /* init memory */
 
     res = init_pmem_from_multiboot(info);
     if (res < 0) {
         return;
     }
 
-    /* setup virtual memory and system services */
+    res = init_vmem_from_multiboot(&g_kernel_vmem);
+    if (res < 0) {
+        return;
+    }
+
+    vmem_enable(&g_kernel_vmem); // paging enabled! avoid PMEM after this point
+
+    res = allocator_init(&g_kernel_vmem);
+    if (res < 0) {
+        return;
+    }
+
+    /* setup system services */
 
     struct task* task;
-    res = general_init(&task, &stack);
+    res = general_init(&task, &g_kernel_vmem, &stack);
     if (res < 0) {
         return;
     }

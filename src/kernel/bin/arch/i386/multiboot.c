@@ -29,13 +29,19 @@
 #include <string.h>
 #include "alloc.h"
 #include "console.h"
+#include "drivers/i8042/kbd.h"
+#include "drivers/i8254/i8254.h"
+#include "drivers/i8259/pic.h"
 #include "drivers/multiboot_vga/multiboot_vga.h"
+#include "idt.h"
 #include "elf.h"
 #include "gdt.h"
 #include "main.h"
 #include "page.h"
 #include "pageframe.h"
 #include "pmem.h"
+#include "sched.h" // for SCHED_FREQ
+#include "syscall.h"
 #include "vmem.h"
 #include "vmemhlp.h"
 
@@ -46,10 +52,57 @@
 static struct vmem g_kernel_vmem;
 
 /*
- * Platform drivers that depend in Multiboot
+ * Platform-specific drivers
  */
 
+static struct i8254_drv         g_i8254_drv;
 static struct multiboot_vga_drv g_mb_vga_drv;
+
+/*
+ * Platform entry points for ISR handlers
+ *
+ * The platform_ functions below are the entry points from the
+ * IDT's interupt handlers into the main executable. The functions
+ * must forward the interupts to whatever drivers or modules have
+ * been initialized.
+ */
+
+void __attribute__((used))
+platform_handle_invalid_opcode(void* ip)
+{
+    console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
+}
+
+void __attribute__((used))
+platform_handle_irq(unsigned char irqno)
+{
+    pic_handle_irq(irqno);
+}
+
+void __attribute__((used))
+platform_eoi(unsigned char irqno)
+{
+    pic_eoi(irqno);
+}
+
+void __attribute__((used))
+platform_handle_segmentation_fault(void* ip)
+{
+    vmem_segfault_handler(ip);
+}
+
+void __attribute__((used))
+platform_handle_page_fault(void* ip, void* addr, unsigned long errcode)
+{
+    vmem_pagefault_handler(ip, addr, errcode);
+}
+
+void __attribute__((used))
+platform_handle_syscall(unsigned long* r0, unsigned long* r1,
+                        unsigned long* r2, unsigned long* r3)
+{
+    syscall_entry_handler(r0, r1, r2, r3);
+}
 
 /*
  * Mmap-entry iteration
@@ -535,7 +588,8 @@ multiboot_init(const struct multiboot_header* header,
                const struct multiboot_info* info,
                void* stack)
 {
-    /* init VGA and console */
+    /* init VGA and console
+     */
 
     int res = multiboot_vga_init(&g_mb_vga_drv,
                                  header->width,
@@ -553,7 +607,8 @@ multiboot_init(const struct multiboot_header* header,
      * something to the user. */
     console_printf("opsys booting...\n");
 
-    /* init memory */
+    /* init memory
+     */
 
     gdt_init();
     gdt_install();
@@ -571,6 +626,26 @@ multiboot_init(const struct multiboot_header* header,
     vmem_enable(&g_kernel_vmem); // paging enabled! avoid PMEM after this point
 
     res = allocator_init(&g_kernel_vmem);
+    if (res < 0) {
+        return;
+    }
+
+    /* init interupt controller and handling */
+
+    init_idt();
+    pic_install();
+
+    /* setup PIT for system timer */
+
+    res = i8254_init(&g_i8254_drv);
+    if (res < 0) {
+        return;
+    }
+
+    i8254_install_timer(&g_i8254_drv, SCHED_FREQ); // TODO: avoid SCHED_FREQ
+
+    /* init keyboard; TODO: this driver should run as a user-space program */
+    res = kbd_init();
     if (res < 0) {
         return;
     }

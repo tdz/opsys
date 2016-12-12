@@ -20,71 +20,13 @@
 #include "main.h"
 #include "console.h"
 #include "cpu.h"
-#include "drivers/i8042/kbd.h"
-#include "drivers/i8254/i8254.h"
-#include "drivers/i8259/pic.h"
-#include "idt.h"
 #include "interupt.h"
 #include "loader.h"
 #include "sched.h"
-#include "syscall.h"
 #include "syssrv.h"
 #include "taskhlp.h"
 #include "tcb.h"
 #include "tcbhlp.h"
-#include "vmem.h"
-
-/*
- * Platform drivers
- */
-
-static struct i8254_drv g_i8254_drv;
-
-/*
- * Platform entry points for ISR handlers
- *
- * The platform_ functions below are the entry points from the
- * IDT's interupt handlers into the main executable. The functions
- * must forward the interupts to whatever drivers or modules have
- * been initialized.
- */
-
-void __attribute__((used))
-platform_handle_invalid_opcode(void* ip)
-{
-    console_printf("invalid opcode ip=%x.\n", (unsigned long)ip);
-}
-
-void __attribute__((used))
-platform_handle_irq(unsigned char irqno)
-{
-    pic_handle_irq(irqno);
-}
-
-void __attribute__((used))
-platform_eoi(unsigned char irqno)
-{
-    pic_eoi(irqno);
-}
-
-void __attribute__((used))
-platform_handle_segmentation_fault(void* ip)
-{
-    vmem_segfault_handler(ip);
-}
-
-void __attribute__((used))
-platform_handle_page_fault(void* ip, void* addr, unsigned long errcode)
-{
-    vmem_pagefault_handler(ip, addr, errcode);
-}
-
-void __attribute__((used))
-platform_handle_syscall(unsigned long* r0, unsigned long* r1,
-                        unsigned long* r2, unsigned long* r3)
-{
-    syscall_entry_handler(r0, r1, r2, r3);
-}
 
 /**
  * \brief sets up virtual memory and system services
@@ -98,31 +40,6 @@ general_init(struct task **tsk, struct vmem* vmem, void *stack)
 {
         int err;
         struct tcb *tcb;
-
-        /* setup IDT for protected mode */
-        init_idt();
-
-        /*
-         * setup interupt controller
-         */
-        pic_install();
-
-        /*
-         * setup keyboard
-         */
-        if ((err = kbd_init()) < 0)
-        {
-                console_perror("kbd_init", -err);
-        }
-
-        /* setup PIT for system timer */
-
-        int res = i8254_init(&g_i8254_drv);
-        if (res < 0) {
-            goto err_i8254_init;
-        }
-
-        i8254_install_timer(&g_i8254_drv, SCHED_FREQ);
 
         /*
          * build initial task and address space
@@ -196,8 +113,6 @@ err_tcb_helper_allocate_tcb_and_stack:
 err_sched_init:
 err_tcb_helper_allocate_tcb:
 err_task_helper_init_kernel_task:
-err_i8254_init:
-        uninit_console();
         return err;
 }
 

@@ -24,9 +24,6 @@
 struct vmem;
 
 int
-vmem_helper_init_kernel_vmem(struct vmem *as);
-
-int
 vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as);
 
 int

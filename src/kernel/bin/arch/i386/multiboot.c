@@ -38,7 +38,9 @@
 #include "elf.h"
 #include "gdt.h"
 #include "page.h"
+#include "pagedir.h"
 #include "pageframe.h"
+#include "pagetbl.h"
 #include "pmem.h"
 #include "sched.h" // for SCHED_FREQ
 #include "syscall.h"
@@ -543,16 +545,176 @@ init_pmem_from_multiboot(const struct multiboot_info* info)
  * VMEM
  */
 
-static int
-init_vmem_from_multiboot(struct vmem* vmem)
+static struct page_directory*
+create_page_directory(void)
 {
-    /* init page directory and address space for kernel task */
-    int res = vmem_helper_init_kernel_vmem(vmem);
+    unsigned long nframes = pageframe_count(sizeof(struct page_directory));
+
+    unsigned long pfindex = pmem_alloc_frames(nframes);
+    if (!pfindex) {
+        return NULL;
+    }
+
+    struct page_directory* pd =
+        (struct page_directory*)pageframe_offset(pfindex);
+
+    int res = page_directory_init(pd);
+    if (res < 0) {
+        goto err_page_directory_init;
+    }
+
+    return pd;
+
+err_page_directory_init:
+    pmem_unref_frames(pfindex, nframes);
+    return NULL;
+}
+
+static void
+destroy_page_directory(struct page_directory* pd)
+{
+    page_directory_uninit(pd);
+    pmem_unref_frames(pageframe_index(pd), pageframe_count(sizeof(*pd)));
+}
+
+int
+map_page_directory(struct page_directory* pd, struct vmem* vmem)
+{
+    /* So far the page directory is only allocated in physical
+     * memory, but not mapped into the virtual address space. We
+     * have to do this _before_ we enable paging.
+     *
+     * Here we create an identity mapping for page-directory's page
+     * frame. Whis the address stored in vmem remains valid.
+     */
+    int res = vmem_map_pageframes_nopg(vmem,
+                                       pageframe_index(pd),
+                                       page_index(pd),
+                                       pageframe_count(sizeof(*pd)),
+                                       PTE_FLAG_PRESENT | PTE_FLAG_WRITEABLE);
     if (res < 0) {
         return res;
     }
+    return 0;
+}
+
+static int
+init_vmem_from_multiboot(struct vmem* vmem)
+{
+    /* init vmem data structure for kernel task */
+
+    struct page_directory* pd = create_page_directory();
+    if (!pd) {
+        return -ENOMEM;
+    }
+
+    int res = vmem_init(vmem, PAGING_32BIT, pd);
+    if (res < 0) {
+        goto err_vmem_init;
+    }
+
+    /* install page tables in all kernel areas */
+
+    enum vmem_area_name name;
+
+    for (name = 0; name < LAST_VMEM_AREA; ++name) {
+
+        const struct vmem_area* area = vmem_area_get_by_name(name);
+
+        if (!(area->flags & VMEM_AREA_FLAG_PAGETABLES)) {
+            continue;
+        }
+
+        unsigned long ptindex = pagetable_index(page_address(area->pgindex));
+        unsigned long ptcount = pagetable_count(page_address(area->pgindex),
+                                                page_memory(area->npages));
+
+        res = vmem_alloc_page_tables_nopg(vmem, ptindex, ptcount,
+                                          PDE_FLAG_PRESENT|
+                                          PDE_FLAG_WRITEABLE);
+
+        if (res < 0) {
+            goto err_vmem_alloc_page_tables_nopg;
+        }
+    }
+
+    /* create identity mapping for all identity areas */
+
+    for (name = 0; name < LAST_VMEM_AREA; ++name) {
+
+        const struct vmem_area *area = vmem_area_get_by_name(name);
+
+        if (!(area->flags & VMEM_AREA_FLAG_POLUTE)) {
+            continue;
+        } else if (!(area->flags & VMEM_AREA_FLAG_IDENTITY)) {
+            continue;
+        }
+
+        res = vmem_map_pageframes_nopg(vmem,
+                                       area->pgindex,
+                                       area->pgindex,
+                                       area->npages,
+                                       PTE_FLAG_PRESENT |
+                                       PTE_FLAG_WRITEABLE);
+        if (res < 0) {
+            goto err_vmem_map_pageframes_nopg_identity;
+        }
+    }
+
+    /* populate remaining areas */
+
+    for (name = 0; name < LAST_VMEM_AREA; ++name) {
+
+        const struct vmem_area *area = vmem_area_get_by_name(name);
+
+        if (!(area->flags & VMEM_AREA_FLAG_POLUTE)) {
+            continue;
+        } else if (area->flags & VMEM_AREA_FLAG_IDENTITY) {
+            continue;
+        }
+
+        os_index_t pfindex =
+            pmem_alloc_frames(pageframe_count(page_memory(area->npages)));
+
+        if (!pfindex) {
+            res = -ENOMEM;
+            break;
+        }
+
+        res = vmem_map_pageframes_nopg(vmem, pfindex,
+                                       area->pgindex,
+                                       area->npages,
+                                       PTE_FLAG_PRESENT |
+                                       PTE_FLAG_WRITEABLE);
+        if (res < 0) {
+            goto err_vmem_map_pageframes_nopg_pollute;
+        }
+    }
+
+    /* map page directory */
+    res = map_page_directory(pd, vmem);
+    if (res < 0){
+        goto err_map_page_directory;
+    }
+
+    /* prepare temporary mappings */
+
+    res = vmem_install_tmp_nopg(vmem);
+    if (res < 0) {
+        goto err_vmem_install_tmp_nopg;
+    }
 
     return 0;
+
+err_vmem_install_tmp_nopg:
+err_map_page_directory:
+err_vmem_map_pageframes_nopg_pollute:
+err_vmem_map_pageframes_nopg_identity:
+err_vmem_alloc_page_tables_nopg:
+    vmem_uninit(vmem);
+err_vmem_init:
+    destroy_page_directory(pd);
+    return res;
 }
 
 /*

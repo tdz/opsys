@@ -22,7 +22,9 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "iomem.h"
 #include "ioports.h"
+#include "pde.h"
 
 static struct multiboot_vga_drv*
 multiboot_vga_drv_of_crt_drv(struct crt_drv* drv)
@@ -128,9 +130,9 @@ put_char(struct crt_drv* drv, unsigned long off, int c)
 }
 
 int
-multiboot_vga_init(struct multiboot_vga_drv* mb_vga,
-                   unsigned short fb_w,
-                   unsigned short fb_h)
+multiboot_vga_early_init(struct multiboot_vga_drv* mb_vga,
+                         unsigned short fb_w,
+                         unsigned short fb_h)
 {
     static const struct crt_drv_funcs funcs = {
         get_fb_resolution,
@@ -152,6 +154,20 @@ multiboot_vga_init(struct multiboot_vga_drv* mb_vga,
     mb_vga->fb_w = fb_w;
     mb_vga->fb_h = fb_h;
     mb_vga->vmem = (unsigned char*)0xb8000;
+
+    return 0;
+}
+
+int
+multiboot_vga_late_init(struct multiboot_vga_drv* mb_vga)
+{
+    void* mem = map_io_range_nopg(mb_vga->vmem, mb_vga->vmem, 64 * 1024,
+                                  PDE_FLAG_PRESENT | PDE_FLAG_WRITEABLE);
+    if (!mem) {
+        return -ENOMEM;
+    }
+
+    mb_vga->vmem = mem;
 
     return 0;
 }

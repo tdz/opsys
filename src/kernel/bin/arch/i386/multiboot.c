@@ -755,9 +755,9 @@ multiboot_init(const struct multiboot_header* header,
     /* init VGA and console
      */
 
-    int res = multiboot_vga_init(&g_mb_vga_drv,
-                                 header->width,
-                                 header->height);
+    int res = multiboot_vga_early_init(&g_mb_vga_drv,
+                                       header->width,
+                                       header->height);
     if (res < 0) {
         return;
     }
@@ -788,6 +788,11 @@ multiboot_init(const struct multiboot_header* header,
     }
 
     res = init_iomem(&g_kernel_vmem);
+    if (res < 0) {
+        return;
+    }
+
+    res = multiboot_vga_late_init(&g_mb_vga_drv);
     if (res < 0) {
         return;
     }

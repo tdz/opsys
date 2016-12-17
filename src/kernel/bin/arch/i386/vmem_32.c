@@ -262,6 +262,17 @@ vmem_32_install_tmp_nopg(void *tlps)
                 goto err_page_directory_install_page_table;
         }
 
+        // map page-table page frame into kernel address space
+        int res = vmem_32_map_pageframe_nopg(tlps, ptpfindex, ptpfindex,
+                                             PTE_FLAG_PRESENT |
+                                             PTE_FLAG_WRITEABLE);
+        if (res < 0) {
+            goto err_vmem_32_map_pageframe_nopg;
+        }
+
+        return 0;
+
+err_vmem_32_map_pageframe_nopg:
 err_page_directory_install_page_table:
         page_table_uninit(pt);
 err_page_table_init:

@@ -35,6 +35,7 @@
 #include "drivers/multiboot_vga/multiboot_vga.h"
 #include "idt.h"
 #include "interupt.h"
+#include "iomem.h"
 #include "elf.h"
 #include "gdt.h"
 #include "page.h"
@@ -782,6 +783,11 @@ multiboot_init(const struct multiboot_header* header,
     }
 
     res = init_vmem_from_multiboot(&g_kernel_vmem);
+    if (res < 0) {
+        return;
+    }
+
+    res = init_iomem(&g_kernel_vmem);
     if (res < 0) {
         return;
     }

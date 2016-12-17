@@ -6,6 +6,7 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         idt.S \
         idtentry.c \
         interupt.c \
+        iomem.c \
         ioports.c \
         multiboot.c \
         multiboot.S \

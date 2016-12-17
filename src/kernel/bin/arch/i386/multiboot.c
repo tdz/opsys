@@ -26,6 +26,7 @@
 #include <multiboot.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 #include "console.h"
 #include "drivers/multiboot_vga/multiboot_vga.h"
 #include "elf.h"
@@ -393,6 +394,18 @@ claim_modules_frames(const struct multiboot_info* info)
         int res = pmem_claim_frames(pfindex, nframes);
         if (res < 0) {
             return res;
+        }
+
+        const char* cmdline = (const char*)(uintptr_t)mod->cmdline;
+
+        if (cmdline) {
+            pfindex = pageframe_index(cmdline);
+            nframes = pageframe_span(cmdline, strlen(cmdline));
+
+            res = pmem_claim_frames(pfindex, nframes);
+            if (res < 0) {
+                return res;
+            }
         }
     }
 

@@ -31,8 +31,6 @@ static const struct vmem_area g_vmem_area[LAST_VMEM_AREA] =
         /* < 4 MiB */
         [VMEM_AREA_KERNEL_LOW] = { .pgindex = 1, .npages = 1023,
                                    .flags = VMEM_AREA_FLAG_KERNEL |
-                                            VMEM_AREA_FLAG_IDENTITY |
-                                            VMEM_AREA_FLAG_POLUTE |
                                             VMEM_AREA_FLAG_PAGETABLES |
                                             VMEM_AREA_FLAG_GLOBAL},
         /* < 1 GiB */

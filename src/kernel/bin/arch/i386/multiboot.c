@@ -599,8 +599,130 @@ map_page_directory(struct page_directory* pd, struct vmem* vmem)
     return 0;
 }
 
+int
+map_memmap_frames(struct vmem* vmem, const pmem_map_t* memmap, size_t nframes)
+{
+    int res = vmem_map_pageframes_nopg(vmem,
+                                       pageframe_index(memmap),
+                                       pageframe_index(memmap),
+                                       pageframe_count(nframes * sizeof(*memmap)),
+                                       PTE_FLAG_PRESENT |
+                                       PTE_FLAG_WRITEABLE);
+    if (res < 0) {
+        return res;
+    }
+    return 0;
+}
+
+int
+map_multiboot_frames(struct vmem* vmem, const struct multiboot_info* info)
+{
+    int res = vmem_map_pageframes_nopg(vmem,
+                                       pageframe_index(info),
+                                       pageframe_index(info),
+                                       pageframe_span(info, sizeof(*info)),
+                                       PTE_FLAG_PRESENT |
+                                       PTE_FLAG_WRITEABLE);
+    if (res < 0) {
+        return res;
+    }
+
+    const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
+
+    if (mmap) {
+        res = vmem_map_pageframes_nopg(vmem,
+                                       pageframe_index(mmap),
+                                       pageframe_index(mmap),
+                                       pageframe_span(mmap, info->mmap_length),
+                                       PTE_FLAG_PRESENT |
+                                       PTE_FLAG_WRITEABLE);
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    const struct multiboot_mod_list* mod = first_mod_list(info);
+
+    if (mod) {
+        res = vmem_map_pageframes_nopg(vmem,
+                                       pageframe_index(mod),
+                                       pageframe_index(mod),
+                                       pageframe_span(mod, info->mods_count * sizeof(*mod)),
+                                       PTE_FLAG_PRESENT |
+                                       PTE_FLAG_WRITEABLE);
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    return 0;
+}
+
 static int
-init_vmem_from_multiboot(struct vmem* vmem)
+map_kernel_frames(struct vmem* vmem, const struct multiboot_info* info)
+{
+    /* kernel includes initial stack and Multiboot header */
+
+    for (const Elf32_Shdr* shdr = first_elf32_shdr_in_memory(info);
+            shdr;
+            shdr = next_elf32_shdr_in_memory(info, shdr)) {
+
+        const void* addr = (const void*)(uintptr_t)shdr->sh_addr;
+
+        os_index_t pfindex = pageframe_index(addr);
+        size_t     nframes = pageframe_span(addr, shdr->sh_size);
+
+        int res = vmem_map_pageframes_nopg(vmem,
+                                           pfindex, pfindex, nframes,
+                                           PTE_FLAG_PRESENT |
+                                           PTE_FLAG_WRITEABLE);
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    return 0;
+}
+
+static int
+map_modules_frames(struct vmem* vmem, const struct multiboot_info* info)
+{
+    for (const struct multiboot_mod_list* mod = first_mod_list(info);
+            mod;
+            mod = next_mod_list(info, mod)) {
+
+        os_index_t pfindex = pageframe_index((void*)(uintptr_t)mod->mod_start);
+        size_t nframes = pageframe_count(mod->mod_end - mod->mod_start);
+
+        int res = vmem_map_pageframes_nopg(vmem,
+                                           pfindex, pfindex, nframes,
+                                           PTE_FLAG_PRESENT |
+                                           PTE_FLAG_WRITEABLE);
+        if (res < 0) {
+            return res;
+        }
+
+        const char* cmdline = (const char*)(uintptr_t)mod->cmdline;
+
+        if (cmdline) {
+            pfindex = pageframe_index(cmdline);
+            nframes = pageframe_span(cmdline, strlen(cmdline));
+
+            res = vmem_map_pageframes_nopg(vmem,
+                                           pfindex, pfindex, nframes,
+                                           PTE_FLAG_PRESENT |
+                                           PTE_FLAG_WRITEABLE);
+            if (res < 0) {
+                return res;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int
+init_vmem_from_multiboot(struct vmem* vmem, const struct multiboot_info* info)
 {
     /* init vmem data structure for kernel task */
 
@@ -698,6 +820,26 @@ init_vmem_from_multiboot(struct vmem* vmem)
         goto err_map_page_directory;
     }
 
+    res = map_memmap_frames(vmem, pmem_get_memmap(), pmem_get_nframes());
+    if (res < 0){
+        goto err_map_memmap_frames;
+    }
+
+    res = map_multiboot_frames(vmem, info);
+    if (res < 0){
+        goto err_map_multiboot_frames;
+    }
+
+    res = map_kernel_frames(vmem, info);
+    if (res < 0){
+        goto err_map_kernel_frames;
+    }
+
+    res = map_modules_frames(vmem, info);
+    if (res < 0){
+        goto err_map_modules_frames;
+    }
+
     /* prepare temporary mappings */
 
     res = vmem_install_tmp_nopg(vmem);
@@ -708,6 +850,10 @@ init_vmem_from_multiboot(struct vmem* vmem)
     return 0;
 
 err_vmem_install_tmp_nopg:
+err_map_modules_frames:
+err_map_kernel_frames:
+err_map_multiboot_frames:
+err_map_memmap_frames:
 err_map_page_directory:
 err_vmem_map_pageframes_nopg_pollute:
 err_vmem_map_pageframes_nopg_identity:
@@ -782,7 +928,7 @@ multiboot_init(const struct multiboot_header* header,
         return;
     }
 
-    res = init_vmem_from_multiboot(&g_kernel_vmem);
+    res = init_vmem_from_multiboot(&g_kernel_vmem, info);
     if (res < 0) {
         return;
     }

@@ -370,6 +370,12 @@ pmem_unref_frames(unsigned long pfindex, unsigned long nframes)
     semaphore_leave(&g_pmem.map_sem);
 }
 
+const pmem_map_t*
+pmem_get_memmap()
+{
+    return g_pmem.map;
+}
+
 size_t
 pmem_get_nframes()
 {

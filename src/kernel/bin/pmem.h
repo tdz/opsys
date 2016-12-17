@@ -53,6 +53,9 @@ pmem_ref_frames(unsigned long pfindex, unsigned long nframes);
 void
 pmem_unref_frames(unsigned long pfindex, unsigned long nframes);
 
+const pmem_map_t*
+pmem_get_memmap(void);
+
 size_t
 pmem_get_nframes(void);
 

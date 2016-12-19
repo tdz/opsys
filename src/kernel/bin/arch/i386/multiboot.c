@@ -534,6 +534,70 @@ init_pmem_from_multiboot(const struct multiboot_info* info)
     return 0;
 }
 
+/* Reclaim
+ */
+
+static void
+reclaim_multiboot_frames(const struct multiboot_info* info)
+{
+    const struct multiboot_mod_list* mod = first_mod_list(info);
+
+    if (mod) {
+        pmem_unref_frames(pageframe_index(mod),
+                          pageframe_span(mod, info->mods_count * sizeof(*mod)));
+    }
+
+    const struct multiboot_mmap_entry* mmap = first_mmap_entry(info);
+
+    if (mmap) {
+        pmem_unref_frames(pageframe_index(mmap),
+                          pageframe_span(mmap, info->mmap_length));
+    }
+
+    pmem_unref_frames(pageframe_index(info),
+                      pageframe_span(info, sizeof(*info)));
+}
+
+static void
+reclaim_kernel_frames(const struct multiboot_info* info)
+{
+    /* kernel includes initial stack and Multiboot header */
+
+    for (const Elf32_Shdr* shdr = first_elf32_shdr_in_memory(info);
+            shdr;
+            shdr = next_elf32_shdr_in_memory(info, shdr)) {
+
+        const void* addr = (const void*)(uintptr_t)shdr->sh_addr;
+
+        os_index_t pfindex = pageframe_index(addr);
+        size_t     nframes = pageframe_span(addr, shdr->sh_size);
+        pmem_unref_frames(pfindex, nframes);
+    }
+}
+
+static void
+reclaim_modules_frames(const struct multiboot_info* info)
+{
+    for (const struct multiboot_mod_list* mod = first_mod_list(info);
+            mod;
+            mod = next_mod_list(info, mod)) {
+
+        const char* cmdline = (const char*)(uintptr_t)mod->cmdline;
+
+        if (cmdline) {
+            os_index_t pfindex = pageframe_index(cmdline);
+            size_t     nframes = pageframe_span(cmdline, strlen(cmdline));
+
+            pmem_unref_frames(pfindex, nframes);
+        }
+
+        os_index_t pfindex = pageframe_index((void*)(uintptr_t)mod->mod_start);
+        size_t     nframes = pageframe_span((void*)(uintptr_t)mod->mod_start,
+                                            mod->mod_end - mod->mod_start + 1);
+        pmem_unref_frames(pfindex, nframes);
+    }
+}
+
 /*
  * VMEM
  */
@@ -936,6 +1000,13 @@ multiboot_init(const struct multiboot_header* header,
     }
 
     vmem_enable(&g_kernel_vmem); // paging enabled! avoid PMEM after this point
+
+    /* All Multiboot page frames should now have been mapped into the
+     * kernel's virtual address space and referenced accordingly. So we
+     * reclaim available page frames to free them for memory allocation. */
+    reclaim_modules_frames(info);
+    reclaim_kernel_frames(info);
+    reclaim_multiboot_frames(info);
 
     res = allocator_init(&g_kernel_vmem);
     if (res < 0) {

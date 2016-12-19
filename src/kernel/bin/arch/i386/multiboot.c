@@ -219,7 +219,7 @@ find_unused_area(const struct multiboot_info* info,
         /* area page index and length */
 
         os_index_t mmap_pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
-        size_t mmap_nframes = pageframe_count(mmap->len);
+        size_t     mmap_nframes = pageframe_span((void*)(uintptr_t)mmap->addr, mmap->len);
 
         /* area at address 0, or too small */
         if (!mmap_pfindex || (mmap_nframes < nframes)) {
@@ -252,10 +252,11 @@ find_unused_area(const struct multiboot_info* info,
                 mod = next_mod_list(info, mod)) {
 
             os_index_t mod_pfindex =
-                pageframe_index((void *)mod->mod_start);
+                pageframe_index((void *)(uintptr_t)mod->mod_start);
 
             size_t mod_nframes =
-                pageframe_count(mod->mod_end - mod->mod_start + 1);
+                pageframe_span((void *)(uintptr_t)mod->mod_start,
+                               mod->mod_end - mod->mod_start + 1);
 
             if (overlaps_with(pfindex, nframes, mod_pfindex, mod_nframes)) {
                 pfindex = mod_pfindex + mod_nframes;
@@ -282,7 +283,7 @@ available_frames(const struct multiboot_info* info)
             mmap = next_mmap_entry_of_type(info, mmap, MULTIBOOT_MEMORY_AVAILABLE)) {
 
         unsigned long end = pageframe_index((void*)(uintptr_t)mmap->addr) +
-                            pageframe_count(mmap->len);
+                            pageframe_span((void*)(uintptr_t)mmap->addr, mmap->len);
 
         if (end > nframes) {
             nframes = end;
@@ -315,7 +316,7 @@ mark_mmap_areas(const struct multiboot_info* info)
             mmap = next_mmap_entry_of_type(info, mmap, MULTIBOOT_MEMORY_AVAILABLE)) {
 
         os_index_t pfindex = pageframe_index((void*)(uintptr_t)mmap->addr);
-        size_t nframes = pageframe_count(mmap->len);
+        size_t     nframes = pageframe_span((void*)(uintptr_t)mmap->addr, mmap->len);
 
         int res = pmem_set_type(pfindex, nframes, PMEM_TYPE_AVAILABLE);
         if (res < 0) {
@@ -389,7 +390,8 @@ claim_modules_frames(const struct multiboot_info* info)
             mod = next_mod_list(info, mod)) {
 
         os_index_t pfindex = pageframe_index((void*)(uintptr_t)mod->mod_start);
-        size_t nframes = pageframe_count(mod->mod_end - mod->mod_start);
+        size_t     nframes = pageframe_span((void*)(uintptr_t)mod->mod_start,
+                                            mod->mod_end - mod->mod_start + 1);
 
         int res = pmem_claim_frames(pfindex, nframes);
         if (res < 0) {
@@ -442,7 +444,7 @@ init_pmem_from_multiboot(const struct multiboot_info* info)
     /* claim memory map; global variables of pmem claimed
      * by kernel image */
     res = pmem_claim_frames(pageframe_index(memmap),
-                            pageframe_count(pfcount * sizeof(*memmap)));
+                            pageframe_span(memmap, pfcount * sizeof(*memmap)));
     if (res < 0) {
         return res;
     }

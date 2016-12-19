@@ -241,6 +241,11 @@ vmem_32_install_tmp_nopg(void *tlps)
 
         pt = vmem_32_get_page_table_tmp();
 
+        err = pmem_claim_frames(pageframe_index(pt), 1);
+        if (err < 0) {
+                goto err_pmem_claim_frames;
+        }
+
         if ((err = page_table_init(pt)) < 0)
         {
                 goto err_page_table_init;
@@ -276,6 +281,8 @@ err_vmem_32_map_pageframe_nopg:
 err_page_directory_install_page_table:
         page_table_uninit(pt);
 err_page_table_init:
+        pmem_unref_frames(pageframe_index(pt), 1);
+err_pmem_claim_frames:
         return err;
 }
 

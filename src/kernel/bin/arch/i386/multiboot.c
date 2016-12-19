@@ -484,8 +484,6 @@ claim_modules_frames(const struct multiboot_info* info)
 static int
 init_pmem_from_multiboot(const struct multiboot_info* info)
 {
-    const static size_t NPAGES = (4 * 1024 * 1024) / PAGE_SIZE;
-
     /* init physical memory */
 
     unsigned long pfcount = available_frames(info);
@@ -516,13 +514,7 @@ init_pmem_from_multiboot(const struct multiboot_info* info)
         return res;
     }
 
-    /* claim frames with lowest 4 MiB reserved for DMA,
-     * kernel, etc */
-
-    res = pmem_claim_frames(pageframe_index(0), NPAGES);
-    if (res < 0) {
-        return res;
-    }
+    /* claim Multiboot data structures */
 
     res = claim_multiboot_frames(info);
     if (res < 0) {

@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include "page.h"
 #include "pageframe.h"
+#include "pmem.h"
 #include "vmem.h"
 #include "vmemarea.h"
 
@@ -49,18 +50,27 @@ map_io_range_nopg(const void* io_addr, const void* virt_addr, size_t length,
     unsigned long pfindex = pageframe_index(io_addr);
     unsigned long pfcount = pageframe_span(io_addr, length);
 
-    os_index_t pgindex = page_index(virt_addr);
-
-    int res = vmem_map_pageframes_nopg(g_iomem.vmem,
-                                       pfindex, pgindex, pfcount, flags);
+    int res = pmem_claim_frames(pfindex, pfcount);
     if (res < 0) {
         return NULL;
+    }
+
+    os_index_t pgindex = page_index(virt_addr);
+
+    res = vmem_map_pageframes_nopg(g_iomem.vmem,
+                                   pfindex, pgindex, pfcount, flags);
+    if (res < 0) {
+        goto err_vmem_map_pageframes_nopg;
     }
 
     // offset of io_addr within it's pageframe
     unsigned long offset = ((uintptr_t)io_addr) - pageframe_offset(pfindex);
 
     return (void*)(page_offset(pgindex) + offset);
+
+err_vmem_map_pageframes_nopg:
+    pmem_unref_frames(pfindex, pfcount);
+    return NULL;
 }
 
 void*

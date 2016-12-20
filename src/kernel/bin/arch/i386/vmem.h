@@ -110,28 +110,8 @@ os_index_t
 vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
                         os_index_t pg_index_max, size_t pgcount);
 
-/*
- * internal functions
- */
-
 int
-__vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex, os_index_t pgindex,
-                  size_t pgcount, unsigned int flags);
-
-os_index_t
-__vmem_lookup_frame(const struct vmem *vmem, os_index_t pgindex);
-
-int
-__vmem_alloc_pages(struct vmem *vmem, os_index_t pgindex, size_t pgcount,
-                 unsigned int flags);
-
-int
-__vmem_map_pages(struct vmem *dst_as, os_index_t dst_pgindex,
-               const struct vmem *src_as, os_index_t src_pgindex,
-               size_t pgcount, unsigned long flags);
-
-int
-__vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
+vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
                       os_index_t pgindex, size_t pgcount);
 
 /*

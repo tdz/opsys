@@ -763,7 +763,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                 {
                         os_index_t src_pfindex;
 
-                        src_pfindex = __vmem_lookup_frame(src_as, src_pgindex);
+                        src_pfindex = vmem_32_lookup_frame(src_as->tlps, src_pgindex);
 
                         if (src_pfindex < 0)
                         {

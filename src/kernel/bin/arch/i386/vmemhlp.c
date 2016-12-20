@@ -40,8 +40,8 @@ vmem_helper_flat_copy_areas(const struct vmem *src_as,
 
                 if (area->flags & pteflags)
                 {
-                        __vmem_share_2nd_lvl_ps(dst_as, src_as,
-                                                area->pgindex, area->npages);
+                        vmem_share_2nd_lvl_ps(dst_as, src_as,
+                                              area->pgindex, area->npages);
                 }
         }
 

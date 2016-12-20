@@ -64,7 +64,7 @@ vmem_install_tmp_nopg(struct vmem *vmem)
  */
 
 int
-vmem_init(struct vmem *vmem, enum paging_mode pgmode, void *tlps)
+vmem_init(struct vmem *vmem, void *tlps)
 {
         int err;
 
@@ -73,7 +73,6 @@ vmem_init(struct vmem *vmem, enum paging_mode pgmode, void *tlps)
                 goto err_semaphore_init;
         }
 
-        vmem->pgmode = pgmode;
         vmem->tlps = tlps;
 
         return 0;

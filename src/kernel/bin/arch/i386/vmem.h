@@ -22,18 +22,9 @@
 #include <sys/types.h>
 #include "semaphore.h"
 
-/**
- * \brief paging mode of address space
- */
-enum paging_mode
-{
-        PAGING_32BIT /**< address space uses 32-bit paging */
-};
-
 struct vmem
 {
         struct semaphore sem; /**< lock of address-space data structure */
-        enum paging_mode pgmode; /**< address space's paging mode */
         void            *tlps; /**< address of top-level paging structure */
 };
 
@@ -64,12 +55,11 @@ vmem_install_tmp_nopg(struct vmem *vmem);
 /**
  * \brief init vmem structure
  * \param[in] as address of vmem structure
- * \param[in] pgmode paging mode
  * \param[in] tlps address of top-level paging structure
  * \return 0 if successful, or a negative error code otherwise
  */
 int
-vmem_init(struct vmem *vmem, enum paging_mode pgmode, void *tlps);
+vmem_init(struct vmem *vmem, void *tlps);
 
 void
 vmem_uninit(struct vmem *vmem);

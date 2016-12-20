@@ -787,7 +787,7 @@ init_vmem_from_multiboot(struct vmem* vmem, const struct multiboot_info* info)
         return -ENOMEM;
     }
 
-    int res = vmem_init(vmem, PAGING_32BIT, pd);
+    int res = vmem_init(vmem, pd);
     if (res < 0) {
         goto err_vmem_init;
     }

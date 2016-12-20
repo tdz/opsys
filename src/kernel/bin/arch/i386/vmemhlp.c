@@ -81,7 +81,7 @@ vmem_helper_init_vmem_from_parent(struct vmem *parent, struct vmem *as)
          * init address space
          */
 
-        if ((err = vmem_init(as, PAGING_32BIT, pd)) < 0)
+        if ((err = vmem_init(as, pd)) < 0)
         {
                 goto err_vmem_init;
         }

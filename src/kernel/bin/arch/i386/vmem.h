@@ -27,8 +27,7 @@
  */
 enum paging_mode
 {
-        PAGING_32BIT, /**< address space uses 32-bit paging */
-        PAGING_PAE /**< address space uses PAE (currently not supported) */
+        PAGING_32BIT /**< address space uses 32-bit paging */
 };
 
 struct vmem

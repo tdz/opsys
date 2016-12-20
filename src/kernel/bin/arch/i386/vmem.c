@@ -21,7 +21,6 @@
 #include <errno.h>
 #include "cpu.h"
 #include "vmem_32.h"
-#include "vmem_pae.h"
 
 static int
 __vmem_map_pageframe_nopg(struct vmem *vmem, os_index_t pfindex,
@@ -33,7 +32,6 @@ __vmem_map_pageframe_nopg(struct vmem *vmem, os_index_t pfindex,
                                                   os_index_t, unsigned int) =
         {
                 vmem_32_map_pageframe_nopg,
-                vmem_pae_map_pageframe_nopg
         };
         /* INDENT-ON */
 
@@ -67,7 +65,6 @@ __vmem_alloc_page_table_nopg(struct vmem *vmem, os_index_t ptindex,
                                                    os_index_t, unsigned int) =
         {
                 vmem_32_alloc_page_table_nopg,
-                vmem_pae_alloc_page_table_nopg
         };
         /* INDENT-ON */
 
@@ -95,7 +92,6 @@ vmem_install_tmp_nopg(struct vmem *vmem)
         static int (* const install_tmp_nopg[])(void *) =
         {
                 vmem_32_install_tmp_nopg,
-                vmem_pae_install_tmp_nopg
         };
         /* INDENT-ON */
 
@@ -137,7 +133,6 @@ vmem_enable(const struct vmem *vmem)
         static void (* const enable[])(const void *tlps) =
         {
                 vmem_32_enable,
-                vmem_pae_enable
         };
 
         enable[vmem->pgmode](vmem->tlps);
@@ -196,7 +191,6 @@ check_pages_empty(const struct vmem *vmem, os_index_t pgindex, size_t pgcount)
         static size_t(*const check_empty[])(const void*, os_index_t, size_t) =
         {
                 vmem_32_check_empty_pages,
-                vmem_pae_check_empty_pages
         };
 
         return check_empty[vmem->pgmode](vmem->tlps, pgindex, pgcount);
@@ -423,7 +417,6 @@ __vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex, os_index_t pgindex,
                                            size_t, unsigned int) =
         {
                 vmem_32_alloc_frames,
-                vmem_pae_alloc_frames
         };
         /* INDENT-ON */
 
@@ -438,7 +431,6 @@ __vmem_lookup_frame(const struct vmem *vmem, os_index_t pgindex)
         static os_index_t (*const lookup_frame[])(const void *, os_index_t) =
         {
                 vmem_32_lookup_frame,
-                vmem_pae_lookup_frame
         };
         /* INDENT-ON */
 
@@ -454,7 +446,6 @@ __vmem_alloc_pages(struct vmem *vmem, os_index_t pgindex, size_t pgcount,
                                           size_t, unsigned int) =
         {
                 vmem_32_alloc_pages,
-                vmem_pae_alloc_pages
         };
         /* INDENT-ON */
 
@@ -473,7 +464,6 @@ __vmem_map_pages(struct vmem *dst_vmem, os_index_t dst_pgindex,
                                          os_index_t, size_t, unsigned long) =
         {
                 vmem_32_map_pages,
-                vmem_pae_map_pages
         };
         /* INDENT-ON */
 
@@ -492,7 +482,6 @@ __vmem_share_2nd_lvl_ps(struct vmem *dst_vmem, const struct vmem *src_vmem,
                                                 size_t) =
         {
                 vmem_32_share_2nd_lvl_ps,
-                vmem_pae_share_2nd_lvl_ps
         };
         /* INDENT-ON */
 

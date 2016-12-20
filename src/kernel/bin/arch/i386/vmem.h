@@ -21,11 +21,12 @@
 
 #include <sys/types.h>
 #include "semaphore.h"
+#include "vmem_32.h"
 
 struct vmem
 {
         struct semaphore sem; /**< lock of address-space data structure */
-        void            *tlps; /**< address of top-level paging structure */
+        struct vmem_32   vmem_32;
 };
 
 int

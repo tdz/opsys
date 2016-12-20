@@ -156,7 +156,19 @@ err_page_table_unmap_page_frame:
 }
 
 int
-vmem_32_map_pageframe_nopg(void *tlps, os_index_t pfindex,
+vmem_32_init(struct vmem_32* vmem32, struct page_directory* pd)
+{
+    vmem32->pd = pd;
+
+    return 0;
+}
+
+void
+vmem_32_uninit(struct vmem_32* vmem32)
+{ }
+
+int
+vmem_32_map_pageframe_nopg(struct vmem_32* vmem32, os_index_t pfindex,
                            os_index_t pgindex, unsigned int flags)
 {
         struct page_directory *pd;
@@ -164,7 +176,7 @@ vmem_32_map_pageframe_nopg(void *tlps, os_index_t pfindex,
         int err;
         struct page_table *pt;
 
-        pd = tlps;
+        pd = vmem32->pd;
 
         /*
          * get page table
@@ -193,14 +205,14 @@ err_nopagetable:
 }
 
 int
-vmem_32_alloc_page_table_nopg(void *tlps, os_index_t ptindex,
+vmem_32_alloc_page_table_nopg(struct vmem_32* vmem32, os_index_t ptindex,
                               unsigned int flags)
 {
         struct page_directory *pd;
         os_index_t pfindex;
         int err;
 
-        pd = tlps;
+        pd = vmem32->pd;
 
         if (pde_get_pageframe_index(pd->entry[ptindex]))
         {
@@ -229,7 +241,7 @@ err_pmem_alloc_frames:
 }
 
 int
-vmem_32_install_tmp_nopg(void *tlps)
+vmem_32_install_tmp_nopg(struct vmem_32* vmem32)
 {
         struct page_directory *pd;
         struct page_table *pt;
@@ -237,7 +249,7 @@ vmem_32_install_tmp_nopg(void *tlps)
         os_index_t ptpfindex, index;
         const struct vmem_area *tmp;
 
-        pd = tlps;
+        pd = vmem32->pd;
 
         pt = vmem_32_get_page_table_tmp();
 
@@ -268,7 +280,7 @@ vmem_32_install_tmp_nopg(void *tlps)
         }
 
         // map page-table page frame into kernel address space
-        int res = vmem_32_map_pageframe_nopg(tlps, ptpfindex, ptpfindex,
+        int res = vmem_32_map_pageframe_nopg(vmem32, ptpfindex, ptpfindex,
                                              PTE_FLAG_PRESENT |
                                              PTE_FLAG_WRITEABLE);
         if (res < 0) {
@@ -287,22 +299,22 @@ err_pmem_claim_frames:
 }
 
 void
-vmem_32_enable(const void *tlps)
+vmem_32_enable(const struct vmem_32* vmem32)
 {
-        const struct page_directory *pd = tlps;
+        const struct page_directory *pd = vmem32->pd;
 
         mmu_load(((unsigned long)pd->entry) & (~0xfff));
         mmu_enable_paging();
 }
 
 size_t
-vmem_32_check_empty_pages(const void *tlps, os_index_t pgindex, size_t pgcount)
+vmem_32_check_empty_pages(const struct vmem_32* vmem32, os_index_t pgindex, size_t pgcount)
 {
         const struct page_directory *pd;
         os_index_t ptindex;
         size_t ptcount, nempty;
 
-        pd = tlps;
+        pd = vmem32->pd;
 
         ptindex = pagetable_index(page_address(pgindex));
         ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
@@ -363,7 +375,7 @@ vmem_32_check_empty_pages(const void *tlps, os_index_t pgindex, size_t pgcount)
 }
 
 int
-vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
+vmem_32_alloc_frames(struct vmem_32* vmem32, os_index_t pfindex, os_index_t pgindex,
                      size_t pgcount, unsigned int pteflags)
 {
         struct page_directory *pd;
@@ -371,7 +383,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
         size_t ptcount, i;
         int err;
 
-        pd = tlps;
+        pd = vmem32->pd;
 
         ptindex = pagetable_index(page_address(pgindex));
         ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
@@ -480,7 +492,7 @@ vmem_32_alloc_frames(void *tlps, os_index_t pfindex, os_index_t pgindex,
 }
 
 os_index_t
-vmem_32_lookup_frame(const void *tlps, os_index_t pgindex)
+vmem_32_lookup_frame(const struct vmem_32* vmem32, os_index_t pgindex)
 {
         const struct page_directory *pd;
         os_index_t ptindex;
@@ -490,7 +502,7 @@ vmem_32_lookup_frame(const void *tlps, os_index_t pgindex)
         os_index_t pfindex;
         int err;
 
-        pd = tlps;
+        pd = vmem32->pd;
 
         ptindex = pagetable_index(page_address(pgindex));
 
@@ -536,7 +548,7 @@ err_vmem_32_install_page_frame_tmp:
 }
 
 int
-vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
+vmem_32_alloc_pages(struct vmem_32* vmem32, os_index_t pgindex, size_t pgcount,
                     unsigned int pteflags)
 {
         struct page_directory *pd;
@@ -545,7 +557,7 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
         size_t i;
         int err;
 
-        pd = tlps;
+        pd = vmem32->pd;
 
         ptindex = pagetable_index(page_address(pgindex));
         ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
@@ -662,8 +674,8 @@ vmem_32_alloc_pages(void *tlps, os_index_t pgindex, size_t pgcount,
 }
 
 int
-vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
-                  const struct vmem *src_as, os_index_t src_pgindex,
+vmem_32_map_pages(struct vmem_32* dst_as, os_index_t dst_pgindex,
+                  const struct vmem_32 *src_as, os_index_t src_pgindex,
                   size_t pgcount, unsigned long pteflags)
 {
         os_index_t dst_ptindex, dst_ptcount;
@@ -671,7 +683,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
         os_index_t i;
         struct page_directory *dst_pd;
 
-        dst_pd = dst_tlps;
+        dst_pd = dst_as->pd;
         dst_ptindex = pagetable_index(page_address(dst_pgindex));
         dst_ptcount = pagetable_count(page_address(dst_pgindex),
                                       page_memory(pgcount));
@@ -763,7 +775,7 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
                 {
                         os_index_t src_pfindex;
 
-                        src_pfindex = vmem_32_lookup_frame(src_as->tlps, src_pgindex);
+                        src_pfindex = vmem_32_lookup_frame(src_as, src_pgindex);
 
                         if (src_pfindex < 0)
                         {
@@ -793,7 +805,8 @@ vmem_32_map_pages(void *dst_tlps, os_index_t dst_pgindex,
 }
 
 int
-vmem_32_share_2nd_lvl_ps(void *dst_tlps, const void *src_tlps,
+vmem_32_share_2nd_lvl_ps(struct vmem_32* dst_vmem32,
+                         const struct vmem_32* src_vmem32,
                          os_index_t pgindex, size_t pgcount)
 {
         struct page_directory *dst_pd;
@@ -801,8 +814,8 @@ vmem_32_share_2nd_lvl_ps(void *dst_tlps, const void *src_tlps,
         os_index_t ptindex;
         size_t ptcount;
 
-        dst_pd = dst_tlps;
-        src_pd = src_tlps;
+        dst_pd = dst_vmem32->pd;
+        src_pd = src_vmem32->pd;
 
         ptindex = pagetable_index(page_address(pgindex));
         ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));

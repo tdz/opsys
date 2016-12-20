@@ -75,7 +75,7 @@ tcb_init_with_id(struct tcb *tcb,
     spinlock_init(&tcb->lock);
 
     os_index_t pfindex = vmem_lookup_frame(task->as,
-                                           page_index(task->as->tlps));
+                                           page_index(task->as->vmem_32.pd));
     if (pfindex < 0) {
         res = pfindex;
         goto err_vmem_lookup_pageframe;

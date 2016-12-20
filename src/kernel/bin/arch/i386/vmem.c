@@ -22,45 +22,8 @@
 #include "cpu.h"
 #include "vmem_32.h"
 
-int
-vmem_map_pageframes_nopg(struct vmem *vmem, os_index_t pfindex,
-                         os_index_t pgindex, size_t count, unsigned int flags)
-{
-        int err = 0;
-
-        while (count && !(err < 0))
-        {
-                err = vmem_32_map_pageframe_nopg(&vmem->vmem_32, pfindex, pgindex, flags);
-                ++pgindex;
-                ++pfindex;
-                --count;
-        }
-
-        return err;
-}
-
-int
-vmem_alloc_page_tables_nopg(struct vmem *vmem, os_index_t ptindex,
-                            size_t ptcount, unsigned int flags)
-{
-        int err;
-
-        for (err = 0; ptcount && !(err < 0); ++ptindex, --ptcount)
-        {
-                err = vmem_32_alloc_page_table_nopg(&vmem->vmem_32, ptindex, flags);
-        }
-
-        return err;
-}
-
-int
-vmem_install_tmp_nopg(struct vmem *vmem)
-{
-        return vmem_32_install_tmp_nopg(&vmem->vmem_32);
-}
-
 /*
- * public functions
+ * Public functions
  */
 
 int
@@ -369,7 +332,64 @@ vmem_share_2nd_lvl_ps(struct vmem *dst_vmem, const struct vmem *src_vmem,
 }
 
 /*
- * fault handlers
+ * Public functions for Protected Mode setup
+ */
+
+int
+vmem_map_pageframes_nopg(struct vmem* vmem, os_index_t pfindex,
+                         os_index_t pgindex, size_t count, unsigned int flags)
+{
+    os_index_t pfbeg = pfindex;
+    os_index_t pfend = pfbeg + count;
+    os_index_t pgbeg = pgindex;
+
+    while (pfbeg < pfend) {
+        int res = vmem_32_map_pageframe_nopg(&vmem->vmem_32,
+                                             pfbeg, pgbeg,
+                                             flags);
+        if (res < 0) {
+            return res; // no undo; simply fail
+        }
+
+        ++pgbeg;
+        ++pfbeg;
+    }
+
+    return 0;
+}
+
+int
+vmem_alloc_page_tables_nopg(struct vmem* vmem, os_index_t ptindex,
+                            size_t ptcount, unsigned int flags)
+{
+    os_index_t ptbeg = ptindex;
+    os_index_t ptend = ptbeg + ptcount;
+
+    while (ptbeg < ptend) {
+        int res = vmem_32_alloc_page_table_nopg(&vmem->vmem_32, ptbeg, flags);
+
+        if (res < 0) {
+            return res; // no undo; simply fail
+        }
+
+        ++ptbeg;
+    }
+
+    return 0;
+}
+
+int
+vmem_install_tmp_nopg(struct vmem* vmem)
+{
+    int res = vmem_32_install_tmp_nopg(&vmem->vmem_32);
+    if (res < 0) {
+        return res;
+    }
+    return 0;
+}
+
+/*
+ * Fault handlers
  */
 
 #include "console.h"
@@ -392,4 +412,3 @@ vmem_pagefault_handler(void *ip, void *addr, unsigned long errcode)
                 hlt();
         }
 }
-

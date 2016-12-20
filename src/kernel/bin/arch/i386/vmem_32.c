@@ -155,6 +155,10 @@ err_page_table_unmap_page_frame:
         return err;
 }
 
+/*
+ * Public functions
+ */
+
 int
 vmem_32_init(struct vmem_32* vmem32, struct page_directory* pd)
 {
@@ -166,137 +170,6 @@ vmem_32_init(struct vmem_32* vmem32, struct page_directory* pd)
 void
 vmem_32_uninit(struct vmem_32* vmem32)
 { }
-
-int
-vmem_32_map_pageframe_nopg(struct vmem_32* vmem32, os_index_t pfindex,
-                           os_index_t pgindex, unsigned int flags)
-{
-        struct page_directory *pd;
-        os_index_t ptindex;
-        int err;
-        struct page_table *pt;
-
-        pd = vmem32->pd;
-
-        /*
-         * get page table
-         */
-
-        ptindex = pagetable_index(page_address(pgindex));
-
-        pt = pageframe_address(pde_get_pageframe_index(pd->entry[ptindex]));
-
-        if (!pt)
-        {
-                /*
-                 * no page table present
-                 */
-                err = -ENOMEM;
-                goto err_nopagetable;
-        }
-
-        return page_table_map_page_frame(pt,
-                                         pfindex,
-                                         pagetable_page_index(pgindex),
-                                         flags);
-
-err_nopagetable:
-        return err;
-}
-
-int
-vmem_32_alloc_page_table_nopg(struct vmem_32* vmem32, os_index_t ptindex,
-                              unsigned int flags)
-{
-        struct page_directory *pd;
-        os_index_t pfindex;
-        int err;
-
-        pd = vmem32->pd;
-
-        if (pde_get_pageframe_index(pd->entry[ptindex]))
-        {
-                return 0;       /* page table already exists */
-        }
-
-        pfindex = pmem_alloc_frames(pageframe_count(sizeof(struct page_table)));
-
-        if (!pfindex)
-        {
-                err = -ENOMEM;
-                goto err_pmem_alloc_frames;
-        }
-
-        if ((err = page_table_init(pageframe_address(pfindex))) < 0)
-        {
-                goto err_page_table_init;
-        }
-
-        return page_directory_install_page_table(pd, pfindex, ptindex, flags);
-
-err_page_table_init:
-        pmem_unref_frames(pfindex, pageframe_count(sizeof(struct page_table)));
-err_pmem_alloc_frames:
-        return err;
-}
-
-int
-vmem_32_install_tmp_nopg(struct vmem_32* vmem32)
-{
-        struct page_directory *pd;
-        struct page_table *pt;
-        int err;
-        os_index_t ptpfindex, index;
-        const struct vmem_area *tmp;
-
-        pd = vmem32->pd;
-
-        pt = vmem_32_get_page_table_tmp();
-
-        err = pmem_claim_frames(pageframe_index(pt), 1);
-        if (err < 0) {
-                goto err_pmem_claim_frames;
-        }
-
-        if ((err = page_table_init(pt)) < 0)
-        {
-                goto err_page_table_init;
-        }
-
-        ptpfindex = page_index(pt);
-
-        tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
-
-        index = pagetable_index(page_address(tmp->pgindex));
-
-        err = page_directory_install_page_table(pd,
-                                                ptpfindex,
-                                                index,
-                                                PTE_FLAG_PRESENT|
-                                                PTE_FLAG_WRITEABLE);
-        if (err < 0)
-        {
-                goto err_page_directory_install_page_table;
-        }
-
-        // map page-table page frame into kernel address space
-        int res = vmem_32_map_pageframe_nopg(vmem32, ptpfindex, ptpfindex,
-                                             PTE_FLAG_PRESENT |
-                                             PTE_FLAG_WRITEABLE);
-        if (res < 0) {
-            goto err_vmem_32_map_pageframe_nopg;
-        }
-
-        return 0;
-
-err_vmem_32_map_pageframe_nopg:
-err_page_directory_install_page_table:
-        page_table_uninit(pt);
-err_page_table_init:
-        pmem_unref_frames(pageframe_index(pt), 1);
-err_pmem_claim_frames:
-        return err;
-}
 
 void
 vmem_32_enable(const struct vmem_32* vmem32)
@@ -830,3 +703,126 @@ vmem_32_share_2nd_lvl_ps(struct vmem_32* dst_vmem32,
         return 0;
 }
 
+/*
+ * Public functions for Protected Mode setup
+ */
+
+int
+vmem_32_map_pageframe_nopg(struct vmem_32* vmem32, os_index_t pfindex,
+                           os_index_t pgindex, unsigned int flags)
+{
+    struct page_directory* pd = vmem32->pd;
+
+    /* get page table */
+
+    os_index_t ptindex = pagetable_index(page_address(pgindex));
+
+    struct page_table* pt =
+        pageframe_address(pde_get_pageframe_index(pd->entry[ptindex]));
+
+    if (!pt) {
+        // no page table present
+        return -ENOMEM;
+    }
+
+    int res = page_table_map_page_frame(pt,
+                                        pfindex,
+                                        pagetable_page_index(pgindex),
+                                        flags);
+    if (res < 0) {
+        goto err_page_table_map_page_frame;
+    }
+
+err_page_table_map_page_frame:
+    return res;
+}
+
+int
+vmem_32_alloc_page_table_nopg(struct vmem_32* vmem32, os_index_t ptindex,
+                              unsigned int flags)
+{
+    struct page_directory* pd = vmem32->pd;
+
+    if (pde_get_pageframe_index(pd->entry[ptindex])) {
+        return 0;       // page table already exists
+    }
+
+    os_index_t pfindex =
+        pmem_alloc_frames(pageframe_count(sizeof(struct page_table)));
+
+    if (!pfindex) {
+        return -ENOMEM;
+    }
+
+    struct page_table* pt = pageframe_address(pfindex);
+
+    int res = page_table_init(pt);
+
+    if (res < 0) {
+        goto err_page_table_init;
+    }
+
+    res = page_directory_install_page_table(pd, pfindex, ptindex, flags);
+
+    if (res < 0) {
+        goto err_page_directory_install_page_table;
+    }
+
+    return 0;
+
+err_page_directory_install_page_table:
+    page_table_uninit(pt);
+err_page_table_init:
+    pmem_unref_frames(pfindex, pageframe_count(sizeof(struct page_table)));
+    return res;
+}
+
+int
+vmem_32_install_tmp_nopg(struct vmem_32* vmem32)
+{
+    struct page_directory* pd = vmem32->pd;
+
+    struct page_table* pt = vmem_32_get_page_table_tmp();
+
+    int res = pmem_claim_frames(pageframe_index(pt), 1);
+
+    if (res < 0) {
+        return res;
+    }
+
+    res = page_table_init(pt);
+    if (res < 0) {
+        goto err_page_table_init;
+    }
+
+    os_index_t ptpfindex = page_index(pt);
+
+    const struct vmem_area* tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
+
+    os_index_t index = pagetable_index(page_address(tmp->pgindex));
+
+    res = page_directory_install_page_table(pd, ptpfindex, index,
+                                            PTE_FLAG_PRESENT |
+                                            PTE_FLAG_WRITEABLE);
+    if (res < 0) {
+        goto err_page_directory_install_page_table;
+    }
+
+    // map page-table page frame into kernel address space
+    res = vmem_32_map_pageframe_nopg(vmem32, ptpfindex, ptpfindex,
+                                     PTE_FLAG_PRESENT |
+                                     PTE_FLAG_WRITEABLE);
+    if (res < 0) {
+        goto err_vmem_32_map_pageframe_nopg;
+    }
+
+    return 0;
+
+err_vmem_32_map_pageframe_nopg:
+    page_directory_uninstall_page_table(pd, index);
+err_page_directory_install_page_table:
+    page_table_uninit(pt);
+err_page_table_init:
+    pmem_unref_frames(pageframe_index(pt), 1);
+    return res;
+}

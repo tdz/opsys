@@ -33,18 +33,6 @@ vmem_32_init(struct vmem_32* vmem32, struct page_directory* pd);
 void
 vmem_32_uninit(struct vmem_32* vmem32);
 
-int
-vmem_32_map_pageframe_nopg(struct vmem_32* vmem32,
-                           os_index_t pfindex,
-                           os_index_t pgindex, unsigned int flags);
-
-int
-vmem_32_alloc_page_table_nopg(struct vmem_32* vmem32,
-                              os_index_t ptindex, unsigned int flags);
-
-int
-vmem_32_install_tmp_nopg(struct vmem_32* vmem32);
-
 void
 vmem_32_enable(const struct vmem_32* vmem32);
 
@@ -73,3 +61,19 @@ int
 vmem_32_share_2nd_lvl_ps(struct vmem_32* dst_vmem32,
                          const struct vmem_32* src_vmem32,
                          os_index_t pgindex, size_t pgcount);
+
+/*
+ * Public functions for Protected Mode setup
+ */
+
+int
+vmem_32_map_pageframe_nopg(struct vmem_32* vmem32,
+                           os_index_t pfindex,
+                           os_index_t pgindex, unsigned int flags);
+
+int
+vmem_32_alloc_page_table_nopg(struct vmem_32* vmem32,
+                              os_index_t ptindex, unsigned int flags);
+
+int
+vmem_32_install_tmp_nopg(struct vmem_32* vmem32);

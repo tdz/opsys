@@ -29,28 +29,8 @@ struct vmem
         struct vmem_32   vmem_32;
 };
 
-int
-vmem_map_pageframes_nopg(struct vmem *vmem, os_index_t pfindex,
-                         os_index_t pgindex, size_t count, unsigned int flags);
-
-int
-vmem_alloc_page_tables_nopg(struct vmem *vmem, os_index_t ptindex,
-                            size_t ptcount, unsigned int flags);
-
-/**
- * \brief Install temporary-mappings hack
- * \param[in] as Address of vmem structure
- * \return 0 if successful; a negative error code otherwise
- *
- * The lowest page table in kernel memory resides in highest page frame of
- * identity-mapped low memory. This allows for temporary mappings by writing
- * to low-area page.
- */
-int
-vmem_install_tmp_nopg(struct vmem *vmem);
-
 /*
- * public functions
+ * Public functions
  */
 
 /**
@@ -106,7 +86,31 @@ vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
                       os_index_t pgindex, size_t pgcount);
 
 /*
- * fault handlers
+ * Public functions for Protected Mode setup
+ */
+
+int
+vmem_map_pageframes_nopg(struct vmem* vmem, os_index_t pfindex,
+                         os_index_t pgindex, size_t count, unsigned int flags);
+
+int
+vmem_alloc_page_tables_nopg(struct vmem* vmem, os_index_t ptindex,
+                            size_t ptcount, unsigned int flags);
+
+/**
+ * \brief Install temporary-mappings hack
+ * \param[in] as Address of vmem structure
+ * \return 0 if successful; a negative error code otherwise
+ *
+ * The lowest page table in kernel memory resides in highest page frame of
+ * identity-mapped low memory. This allows for temporary mappings by writing
+ * to low-area page.
+ */
+int
+vmem_install_tmp_nopg(struct vmem* vmem);
+
+/*
+ * Fault handlers
  */
 
 void

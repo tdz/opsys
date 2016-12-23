@@ -28,9 +28,9 @@
 #include "vmem.h"
 
 static int
-vmem_helper_flat_copy_areas(const struct vmem *src_as,
-                                     struct vmem *dst_as,
-                                     unsigned long pteflags)
+vmem_helper_flat_copy_areas(struct vmem *src_as,
+                            struct vmem *dst_as,
+                            unsigned long pteflags)
 {
         enum vmem_area_name name;
 

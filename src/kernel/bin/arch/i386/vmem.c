@@ -54,7 +54,7 @@ vmem_uninit(struct vmem* vmem)
 }
 
 void
-vmem_enable(const struct vmem *vmem)
+vmem_enable(struct vmem *vmem)
 {
         vmem_32_enable(&vmem->vmem_32);
 }
@@ -107,13 +107,13 @@ err_vmem_lookup_pageframe:
 }
 
 static size_t
-check_pages_empty(const struct vmem *vmem, os_index_t pgindex, size_t pgcount)
+check_pages_empty(struct vmem *vmem, os_index_t pgindex, size_t pgcount)
 {
         return vmem_32_check_empty_pages(&vmem->vmem_32, pgindex, pgcount);
 }
 
 static os_index_t
-find_empty_pages(const struct vmem *vmem, size_t npages,
+find_empty_pages(struct vmem *vmem, size_t npages,
                  os_index_t pgindex_beg, os_index_t pgindex_end)
 {
         /*
@@ -323,7 +323,7 @@ err_vmem_find_empty_pages:
 }
 
 int
-vmem_share_2nd_lvl_ps(struct vmem *dst_vmem, const struct vmem *src_vmem,
+vmem_share_2nd_lvl_ps(struct vmem *dst_vmem, struct vmem *src_vmem,
                       os_index_t pgindex, size_t pgcount)
 {
         return vmem_32_share_2nd_lvl_ps(&dst_vmem->vmem_32,

@@ -46,7 +46,7 @@ void
 vmem_uninit(struct vmem *vmem);
 
 void
-vmem_enable(const struct vmem *vmem);
+vmem_enable(struct vmem *vmem);
 
 int
 vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex,
@@ -82,7 +82,7 @@ vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
                         os_index_t pg_index_max, size_t pgcount);
 
 int
-vmem_share_2nd_lvl_ps(struct vmem *dst_as, const struct vmem *src_as,
+vmem_share_2nd_lvl_ps(struct vmem *dst_as, struct vmem *src_as,
                       os_index_t pgindex, size_t pgcount);
 
 /*

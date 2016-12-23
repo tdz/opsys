@@ -32,128 +32,134 @@
 #include "vmem.h"
 #include "vmemarea.h"
 
+/*
+ * Page-table mappings
+ */
+
 static struct page_table *
-vmem_32_get_page_table_tmp(void)
+get_temp_page_table(void)
 {
-        const struct vmem_area *low, *tmp;
+    const struct vmem_area* low = vmem_area_get_by_name(VMEM_AREA_KERNEL_LOW);
+    const struct vmem_area* tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
 
-        low = vmem_area_get_by_name(VMEM_AREA_KERNEL_LOW);
-        tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
+    return page_address(low->pgindex + low->npages - (tmp->npages >> 10));
+}
 
-        return page_address(low->pgindex + low->npages - (tmp->npages >> 10));
+static struct page_table*
+claim_and_init_temp_page_table(void)
+{
+    struct page_table* pt = get_temp_page_table();
+    if (!pt) {
+        return NULL;
+    }
+
+    int res = pmem_claim_frames(pageframe_index(pt), 1);
+    if (res < 0) {
+        goto err_pmem_claim_frames;
+    }
+
+    res = page_table_init(pt);
+    if (res < 0) {
+        goto err_page_table_init;
+    }
+
+    return pt;
+
+err_page_table_init:
+    pmem_unref_frames(pageframe_index(pt), 1);
+err_pmem_claim_frames:
+    return NULL;
 }
 
 static os_index_t
-vmem_32_get_page_tmp(size_t i)
+get_temp_page(size_t i)
 {
-        const struct vmem_area *tmp =
-                vmem_area_get_by_name(VMEM_AREA_TMPMAP);
+    const struct vmem_area* tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
 
-        return tmp->pgindex + i;
+    return tmp->pgindex + i;
 }
 
-static int
-vmem_32_page_is_tmp(os_index_t pgindex)
+static bool
+page_is_temp(os_index_t pgindex)
 {
-        const struct vmem_area *tmp =
-                vmem_area_get_by_name(VMEM_AREA_TMPMAP);
+    const struct vmem_area* tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
 
-        return vmem_area_contains_page(tmp, pgindex);
-}
-
-static os_index_t
-vmem_32_get_index_tmp(os_index_t pgindex)
-{
-        const struct vmem_area *tmp =
-                vmem_area_get_by_name(VMEM_AREA_TMPMAP);
-
-        return pgindex - tmp->pgindex;
+    return vmem_area_contains_page(tmp, pgindex);
 }
 
 static os_index_t
-vmem_32_install_page_frame_tmp(os_index_t pfindex)
+get_temp_index(os_index_t pgindex)
 {
-        volatile pde_type *ptebeg, *pteend, *pte;
-        struct page_table *pt;
-        os_index_t pgindex;
+    const struct vmem_area *tmp = vmem_area_get_by_name(VMEM_AREA_TMPMAP);
 
-        pt = vmem_32_get_page_table_tmp();
-
-        /*
-         * find empty temporary page
-         */
-
-        ptebeg = pt->entry;
-        pteend = pt->entry + ARRAY_NELEMS(pt->entry);
-        pte = ptebeg;
-
-        while ((pte < pteend) && (pte_get_pageframe_index(*pte)))
-        {
-                ++pte;
-        }
-
-        if (!(pteend - pte))
-        {
-                /*
-                 * none found
-                 */
-                return -EBUSY;
-        }
-
-        /*
-         * establish mapping to page frame
-         */
-
-        pmem_ref_frames(pfindex, 1);
-
-        *pte = pte_create(pfindex, PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
-
-        pgindex = vmem_32_get_page_tmp(pte - ptebeg);
-
-        mmu_flush_tlb_entry(page_address(pgindex));
-
-        return pgindex;
+    return pgindex - tmp->pgindex;
 }
 
 static os_index_t
-vmem_32_uninstall_page_tmp(os_index_t pgindex)
+install_temp_page_frame(os_index_t pfindex)
 {
-        struct page_table *pt;
-        os_index_t index;
-        int err;
+    struct page_table* pt = get_temp_page_table();
 
-        if (!vmem_32_page_is_tmp(pgindex))
-        {
-                /*
-                 * not temporarily mapped
-                 */
-                return -EINVAL;
-        }
+    /* find empty temporary page
+     */
 
-        pt = vmem_32_get_page_table_tmp();
+    volatile pde_type* ptebeg = pt->entry;
+    volatile pde_type* pteend = pt->entry + ARRAY_NELEMS(pt->entry);
+    volatile pde_type* pte = ptebeg;
 
-        index = vmem_32_get_index_tmp(pgindex);
+    while ((pte < pteend) && (pte_get_pageframe_index(*pte))) {
+        ++pte;
+    }
 
-        /*
-         * finish access before unmapping page
-         */
-        rwmembar();
+    if (!(pteend - pte)) {
+        /* none found */
+        return -EBUSY;
+    }
 
-        /*
-         * remove mapping
-         */
-        if ((err = page_table_unmap_page_frame(pt, index)) < 0)
-        {
-                goto err_page_table_unmap_page_frame;
-        }
+    /* establish mapping to page frame
+     */
 
-        mmu_flush_tlb_entry(page_address(pgindex));
-        mmu_flush_tlb();
+    pmem_ref_frames(pfindex, 1);
 
-        return 0;
+    *pte = pte_create(pfindex, PTE_FLAG_PRESENT|PTE_FLAG_WRITEABLE);
+
+    os_index_t pgindex = get_temp_page(pte - ptebeg);
+
+    mmu_flush_tlb_entry(page_address(pgindex));
+
+    return pgindex;
+}
+
+static os_index_t
+uninstall_temp_page(os_index_t pgindex)
+{
+    if (!page_is_temp(pgindex)) {
+        /* not temporarily mapped */
+        return -EINVAL;
+    }
+
+    os_index_t index = get_temp_index(pgindex);
+
+    /* finish access before unmapping page */
+    rwmembar();
+
+    /* remove mapping
+     */
+
+    struct page_table* pt = get_temp_page_table();
+
+    int res = page_table_unmap_page_frame(pt, index);
+    if (res < 0) {
+        goto err_page_table_unmap_page_frame;
+    }
+
+    mmu_flush_tlb_entry(page_address(pgindex));
+    mmu_flush_tlb();
+
+    return 0;
 
 err_page_table_unmap_page_frame:
-        return err;
+    return res;
 }
 
 static struct page_table*
@@ -169,10 +175,10 @@ alloc_and_init_page_table(struct vmem_32* vmem32, unsigned long i)
         return NULL;
     }
 
-    os_index_t pgindex = vmem_32_install_page_frame_tmp(pfindex);
+    os_index_t pgindex = install_temp_page_frame(pfindex);
 
     if (pgindex < 0) {
-        goto err_vmem_32_install_page_frame_tmp;
+        goto err_install_temp_page_frame;
     }
 
     /* init and install page table */
@@ -204,8 +210,8 @@ alloc_and_init_page_table(struct vmem_32* vmem32, unsigned long i)
 err_page_directory_install_page_table:
 err_page_table_init:
 err_page_address:
-    vmem_32_uninstall_page_tmp(pgindex);
-err_vmem_32_install_page_frame_tmp:
+    uninstall_temp_page(pgindex);
+err_install_temp_page_frame:
     pmem_unref_frames(pfindex, pfcount);
     return NULL;
 }
@@ -220,7 +226,7 @@ map_page_table(struct vmem_32* vmem32, unsigned long i, bool init_if_none)
     }
 
     /* map page-table page frames */
-    os_index_t pgindex = vmem_32_install_page_frame_tmp(pfindex);
+    os_index_t pgindex = install_temp_page_frame(pfindex);
 
     if (pgindex < 0) {
         return NULL;
@@ -235,14 +241,14 @@ map_page_table(struct vmem_32* vmem32, unsigned long i, bool init_if_none)
     return pt;
 
 err_page_address:
-    vmem_32_uninstall_page_tmp(pgindex);
+    uninstall_temp_page(pgindex);
     return NULL;
 }
 
 static void
 unmap_page_table(struct vmem_32* vmem32, struct page_table* pt)
 {
-    vmem_32_uninstall_page_tmp(page_index(pt));
+    uninstall_temp_page(page_index(pt));
 }
 
 /*
@@ -600,19 +606,9 @@ err_page_table_init:
 int
 vmem_32_install_tmp_nopg(struct vmem_32* vmem32)
 {
-    struct page_directory* pd = vmem32->pd;
-
-    struct page_table* pt = vmem_32_get_page_table_tmp();
-
-    int res = pmem_claim_frames(pageframe_index(pt), 1);
-
-    if (res < 0) {
-        return res;
-    }
-
-    res = page_table_init(pt);
-    if (res < 0) {
-        goto err_page_table_init;
+    struct page_table* pt = claim_and_init_temp_page_table();
+    if (!pt) {
+        return -ENOMEM;
     }
 
     os_index_t ptpfindex = page_index(pt);
@@ -621,9 +617,9 @@ vmem_32_install_tmp_nopg(struct vmem_32* vmem32)
 
     os_index_t index = pagetable_index(page_address(tmp->pgindex));
 
-    res = page_directory_install_page_table(pd, ptpfindex, index,
-                                            PTE_FLAG_PRESENT |
-                                            PTE_FLAG_WRITEABLE);
+    int res = page_directory_install_page_table(vmem32->pd, ptpfindex, index,
+                                                PTE_FLAG_PRESENT |
+                                                PTE_FLAG_WRITEABLE);
     if (res < 0) {
         goto err_page_directory_install_page_table;
     }
@@ -639,10 +635,7 @@ vmem_32_install_tmp_nopg(struct vmem_32* vmem32)
     return 0;
 
 err_vmem_32_map_pageframe_nopg:
-    page_directory_uninstall_page_table(pd, index);
+    page_directory_uninstall_page_table(vmem32->pd, index);
 err_page_directory_install_page_table:
-    page_table_uninit(pt);
-err_page_table_init:
-    pmem_unref_frames(pageframe_index(pt), 1);
     return res;
 }

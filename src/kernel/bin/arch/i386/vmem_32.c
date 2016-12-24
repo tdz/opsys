@@ -256,16 +256,34 @@ unmap_page_table(struct vmem_32* vmem32, struct page_table* pt)
  */
 
 int
-vmem_32_init(struct vmem_32* vmem32, struct page_directory* pd)
+vmem_32_init(struct vmem_32* vmem32,
+             void* (alloc_aligned)(size_t, void*),
+             void (*unref_aligned)(void*, size_t, void*), void* alloc_data)
 {
+    struct page_directory* pd = alloc_aligned(sizeof(*pd), alloc_data);
+    if (!pd) {
+        return -ENOMEM;
+    }
+
+    int res = page_directory_init(pd);
+    if (res < 0) {
+        goto err_page_directory_init;
+    }
+
     vmem32->pd = pd;
 
     return 0;
+
+err_page_directory_init:
+    unref_aligned(pd, sizeof(*pd), alloc_data);
+    return res;
 }
 
 void
 vmem_32_uninit(struct vmem_32* vmem32)
-{ }
+{
+    // TODO: Unmap page directory
+}
 
 size_t
 vmem_32_check_empty_pages(struct vmem_32* vmem32, os_index_t pgindex, size_t pgcount)

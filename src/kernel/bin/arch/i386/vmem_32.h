@@ -28,7 +28,9 @@ struct vmem_32 {
 };
 
 int
-vmem_32_init(struct vmem_32* vmem32, struct page_directory* pd);
+vmem_32_init(struct vmem_32* vmem32,
+             void* (alloc_aligned)(size_t, void*),
+             void (*unref_aligned)(void*, size_t, void*), void* alloc_data);
 
 void
 vmem_32_uninit(struct vmem_32* vmem32);

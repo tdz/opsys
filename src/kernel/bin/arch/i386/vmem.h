@@ -37,11 +37,14 @@ struct vmem
 /**
  * \brief init vmem structure
  * \param[in] as address of vmem structure
- * \param[in] tlps address of top-level paging structure
+ * \param[in] alloc_aligned function for allocating contiguous page-aligned memory
+ * \param[in] unref_aligned function for releasing allocated memory
  * \return 0 if successful, or a negative error code otherwise
  */
 int
-vmem_init(struct vmem *vmem, void *tlps);
+vmem_init(struct vmem *vmem,
+          void* (alloc_aligned)(size_t, void*),
+          void (*unref_aligned)(void*, size_t, void*), void* alloc_data);
 
 int
 vmem_init_from_parent(struct vmem* vmem, struct vmem* parent);

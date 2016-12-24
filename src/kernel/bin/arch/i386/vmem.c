@@ -34,14 +34,17 @@
  */
 
 int
-vmem_init(struct vmem* vmem, void* tlps)
+vmem_init(struct vmem* vmem,
+          void* (alloc_aligned)(size_t, void*),
+          void (*unref_aligned)(void*, size_t, void*), void* alloc_data)
 {
     int res = semaphore_init(&vmem->sem, 1);
     if (res < 0) {
         return res;
     }
 
-    res = vmem_32_init(&vmem->vmem_32, tlps);
+    res = vmem_32_init(&vmem->vmem_32, alloc_aligned, unref_aligned,
+                       alloc_data);
     if (res < 0) {
         goto err_vmem_32_init;
     }
@@ -79,35 +82,36 @@ flat_copy_areas(struct vmem* dst_vmem,
     return 0;
 }
 
-int
-vmem_init_from_parent(struct vmem* vmem, struct vmem* parent)
+static void*
+alloc_pages(size_t siz, void* data)
 {
-    /* create page directory (has to be at page boundary) */
+    struct vmem* vmem = data;
 
-    struct page_directory* pd;
-    os_index_t pgindex = vmem_alloc_pages_in_area(parent,
+    os_index_t pgindex = vmem_alloc_pages_in_area(vmem,
                                                   VMEM_AREA_KERNEL,
-                                                  page_count(0, sizeof(*pd)),
+                                                  page_count(0, siz),
                                                   PTE_FLAG_PRESENT |
                                                   PTE_FLAG_WRITEABLE);
     if (pgindex < 0) {
-        return (int)pgindex;
+        return NULL;
     }
 
-    pd = page_address(pgindex);
+    return page_address(pgindex);
+}
 
-    int res = page_directory_init(pd);
+static void
+unref_pages(void* ptr, size_t siz, void* data)
+{
+    // TODO: unref pages
+}
+
+int
+vmem_init_from_parent(struct vmem* vmem, struct vmem* parent)
+{
+    int res = vmem_init(vmem, alloc_pages, unref_pages, parent);
     if (res < 0) {
-        goto err_page_directory_init;
+        return res;
     }
-
-    /* init address space */
-    res = vmem_init(vmem, pd);
-    if (res < 0) {
-        goto err_vmem_init;
-    }
-
-    /* flat-copy page directory from parent */
 
     res = flat_copy_areas(vmem, parent, VMEM_AREA_FLAG_GLOBAL);
     if (res < 0) {
@@ -118,10 +122,6 @@ vmem_init_from_parent(struct vmem* vmem, struct vmem* parent)
 
 err_flat_copy_areas:
     vmem_uninit(vmem);
-err_vmem_init:
-    page_directory_uninit(pd);
-err_page_directory_init:
-    /* TODO: unmap page-directory pages */
     return res;
 }
 
@@ -438,36 +438,23 @@ vmem_empty_pages_in_area(struct vmem* vmem,
  * Public functions for Protected Mode setup
  */
 
-static struct page_directory*
-create_page_directory(void)
+static void*
+alloc_frames(size_t siz, void* data)
 {
-    unsigned long nframes = pageframe_count(sizeof(struct page_directory));
+    unsigned long pfcount = pageframe_count(siz);
 
-    unsigned long pfindex = pmem_alloc_frames(nframes);
+    unsigned long pfindex = pmem_alloc_frames(pfcount);
     if (!pfindex) {
         return NULL;
     }
-
-    struct page_directory* pd =
-        (struct page_directory*)pageframe_offset(pfindex);
-
-    int res = page_directory_init(pd);
-    if (res < 0) {
-        goto err_page_directory_init;
-    }
-
-    return pd;
-
-err_page_directory_init:
-    pmem_unref_frames(pfindex, nframes);
-    return NULL;
+    return (void*)(uintptr_t)pageframe_offset(pfindex);
 }
 
 static void
-destroy_page_directory(struct page_directory* pd)
+unref_frames(void* ptr, size_t siz, void* data)
 {
-    page_directory_uninit(pd);
-    pmem_unref_frames(pageframe_index(pd), pageframe_count(sizeof(*pd)));
+    pmem_unref_frames(pageframe_index(ptr),
+                      pageframe_span(ptr, siz));
 }
 
 int
@@ -475,14 +462,9 @@ vmem_init_nopg(struct vmem* vmem)
 {
     /* init vmem data structure for kernel task */
 
-    struct page_directory* pd = create_page_directory();
-    if (!pd) {
-        return -ENOMEM;
-    }
-
-    int res = vmem_init(vmem, pd);
+    int res = vmem_init(vmem, alloc_frames, unref_frames, NULL);
     if (res < 0) {
-        goto err_vmem_init;
+        return res;
     }
 
     /* install page tables in all kernel areas */
@@ -583,8 +565,6 @@ err_vmem_map_pageframes_nopg_pollute:
 err_vmem_map_pageframes_nopg_identity:
 err_vmem_alloc_page_tables_nopg:
     vmem_uninit(vmem);
-err_vmem_init:
-    destroy_page_directory(pd);
     return res;
 }
 

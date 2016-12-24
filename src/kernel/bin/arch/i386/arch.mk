@@ -16,7 +16,6 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         pte.c \
         tcbregs.c \
         tcbregs.S \
-        vmem.c \
         vmem_32.c \
 	)
 

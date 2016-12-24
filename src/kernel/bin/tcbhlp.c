@@ -22,7 +22,7 @@
 #include "pte.h"
 #include "task.h"
 #include "tcb.h"
-#include "vmemhlp.h"
+#include "vmem.h"
 
 int
 tcb_helper_allocate_tcb(struct task *tsk, void *stack, struct tcb **tcb)
@@ -30,11 +30,11 @@ tcb_helper_allocate_tcb(struct task *tsk, void *stack, struct tcb **tcb)
         int err;
         long pgindex;
 
-        pgindex = vmem_helper_alloc_pages_in_area(tsk->as,
-                                                  VMEM_AREA_KERNEL,
-                                                  page_count(0, sizeof(*tcb)),
-                                                  PTE_FLAG_PRESENT|
-                                                  PTE_FLAG_WRITEABLE);
+        pgindex = vmem_alloc_pages_in_area(tsk->as,
+                                           VMEM_AREA_KERNEL,
+                                           page_count(0, sizeof(*tcb)),
+                                           PTE_FLAG_PRESENT|
+                                           PTE_FLAG_WRITEABLE);
         if (pgindex < 0)
         {
                 err = pgindex;
@@ -66,11 +66,11 @@ tcb_helper_allocate_tcb_and_stack(struct task *tsk, size_t stackpages,
         int err;
         void *stack;
 
-        pgindex = vmem_helper_alloc_pages_in_area(tsk->as,
-                                                  VMEM_AREA_USER,
-                                                  stackpages,
-                                                  PTE_FLAG_PRESENT|
-                                                  PTE_FLAG_WRITEABLE);
+        pgindex = vmem_alloc_pages_in_area(tsk->as,
+                                           VMEM_AREA_USER,
+                                           stackpages,
+                                           PTE_FLAG_PRESENT|
+                                           PTE_FLAG_WRITEABLE);
         if (pgindex < 0)
         {
                 err = pgindex;
@@ -112,12 +112,12 @@ tcb_helper_run_user_thread(struct tcb *cur_tcb, struct tcb *usr_tcb, void *ip)
         int err;
         os_index_t stackpage;
 
-        stackpage = vmem_helper_map_pages_in_area(cur_tcb->task->as,
-                                                  VMEM_AREA_KERNEL,
-                                                  usr_tcb->task->as,
-                                                  page_index(usr_tcb->stack-PAGE_SIZE), 1,
-                                                  PTE_FLAG_PRESENT |
-                                                  PTE_FLAG_WRITEABLE);
+        stackpage = vmem_map_pages_in_area(cur_tcb->task->as,
+                                           VMEM_AREA_KERNEL,
+                                           usr_tcb->task->as,
+                                           page_index(usr_tcb->stack-PAGE_SIZE), 1,
+                                           PTE_FLAG_PRESENT |
+                                           PTE_FLAG_WRITEABLE);
         if (stackpage < 0)
         {
                 err = stackpage;

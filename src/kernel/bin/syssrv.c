@@ -21,9 +21,9 @@
 #include <errno.h>
 #include "console.h"
 #include "ipc.h"
-#include "tcb.h"
 #include "task.h"
-#include "vmemhlp.h"
+#include "tcb.h"
+#include "vmem.h"
 
 static int
 system_srv_handle_msg(struct ipc_msg *msg, struct tcb *self)
@@ -80,9 +80,9 @@ system_srv_start(struct tcb *self)
 
                 msg.flags = IPC_MSG_FLAGS_MMAP;
                 msg.msg1 = 1;
-                msg.msg0 = vmem_helper_empty_pages_in_area(self->task->as,
-                                                           VMEM_AREA_KERNEL,
-                                                           msg.msg1);
+                msg.msg0 = vmem_empty_pages_in_area(self->task->as,
+                                                    VMEM_AREA_KERNEL,
+                                                    msg.msg1);
 
                 console_printf("%s:%x syssrv=%x.\n", __FILE__, __LINE__,
                                self);

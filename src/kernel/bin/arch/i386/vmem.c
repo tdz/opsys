@@ -18,8 +18,11 @@
  */
 
 #include "vmem.h"
+#include <arch/i386/page.h>
 #include <errno.h>
 #include "cpu.h"
+#include "pagedir.h"
+#include "pte.h"
 #include "vmem_32.h"
 
 /*
@@ -43,6 +46,78 @@ vmem_init(struct vmem* vmem, void* tlps)
 
 err_vmem_32_init:
     semaphore_uninit(&vmem->sem);
+    return res;
+}
+
+static int
+share_2nd_lvl_ps(struct vmem* dst_vmem, struct vmem* src_vmem,
+                 os_index_t pgindex, size_t pgcount)
+{
+    return vmem_32_share_2nd_lvl_ps(&dst_vmem->vmem_32,
+                                    &src_vmem->vmem_32,
+                                    pgindex, pgcount);
+}
+
+static int
+flat_copy_areas(struct vmem* dst_vmem,
+                struct vmem* src_vmem,
+                unsigned long pteflags)
+{
+    for (enum vmem_area_name name = 0; name < LAST_VMEM_AREA; ++name) {
+
+        const struct vmem_area* area = vmem_area_get_by_name(name);
+
+        if (area->flags & pteflags) {
+            share_2nd_lvl_ps(dst_vmem, src_vmem, area->pgindex, area->npages);
+        }
+    }
+
+    return 0;
+}
+
+int
+vmem_init_from_parent(struct vmem* vmem, struct vmem* parent)
+{
+    /* create page directory (has to be at page boundary) */
+
+    struct page_directory* pd;
+    os_index_t pgindex = vmem_alloc_pages_in_area(parent,
+                                                  VMEM_AREA_KERNEL,
+                                                  page_count(0, sizeof(*pd)),
+                                                  PTE_FLAG_PRESENT |
+                                                  PTE_FLAG_WRITEABLE);
+    if (pgindex < 0) {
+        return (int)pgindex;
+    }
+
+    pd = page_address(pgindex);
+
+    int res = page_directory_init(pd);
+    if (res < 0) {
+        goto err_page_directory_init;
+    }
+
+    /* init address space */
+    res = vmem_init(vmem, pd);
+    if (res < 0) {
+        goto err_vmem_init;
+    }
+
+    /* flat-copy page directory from parent */
+
+    res = flat_copy_areas(vmem, parent, VMEM_AREA_FLAG_GLOBAL);
+    if (res < 0) {
+        goto err_flat_copy_areas;
+    }
+
+    return 0;
+
+err_flat_copy_areas:
+    vmem_uninit(vmem);
+err_vmem_init:
+    page_directory_uninit(pd);
+err_page_directory_init:
+    /* TODO: unmap page-directory pages */
     return res;
 }
 
@@ -194,6 +269,18 @@ err_vmem_find_empty_pages:
         return err;
 }
 
+os_index_t
+vmem_alloc_pages_in_area(struct vmem* vmem, enum vmem_area_name areaname,
+                         size_t npages, unsigned int pteflags)
+{
+    const struct vmem_area* area = vmem_area_get_by_name(areaname);
+
+    return vmem_alloc_pages_within(vmem,
+                                   area->pgindex,
+                                   area->pgindex + area->npages, npages,
+                                   pteflags);
+}
+
 static void
 semaphore_enter_ordered(struct semaphore *sem1, struct semaphore *sem2)
 {
@@ -291,6 +378,22 @@ err_vmem_find_empty_pages:
 }
 
 os_index_t
+vmem_map_pages_in_area(struct vmem* dst_vmem, enum vmem_area_name dst_areaname,
+                       struct vmem* src_vmem,
+                       os_index_t src_pgindex, size_t pgcount,
+                       unsigned long dst_pteflags)
+{
+    const struct vmem_area* dst_area = vmem_area_get_by_name(dst_areaname);
+
+    return vmem_map_pages_within(dst_vmem,
+                                 dst_area->pgindex,
+                                 dst_area->pgindex + dst_area->npages,
+                                 src_vmem,
+                                 src_pgindex, pgcount,
+                                 dst_pteflags);
+}
+
+os_index_t
 vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
                         os_index_t pg_index_max, size_t pgcount)
 {
@@ -316,13 +419,15 @@ err_vmem_find_empty_pages:
         return err;
 }
 
-int
-vmem_share_2nd_lvl_ps(struct vmem *dst_vmem, struct vmem *src_vmem,
-                      os_index_t pgindex, size_t pgcount)
+os_index_t
+vmem_empty_pages_in_area(struct vmem* vmem,
+                         enum vmem_area_name areaname, size_t pgcount)
 {
-        return vmem_32_share_2nd_lvl_ps(&dst_vmem->vmem_32,
-                                        &src_vmem->vmem_32,
-                                        pgindex, pgcount);
+    const struct vmem_area* area = vmem_area_get_by_name(areaname);
+
+    return vmem_empty_pages_within(vmem, area->pgindex,
+                                         area->pgindex + area->npages,
+                                         pgcount);
 }
 
 /*

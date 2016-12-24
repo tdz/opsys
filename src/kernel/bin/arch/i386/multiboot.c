@@ -47,7 +47,6 @@
 #include "syscall.h"
 #include "sysexec.h"
 #include "vmem.h"
-#include "vmemhlp.h"
 
 /*
  * Virtual address space for kernel task

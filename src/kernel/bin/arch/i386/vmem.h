@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include "semaphore.h"
 #include "vmem_32.h"
+#include "vmemarea.h"
 
 struct vmem
 {
@@ -41,6 +42,9 @@ struct vmem
  */
 int
 vmem_init(struct vmem *vmem, void *tlps);
+
+int
+vmem_init_from_parent(struct vmem* vmem, struct vmem* parent);
 
 void
 vmem_uninit(struct vmem *vmem);
@@ -63,6 +67,12 @@ vmem_alloc_pages_within(struct vmem *vmem, os_index_t pg_index_min,
                         os_index_t pg_index_max, size_t pg_count,
                         unsigned int flags);
 
+os_index_t
+vmem_alloc_pages_in_area(struct vmem* vmem,
+                         enum vmem_area_name areaname,
+                         size_t pgcount,
+                         unsigned int flags);
+
 int
 vmem_map_pages_at(struct vmem *dst_as, os_index_t dst_pgindex,
                   struct vmem *src_as, os_index_t src_pgindex,
@@ -75,12 +85,19 @@ vmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
                       unsigned long dst_pteflags);
 
 os_index_t
+vmem_map_pages_in_area(struct vmem *dst_vmem,
+                       enum vmem_area_name dst_areaname,
+                       struct vmem *src_vmem,
+                       os_index_t src_pgindex, size_t pgcount,
+                       unsigned long dst_pteflags);
+
+os_index_t
 vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
                         os_index_t pg_index_max, size_t pgcount);
 
-int
-vmem_share_2nd_lvl_ps(struct vmem *dst_as, struct vmem *src_as,
-                      os_index_t pgindex, size_t pgcount);
+os_index_t
+vmem_empty_pages_in_area(struct vmem* vmem,
+                         enum vmem_area_name areaname, size_t pgcount);
 
 /*
  * Public functions for Protected Mode setup

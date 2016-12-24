@@ -24,7 +24,6 @@
 #include "pte.h"
 #include "task.h"
 #include "vmem.h"
-#include "vmemhlp.h"
 
 int
 task_helper_allocate_task(struct vmem* kernel_as, struct task** task_out)
@@ -84,6 +83,28 @@ err_kmalloc_tsk:
 #include "console.h"
 
 int
+allocate_vmem_from_parent(struct vmem* parent, struct vmem** vmem_out)
+{
+    struct vmem* vmem = kmalloc(sizeof(*vmem));
+    if (!vmem) {
+        return -ENOMEM;
+    }
+
+    int res = vmem_init_from_parent(vmem, parent);
+    if (res < 0) {
+        goto err_vmem_init_from_parent;
+    }
+
+    *vmem_out = vmem;
+
+    return 0;
+
+err_vmem_init_from_parent:
+    kfree(vmem);
+    return res;
+}
+
+int
 task_helper_init_task_from_parent(const struct task *parent, struct task *tsk)
 {
         int err;
@@ -93,8 +114,7 @@ task_helper_init_task_from_parent(const struct task *parent, struct task *tsk)
          * create address space from parent
          */
 
-        err = vmem_helper_allocate_vmem_from_parent
-                (parent->as, &as);
+        err = allocate_vmem_from_parent(parent->as, &as);
         if (err < 0)
         {
                 goto err_vmem_helper_allocate_vmem_from_parent;

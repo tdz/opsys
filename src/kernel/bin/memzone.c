@@ -23,7 +23,7 @@
 #include "bitset.h"
 #include "page.h"
 #include "pte.h"
-#include "vmemhlp.h"
+#include "vmem.h"
 
 enum
 {
@@ -141,11 +141,11 @@ memzone_find_unused(struct memzone *mz, size_t nchunks)
 
                 pgcount = page_count(0, nchunks * mz->chunksize);
 
-                pgindex = vmem_helper_alloc_pages_in_area(mz->as,
-                                                      mz->areaname,
-                                                      pgcount,
-                                                      PTE_FLAG_PRESENT |
-                                                      PTE_FLAG_WRITEABLE);
+                pgindex = vmem_alloc_pages_in_area(mz->as,
+                                                   mz->areaname,
+                                                   pgcount,
+                                                   PTE_FLAG_PRESENT |
+                                                   PTE_FLAG_WRITEABLE);
                 if (pgindex < 0)
                 {
                         err = pgindex;
@@ -185,9 +185,9 @@ memzone_init(struct memzone *mz,
 
         memsz = page_memory(area->npages);
 
-        pgindex = vmem_helper_alloc_pages_in_area(as, areaname, 1024,       /* one largepage */
-                                              PTE_FLAG_PRESENT |
-                                              PTE_FLAG_WRITEABLE);
+        pgindex = vmem_alloc_pages_in_area(as, areaname, 1024,       /* one largepage */
+                                           PTE_FLAG_PRESENT |
+                                           PTE_FLAG_WRITEABLE);
         if (pgindex < 0)
         {
                 err = pgindex;

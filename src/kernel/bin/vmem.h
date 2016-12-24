@@ -24,10 +24,9 @@
 #include "vmem_32.h"
 #include "vmemarea.h"
 
-struct vmem
-{
-        struct semaphore sem; /**< lock of address-space data structure */
-        struct vmem_32   vmem_32;
+struct vmem {
+    struct semaphore sem; /**< lock of address-space data structure */
+    struct vmem_32   vmem_32;
 };
 
 /*
@@ -42,7 +41,7 @@ struct vmem
  * \return 0 if successful, or a negative error code otherwise
  */
 int
-vmem_init(struct vmem *vmem,
+vmem_init(struct vmem* vmem,
           void* (alloc_aligned)(size_t, void*),
           void (*unref_aligned)(void*, size_t, void*), void* alloc_data);
 
@@ -50,25 +49,24 @@ int
 vmem_init_from_parent(struct vmem* vmem, struct vmem* parent);
 
 void
-vmem_uninit(struct vmem *vmem);
+vmem_uninit(struct vmem* vmem);
 
 int
-vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex,
-                                                   os_index_t pgindex,
-                                                   size_t pgcount,
-                                                   unsigned int flags);
+vmem_alloc_frames(struct vmem* vmem,
+                  os_index_t pfindex, os_index_t pgindex, size_t pgcount,
+                  unsigned int flags);
 
 os_index_t
-vmem_lookup_frame(struct vmem *vmem, os_index_t pgindex);
+vmem_lookup_frame(struct vmem* vmem, os_index_t pgindex);
 
 os_index_t
-vmem_alloc_pages_at(struct vmem *vmem, os_index_t pg_index, size_t pg_count,
+vmem_alloc_pages_at(struct vmem* vmem, os_index_t pg_index, size_t pg_count,
                     unsigned int flags);
 
 os_index_t
-vmem_alloc_pages_within(struct vmem *vmem, os_index_t pg_index_min,
-                        os_index_t pg_index_max, size_t pg_count,
-                        unsigned int flags);
+vmem_alloc_pages_within(struct vmem* vmem,
+                        os_index_t pg_index_min, os_index_t pg_index_max,
+                        size_t pg_count, unsigned int flags);
 
 os_index_t
 vmem_alloc_pages_in_area(struct vmem* vmem,
@@ -77,25 +75,25 @@ vmem_alloc_pages_in_area(struct vmem* vmem,
                          unsigned int flags);
 
 int
-vmem_map_pages_at(struct vmem *dst_as, os_index_t dst_pgindex,
-                  struct vmem *src_as, os_index_t src_pgindex,
+vmem_map_pages_at(struct vmem* dst_as, os_index_t dst_pgindex,
+                  struct vmem* src_as, os_index_t src_pgindex,
                   size_t pgcount, unsigned long pteflags);
 
 os_index_t
-vmem_map_pages_within(struct vmem *dst_as, os_index_t pg_index_min,
-                      os_index_t pg_index_max, struct vmem *src_as,
+vmem_map_pages_within(struct vmem* dst_as, os_index_t pg_index_min,
+                      os_index_t pg_index_max, struct vmem* src_as,
                       os_index_t src_pgindex, size_t pgcount,
                       unsigned long dst_pteflags);
 
 os_index_t
-vmem_map_pages_in_area(struct vmem *dst_vmem,
+vmem_map_pages_in_area(struct vmem* dst_vmem,
                        enum vmem_area_name dst_areaname,
-                       struct vmem *src_vmem,
+                       struct vmem* src_vmem,
                        os_index_t src_pgindex, size_t pgcount,
                        unsigned long dst_pteflags);
 
 os_index_t
-vmem_empty_pages_within(struct vmem *vmem, os_index_t pg_index_min,
+vmem_empty_pages_within(struct vmem* vmem, os_index_t pg_index_min,
                         os_index_t pg_index_max, size_t pgcount);
 
 os_index_t
@@ -152,7 +150,7 @@ vmem_enable_paging_nopg(struct vmem* vmem);
  */
 
 void
-vmem_segfault_handler(void *ip);
+vmem_segfault_handler(void* ip);
 
 void
-vmem_pagefault_handler(void *ip, void *addr, unsigned long errcode);
+vmem_pagefault_handler(void* ip, void* addr, unsigned long errcode);

@@ -49,12 +49,11 @@ struct vmem_area
         unsigned int flags;
 };
 
-const struct vmem_area *
+const struct vmem_area*
 vmem_area_get_by_name(enum vmem_area_name name);
 
-const struct vmem_area *
+const struct vmem_area*
 vmem_area_get_by_page(os_index_t pgindex);
 
 int
-vmem_area_contains_page(const struct vmem_area *area,
-                           os_index_t pgindex);
+vmem_area_contains_page(const struct vmem_area* area, os_index_t pgindex);

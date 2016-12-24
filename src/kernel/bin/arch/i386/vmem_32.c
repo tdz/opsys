@@ -288,169 +288,161 @@ vmem_32_uninit(struct vmem_32* vmem32)
 size_t
 vmem_32_check_empty_pages(struct vmem_32* vmem32, os_index_t pgindex, size_t pgcount)
 {
-        os_index_t ptindex;
-        size_t ptcount, nempty;
+    os_index_t ptindex = pagetable_index(page_address(pgindex));
+    size_t     ptcount = pagetable_count(page_address(pgindex),
+                                         page_memory(pgcount));
 
-        ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+    size_t nempty = 0;
 
-        for (nempty = 0; ptcount; --ptcount, ++ptindex)
-        {
-                struct page_table* pt = map_page_table(vmem32, ptindex, false);
+    for (; ptcount; --ptcount, ++ptindex) {
+        struct page_table* pt = map_page_table(vmem32, ptindex, false);
 
-                if (!pt) {
-                        nempty +=
-                                minul(pgcount,
-                                      1024 - pagetable_page_index(pgindex));
-                } else {
-                        /* count empty pages at beginning of page table */
-                        for (size_t i = pagetable_page_index(pgindex);
-                                pgcount
-                                && (i < ARRAY_NELEMS(pt->entry))
-                                && (!pte_get_pageframe_index(pt->entry[i]));
-                             ++i)
-                        {
-                                --pgcount;
-                                ++pgindex;
-                                ++nempty;
-                        }
+        if (!pt) {
+            nempty += minul(pgcount, 1024 - pagetable_page_index(pgindex));
+        } else {
+            /* count empty pages at beginning of page table */
+            for (size_t i = pagetable_page_index(pgindex);
+                    pgcount
+                    && (i < ARRAY_NELEMS(pt->entry))
+                    && (!pte_get_pageframe_index(pt->entry[i]));
+                    ++i) {
+                --pgcount;
+                ++pgindex;
+                ++nempty;
+            }
 
-                        unmap_page_table(vmem32, pt);
-                }
+            unmap_page_table(vmem32, pt);
         }
+    }
 
-        return nempty;
+    return nempty;
 }
 
 int
-vmem_32_alloc_frames(struct vmem_32* vmem32, os_index_t pfindex, os_index_t pgindex,
-                     size_t pgcount, unsigned int pteflags)
+vmem_32_alloc_frames(struct vmem_32* vmem32,
+                     os_index_t pfindex, os_index_t pgindex, size_t pgcount,
+                     unsigned int pteflags)
 {
-        os_index_t ptindex;
-        size_t ptcount, i;
-        int err;
+    os_index_t ptindex = pagetable_index(page_address(pgindex));
+    size_t     ptcount = pagetable_count(page_address(pgindex),
+                                         page_memory(pgcount));
 
-        ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+    int res;
 
-        err = 0;
+    for (size_t i = 0; i < ptcount; ++i) {
 
-        for (i = 0; (i < ptcount) && !(err < 0); ++i)
-        {
-                struct page_table *pt = map_page_table(vmem32, ptindex + i, true);
+        struct page_table *pt = map_page_table(vmem32, ptindex + i, true);
 
-                if (!pt) {
-                        err = -ENOMEM;
-                        break;
-                }
-
-                for (size_t j = pagetable_page_index(pgindex);
-                     pgcount
-                     && (j < ARRAY_NELEMS(pt->entry))
-                     && !(err < 0); --pgcount, ++j, ++pgindex, ++pfindex)
-                {
-                        err = page_table_map_page_frame(pt,
-                                                        pfindex,
-                                                        j,
-                                                        pteflags);
-                        if (err < 0)
-                        {
-                                break;
-                        }
-                }
-
-                unmap_page_table(vmem32, pt);
+        if (!pt) {
+            res = -ENOMEM;
+            goto err_map_page_table;
         }
 
-        mmu_flush_tlb();
+        for (size_t j = pagetable_page_index(pgindex);
+                pgcount
+                && (j < ARRAY_NELEMS(pt->entry));
+                --pgcount, ++j, ++pgindex, ++pfindex) {
 
-        return err;
+            res = page_table_map_page_frame(pt,
+                                            pfindex,
+                                            j,
+                                            pteflags);
+            if (res < 0) {
+                goto err_page_table_map_page_frame;
+            }
+        }
+
+        unmap_page_table(vmem32, pt);
+    }
+
+    mmu_flush_tlb();
+
+    return 0;
+
+err_page_table_map_page_frame:
+err_map_page_table:
+    /* TODO: clean up */
+    return res;
 }
 
 os_index_t
 vmem_32_lookup_frame(struct vmem_32* vmem32, os_index_t pgindex)
 {
-        os_index_t pfindex;
-        int err;
+    os_index_t ptindex = pagetable_index(page_address(pgindex));
 
-        os_index_t ptindex = pagetable_index(page_address(pgindex));
+    struct page_table* pt = map_page_table(vmem32, ptindex, false);
+    if (!pt) {
+        return -EFAULT;
+    }
 
-        struct page_table* pt = map_page_table(vmem32, ptindex, false);
+    int res;
 
-        if (!pt) {
-            err = -EFAULT;
-            goto err_map_page_table;
-        }
+    if (!pte_is_present(pt->entry[pgindex & 0x3ff])) {
+        res = -EFAULT;
+        goto err_pte_is_present;
+    }
 
-        if (!pte_is_present(pt->entry[pgindex & 0x3ff]))
-        {
-                err = -EFAULT;
-                goto err_pte_is_present;
-        }
+    os_index_t pfindex = pte_get_pageframe_index(pt->entry[pgindex & 0x3ff]);
 
-        pfindex = pte_get_pageframe_index(pt->entry[pgindex & 0x3ff]);
+    unmap_page_table(vmem32, pt);
 
-        unmap_page_table(vmem32, pt);
-
-        return pfindex;
+    return pfindex;
 
 err_pte_is_present:
-        unmap_page_table(vmem32, pt);
-err_map_page_table:
-        return err;
+    unmap_page_table(vmem32, pt);
+    return res;
 }
 
 int
 vmem_32_alloc_pages(struct vmem_32* vmem32, os_index_t pgindex, size_t pgcount,
                     unsigned int pteflags)
 {
-        os_index_t ptindex;
-        size_t ptcount;
-        size_t i;
-        int err;
+    os_index_t ptindex = pagetable_index(page_address(pgindex));
+    size_t     ptcount = pagetable_count(page_address(pgindex),
+                                         page_memory(pgcount));
 
-        ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+    int res = 0;
 
-        err = 0;
+    for (size_t i = 0; i < ptcount; ++i) {
 
-        for (i = 0; (i < ptcount) && !(err < 0); ++i)
-        {
-            struct page_table* pt = map_page_table(vmem32, ptindex + i, true);
+        struct page_table* pt = map_page_table(vmem32, ptindex + i, true);
 
-            if (!pt) {
-                err = -EFAULT;
-                break;
-            }
-
-            /* allocate pages within page table */
-
-            for (size_t j = pagetable_page_index(pgindex);
-                     pgcount
-                     && (j < ARRAY_NELEMS(pt->entry))
-                     && !(err < 0); --pgcount, ++j, ++pgindex)
-            {
-                    os_index_t pfindex = pmem_alloc_frames(1);
-
-                    if (!pfindex)
-                    {
-                            err = -ENOMEM;
-                            break;
-                    }
-
-                    err = page_table_map_page_frame(pt, pfindex, j,
-                                                    pteflags);
-                    if (err < 0)
-                    {
-                            break;
-                    }
-            }
-            unmap_page_table(vmem32, pt);
+        if (!pt) {
+            res = -EFAULT;
+            goto err_map_page_table;
         }
 
-        mmu_flush_tlb();
+        /* allocate pages within page table */
 
-        return err;
+        for (size_t j = pagetable_page_index(pgindex);
+                pgcount
+                && (j < ARRAY_NELEMS(pt->entry));
+                --pgcount, ++j, ++pgindex) {
+
+            os_index_t pfindex = pmem_alloc_frames(1);
+            if (!pfindex) {
+                res = -ENOMEM;
+                goto err_pmem_alloc_frames;
+            }
+
+            res = page_table_map_page_frame(pt, pfindex, j, pteflags);
+            if (res < 0) {
+                goto err_page_table_map_page_frame;
+            }
+        }
+
+        unmap_page_table(vmem32, pt);
+    }
+
+    mmu_flush_tlb();
+
+    return 0;
+
+err_page_table_map_page_frame:
+err_pmem_alloc_frames:
+err_map_page_table:
+    /* TODO: clean up */
+    return res;
 }
 
 int
@@ -458,58 +450,53 @@ vmem_32_map_pages(struct vmem_32* dst_as, os_index_t dst_pgindex,
                   struct vmem_32 *src_as, os_index_t src_pgindex,
                   size_t pgcount, unsigned long pteflags)
 {
-        os_index_t dst_ptindex, dst_ptcount;
-        int err;
-        os_index_t i;
+    os_index_t dst_ptindex = pagetable_index(page_address(dst_pgindex));
+    size_t     dst_ptcount = pagetable_count(page_address(dst_pgindex),
+                                             page_memory(pgcount));
 
-        dst_ptindex = pagetable_index(page_address(dst_pgindex));
-        dst_ptcount = pagetable_count(page_address(dst_pgindex),
-                                      page_memory(pgcount));
+    int res;
 
-        err = 0;
+    for (size_t i = 0; i < dst_ptcount; ++i) {
 
-        for (i = 0; (i < dst_ptcount) && !(err < 0); ++i)
-        {
-            struct page_table* dst_pt = map_page_table(dst_as, dst_ptindex + i, true);
+        struct page_table* dst_pt = map_page_table(dst_as, dst_ptindex + i, true);
 
-            if (!dst_pt) {
-                err = -EFAULT;
-                break;
-            }
-
-            /* map pages within page table */
-
-            for (size_t j = pagetable_page_index(dst_pgindex);
-                     pgcount
-                     && (j < ARRAY_NELEMS(dst_pt->entry))
-                     && !(err < 0); --pgcount, ++j, ++dst_pgindex)
-            {
-                    os_index_t src_pfindex;
-
-                    src_pfindex = vmem_32_lookup_frame(src_as, src_pgindex);
-
-                    if (src_pfindex < 0)
-                    {
-                            err = src_pfindex;
-                            /*
-                             * handle error
-                             */
-                    }
-
-                    err = page_table_map_page_frame(dst_pt, src_pfindex,
-                                                    j, pteflags);
-                    if (err < 0)
-                    {
-                            break;
-                    }
-            }
-
-            unmap_page_table(dst_as, dst_pt);
+        if (!dst_pt) {
+            res = -EFAULT;
+            goto err_map_page_table;
         }
 
-        mmu_flush_tlb();
+        /* map pages within page table */
 
-        return err;
+        for (size_t j = pagetable_page_index(dst_pgindex);
+                pgcount
+                && (j < ARRAY_NELEMS(dst_pt->entry));
+                --pgcount, ++j, ++dst_pgindex) {
+
+            os_index_t src_pfindex = vmem_32_lookup_frame(src_as, src_pgindex);
+
+            if (src_pfindex < 0) {
+                res = src_pfindex;
+                goto err_vmem_32_lookup_frame;
+            }
+
+            res = page_table_map_page_frame(dst_pt, src_pfindex, j, pteflags);
+            if (res < 0) {
+                goto err_page_table_map_page_frame;
+            }
+        }
+
+        unmap_page_table(dst_as, dst_pt);
+    }
+
+    mmu_flush_tlb();
+
+    return 0;
+
+err_page_table_map_page_frame:
+err_vmem_32_lookup_frame:
+err_map_page_table:
+    /* TODO: clean up */
+    return res;
 }
 
 int

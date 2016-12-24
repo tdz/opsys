@@ -53,7 +53,7 @@ vmem_32_alloc_pages(struct vmem_32* vmem32, os_index_t pgindex,
 
 int
 vmem_32_map_pages(struct vmem_32* dst_as, os_index_t dst_pgindex,
-                  struct vmem_32 *src_as, os_index_t src_pgindex,
+                  struct vmem_32* src_as, os_index_t src_pgindex,
                   size_t pgcount, unsigned long pteflags);
 
 int

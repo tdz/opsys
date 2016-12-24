@@ -22,36 +22,31 @@
 #include <string.h>
 #include "vmemarea_32.h"
 
-const struct vmem_area *
+const struct vmem_area*
 vmem_area_get_by_name(enum vmem_area_name name)
 {
-        return g_vmem_area + name;
+    return g_vmem_area + name;
 }
 
-const struct vmem_area *
+const struct vmem_area*
 vmem_area_get_by_page(os_index_t pgindex)
 {
-        const struct vmem_area *beg, *end;
+    const struct vmem_area* beg = g_vmem_area;
+    const struct vmem_area* end = g_vmem_area + ARRAY_NELEMS(g_vmem_area);
 
-        beg = g_vmem_area;
-        end = g_vmem_area + ARRAY_NELEMS(g_vmem_area);
-
-        while (beg < end)
-        {
-                if (vmem_area_contains_page(beg, pgindex))
-                {
-                        return beg;
-                }
-                ++beg;
+    while (beg < end) {
+        if (vmem_area_contains_page(beg, pgindex)) {
+            return beg;
         }
+        ++beg;
+    }
 
-        return NULL;
+    return NULL;
 }
 
 int
-vmem_area_contains_page(const struct vmem_area *area,
-                           os_index_t pgindex)
+vmem_area_contains_page(const struct vmem_area* area, os_index_t pgindex)
 {
-        return (area->pgindex <= pgindex)
-                && (pgindex < area->pgindex + area->npages);
+    return (area->pgindex <= pgindex)
+            && (pgindex < area->pgindex + area->npages);
 }

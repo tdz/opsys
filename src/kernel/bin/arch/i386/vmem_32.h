@@ -57,7 +57,7 @@ vmem_32_map_pages(struct vmem_32* dst_as, os_index_t dst_pgindex,
                   size_t pgcount, unsigned long pteflags);
 
 int
-vmem_32_share_2nd_lvl_ps(struct vmem_32* dst_vmem32,
+vmem_32_share_page_range(struct vmem_32* dst_vmem32,
                          struct vmem_32* src_vmem32,
                          os_index_t pgindex, size_t pgcount);
 

@@ -56,32 +56,6 @@ err_vmem_32_init:
     return res;
 }
 
-static int
-share_2nd_lvl_ps(struct vmem* dst_vmem, struct vmem* src_vmem,
-                 os_index_t pgindex, size_t pgcount)
-{
-    return vmem_32_share_2nd_lvl_ps(&dst_vmem->vmem_32,
-                                    &src_vmem->vmem_32,
-                                    pgindex, pgcount);
-}
-
-static int
-flat_copy_areas(struct vmem* dst_vmem,
-                struct vmem* src_vmem,
-                unsigned long pteflags)
-{
-    for (enum vmem_area_name name = 0; name < LAST_VMEM_AREA; ++name) {
-
-        const struct vmem_area* area = vmem_area_get_by_name(name);
-
-        if (area->flags & pteflags) {
-            share_2nd_lvl_ps(dst_vmem, src_vmem, area->pgindex, area->npages);
-        }
-    }
-
-    return 0;
-}
-
 static void*
 alloc_pages(size_t siz, void* data)
 {
@@ -106,6 +80,16 @@ unref_pages(void* ptr, size_t siz, void* data)
 }
 
 int
+share_page_range(struct vmem* dst_vmem,
+                 struct vmem* src_vmem,
+                 os_index_t pgindex, size_t pgcount)
+{
+    return vmem_32_share_page_range(&dst_vmem->vmem_32,
+                                    &src_vmem->vmem_32,
+                                    pgindex, pgcount);
+}
+
+int
 vmem_init_from_parent(struct vmem* vmem, struct vmem* parent)
 {
     int res = vmem_init(vmem, alloc_pages, unref_pages, parent);
@@ -113,14 +97,25 @@ vmem_init_from_parent(struct vmem* vmem, struct vmem* parent)
         return res;
     }
 
-    res = flat_copy_areas(vmem, parent, VMEM_AREA_FLAG_GLOBAL);
-    if (res < 0) {
-        goto err_flat_copy_areas;
+    for (enum vmem_area_name name = 0; name < LAST_VMEM_AREA; ++name) {
+
+        const struct vmem_area* area = vmem_area_get_by_name(name);
+
+        if (!(area->flags & VMEM_AREA_FLAG_GLOBAL)) {
+            continue;
+        }
+
+        res = share_page_range(vmem, parent,
+                               area->pgindex,
+                               area->npages);
+        if (res < 0) {
+            goto err_share_page_range;
+        }
     }
 
     return 0;
 
-err_flat_copy_areas:
+err_share_page_range:
     vmem_uninit(vmem);
     return res;
 }

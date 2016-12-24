@@ -513,29 +513,25 @@ vmem_32_map_pages(struct vmem_32* dst_as, os_index_t dst_pgindex,
 }
 
 int
-vmem_32_share_2nd_lvl_ps(struct vmem_32* dst_vmem32,
+vmem_32_share_page_range(struct vmem_32* dst_vmem32,
                          struct vmem_32* src_vmem32,
                          os_index_t pgindex, size_t pgcount)
 {
-        struct page_directory *dst_pd;
-        const struct page_directory *src_pd;
-        os_index_t ptindex;
-        size_t ptcount;
 
-        dst_pd = dst_vmem32->pd;
-        src_pd = src_vmem32->pd;
+    os_index_t ptindex = pagetable_index(page_address(pgindex));
+    size_t     ptcount = pagetable_count(page_address(pgindex),
+                                         page_memory(pgcount));
 
-        ptindex = pagetable_index(page_address(pgindex));
-        ptcount = pagetable_count(page_address(pgindex), page_memory(pgcount));
+    struct page_directory* dst_pd = dst_vmem32->pd;
+    struct page_directory* src_pd = src_vmem32->pd;
 
-        while (ptcount)
-        {
-                dst_pd->entry[ptindex] = src_pd->entry[ptindex];
-                ++ptindex;
-                --ptcount;
-        }
+    while (ptcount) {
+        dst_pd->entry[ptindex] = src_pd->entry[ptindex];
+        ++ptindex;
+        --ptcount;
+    }
 
-        return 0;
+    return 0;
 }
 
 /*

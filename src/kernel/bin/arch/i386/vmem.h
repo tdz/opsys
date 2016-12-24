@@ -104,6 +104,9 @@ vmem_empty_pages_in_area(struct vmem* vmem,
  */
 
 int
+vmem_init_nopg(struct vmem* vmem);
+
+int
 vmem_map_pageframes_nopg(struct vmem* vmem, os_index_t pfindex,
                          os_index_t pgindex, size_t count, unsigned int flags);
 

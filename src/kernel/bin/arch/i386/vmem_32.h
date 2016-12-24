@@ -75,5 +75,8 @@ vmem_32_alloc_page_table_nopg(struct vmem_32* vmem32,
 int
 vmem_32_install_tmp_nopg(struct vmem_32* vmem32);
 
+int
+vmem_32_map_paging_structures_nopg(struct vmem_32* vmem32);
+
 void
 vmem_32_enable_paging_nopg(struct vmem_32* vmem32);

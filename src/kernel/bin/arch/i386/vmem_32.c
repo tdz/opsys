@@ -631,6 +631,27 @@ err_page_directory_install_page_table:
     return res;
 }
 
+int
+vmem_32_map_paging_structures_nopg(struct vmem_32* vmem32)
+{
+    /* So far the page directory is only allocated in physical
+     * memory, but not mapped into the virtual address space. We
+     * have to do this _before_ we enable paging.
+     *
+     * Here we create an identity mapping for page-directory's page
+     * frame. Whis the address stored in vmem remains valid.
+     */
+    int res = vmem_32_map_pageframe_nopg(vmem32,
+                                         pageframe_index(vmem32->pd),
+                                         page_index(vmem32->pd),
+                                         PTE_FLAG_PRESENT | PTE_FLAG_WRITEABLE);
+    if (res < 0) {
+        return res;
+    }
+    return 0;
+
+}
+
 void
 vmem_32_enable_paging_nopg(struct vmem_32* vmem32)
 {

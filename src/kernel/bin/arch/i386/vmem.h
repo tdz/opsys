@@ -124,6 +124,13 @@ int
 vmem_install_tmp_nopg(struct vmem* vmem);
 
 /**
+ * \brief Map paging structures into virtual address space
+ * \param[in] The virtual address space
+ */
+int
+vmem_map_paging_structures_nopg(struct vmem* vmem);
+
+/**
  * \brief Enables paging
  * \param[in] vmem The current address space
  *

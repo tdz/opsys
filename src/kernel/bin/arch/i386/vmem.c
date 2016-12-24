@@ -487,6 +487,16 @@ vmem_install_tmp_nopg(struct vmem* vmem)
     return 0;
 }
 
+int
+vmem_map_paging_structures_nopg(struct vmem* vmem)
+{
+    int res = vmem_32_map_paging_structures_nopg(&vmem->vmem_32);
+    if (res < 0) {
+        return res;
+    }
+    return 0;
+}
+
 void
 vmem_enable_paging_nopg(struct vmem* vmem)
 {

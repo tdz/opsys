@@ -634,27 +634,6 @@ destroy_page_directory(struct page_directory* pd)
 }
 
 int
-map_page_directory(struct page_directory* pd, struct vmem* vmem)
-{
-    /* So far the page directory is only allocated in physical
-     * memory, but not mapped into the virtual address space. We
-     * have to do this _before_ we enable paging.
-     *
-     * Here we create an identity mapping for page-directory's page
-     * frame. Whis the address stored in vmem remains valid.
-     */
-    int res = vmem_map_pageframes_nopg(vmem,
-                                       pageframe_index(pd),
-                                       page_index(pd),
-                                       pageframe_count(sizeof(*pd)),
-                                       PTE_FLAG_PRESENT | PTE_FLAG_WRITEABLE);
-    if (res < 0) {
-        return res;
-    }
-    return 0;
-}
-
-int
 map_memmap_frames(struct vmem* vmem, const pmem_map_t* memmap, size_t nframes)
 {
     int res = vmem_map_pageframes_nopg(vmem,
@@ -876,9 +855,9 @@ init_vmem_from_multiboot(struct vmem* vmem, const struct multiboot_info* info)
     }
 
     /* map page directory */
-    res = map_page_directory(pd, vmem);
+    res = vmem_map_paging_structures_nopg(vmem);
     if (res < 0){
-        goto err_map_page_directory;
+        goto err_vmem_map_paging_structures_nopg;
     }
 
     /* map PMEM memory map */
@@ -910,7 +889,7 @@ err_map_modules_frames:
 err_map_kernel_frames:
 err_map_multiboot_frames:
 err_map_memmap_frames:
-err_map_page_directory:
+err_vmem_map_paging_structures_nopg:
 err_vmem_install_tmp_nopg:
 err_vmem_map_pageframes_nopg_pollute:
 err_vmem_map_pageframes_nopg_identity:

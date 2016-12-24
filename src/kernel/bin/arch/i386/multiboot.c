@@ -999,7 +999,7 @@ multiboot_init(const struct multiboot_header* header,
         return;
     }
 
-    vmem_enable(&g_kernel_vmem); // paging enabled! avoid PMEM after this point
+    vmem_enable_paging_nopg(&g_kernel_vmem); // paging enabled!
 
     /* All Multiboot page frames should now have been mapped into the
      * kernel's virtual address space and referenced accordingly. So we

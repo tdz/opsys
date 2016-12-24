@@ -45,9 +45,6 @@ vmem_init(struct vmem *vmem, void *tlps);
 void
 vmem_uninit(struct vmem *vmem);
 
-void
-vmem_enable(struct vmem *vmem);
-
 int
 vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex,
                                                    os_index_t pgindex,
@@ -108,6 +105,17 @@ vmem_alloc_page_tables_nopg(struct vmem* vmem, os_index_t ptindex,
  */
 int
 vmem_install_tmp_nopg(struct vmem* vmem);
+
+/**
+ * \brief Enables paging
+ * \param[in] vmem The current address space
+ *
+ * This is always the final _nopg function to be called. After it
+ * returned, paging is enabled and VMEM callers should use the regular
+ * interface.
+ */
+void
+vmem_enable_paging_nopg(struct vmem* vmem);
 
 /*
  * Fault handlers

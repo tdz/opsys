@@ -53,12 +53,6 @@ vmem_uninit(struct vmem* vmem)
     semaphore_uninit(&vmem->sem);
 }
 
-void
-vmem_enable(struct vmem *vmem)
-{
-        vmem_32_enable(&vmem->vmem_32);
-}
-
 int
 vmem_alloc_frames(struct vmem *vmem, os_index_t pfindex, os_index_t pgindex,
                   size_t pgcount, unsigned int pteflags)
@@ -386,6 +380,12 @@ vmem_install_tmp_nopg(struct vmem* vmem)
         return res;
     }
     return 0;
+}
+
+void
+vmem_enable_paging_nopg(struct vmem* vmem)
+{
+    vmem_32_enable_paging_nopg(&vmem->vmem_32);
 }
 
 /*

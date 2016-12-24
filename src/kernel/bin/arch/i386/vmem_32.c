@@ -267,15 +267,6 @@ void
 vmem_32_uninit(struct vmem_32* vmem32)
 { }
 
-void
-vmem_32_enable(struct vmem_32* vmem32)
-{
-        const struct page_directory *pd = vmem32->pd;
-
-        mmu_load(((unsigned long)pd->entry) & (~0xfff));
-        mmu_enable_paging();
-}
-
 size_t
 vmem_32_check_empty_pages(struct vmem_32* vmem32, os_index_t pgindex, size_t pgcount)
 {
@@ -638,4 +629,13 @@ err_vmem_32_map_pageframe_nopg:
     page_directory_uninstall_page_table(vmem32->pd, index);
 err_page_directory_install_page_table:
     return res;
+}
+
+void
+vmem_32_enable_paging_nopg(struct vmem_32* vmem32)
+{
+    const struct page_directory *pd = vmem32->pd;
+
+    mmu_load(((unsigned long)pd->entry) & (~0xfff));
+    mmu_enable_paging();
 }

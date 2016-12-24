@@ -33,9 +33,6 @@ vmem_32_init(struct vmem_32* vmem32, struct page_directory* pd);
 void
 vmem_32_uninit(struct vmem_32* vmem32);
 
-void
-vmem_32_enable(struct vmem_32* vmem32);
-
 int
 vmem_32_alloc_frames(struct vmem_32* vmem32,
                      os_index_t pfindex, os_index_t pgindex, size_t pgcount,
@@ -77,3 +74,6 @@ vmem_32_alloc_page_table_nopg(struct vmem_32* vmem32,
 
 int
 vmem_32_install_tmp_nopg(struct vmem_32* vmem32);
+
+void
+vmem_32_enable_paging_nopg(struct vmem_32* vmem32);

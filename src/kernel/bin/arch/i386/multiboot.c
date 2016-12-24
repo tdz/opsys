@@ -870,16 +870,25 @@ init_vmem_from_multiboot(struct vmem* vmem, const struct multiboot_info* info)
         }
     }
 
+    /* prepare temporary mappings */
+    res = vmem_install_tmp_nopg(vmem);
+    if (res < 0) {
+        goto err_vmem_install_tmp_nopg;
+    }
+
     /* map page directory */
     res = map_page_directory(pd, vmem);
     if (res < 0){
         goto err_map_page_directory;
     }
 
+    /* map PMEM memory map */
     res = map_memmap_frames(vmem, pmem_get_memmap(), pmem_get_nframes());
     if (res < 0){
         goto err_map_memmap_frames;
     }
+
+    /* map Multiboot page frames */
 
     res = map_multiboot_frames(vmem, info);
     if (res < 0){
@@ -896,21 +905,14 @@ init_vmem_from_multiboot(struct vmem* vmem, const struct multiboot_info* info)
         goto err_map_modules_frames;
     }
 
-    /* prepare temporary mappings */
-
-    res = vmem_install_tmp_nopg(vmem);
-    if (res < 0) {
-        goto err_vmem_install_tmp_nopg;
-    }
-
     return 0;
 
-err_vmem_install_tmp_nopg:
 err_map_modules_frames:
 err_map_kernel_frames:
 err_map_multiboot_frames:
 err_map_memmap_frames:
 err_map_page_directory:
+err_vmem_install_tmp_nopg:
 err_vmem_map_pageframes_nopg_pollute:
 err_vmem_map_pageframes_nopg_identity:
 err_vmem_alloc_page_tables_nopg:

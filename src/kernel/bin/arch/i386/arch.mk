@@ -17,6 +17,7 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         tcbregs.c \
         tcbregs.S \
         vmem_32.c \
+        vmemarea_32.c \
 	)
 
 oskernel_INCLUDES += external/multiboot/include

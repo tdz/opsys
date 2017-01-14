@@ -1,7 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
  *  Copyright (C) 2009-2010  Thomas Zimmermann
- *  Copyright (C) 2016       Thomas Zimmermann
+ *  Copyright (C) 2016-2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,21 +21,6 @@
 #include <errno.h>
 #include <generic/tid.h>
 #include "syscall.h"
-
-enum syscall_op
-{
-        SYSCALL_OP_SEND, /**< send message to another thread */
-        SYSCALL_OP_SEND_AND_WAIT, /**< send message to another thread and wait for its answer */
-        SYSCALL_OP_RECV, /**< receive from any thread */
-        SYSCALL_OP_REPLY_AND_RECV /**< replay to thread and receive from any thread */
-};
-
-enum ipc_msg_flags
-{
-        IPC_MSG_FLAGS_RESERVED = 0xe0000000,
-        IPC_MSG_FLAGS_MMAP     = 1<<17,
-        IPC_MSG_FLAG_IS_ERRNO  = 1<<16
-};
 
 int
 crt_write(const char *buf, size_t buflen, unsigned char attr)

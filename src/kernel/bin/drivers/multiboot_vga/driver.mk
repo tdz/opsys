@@ -1,4 +1,4 @@
 
-oskernel_SRCS += $(addprefix $(driversdir)multiboot_vga/, \
+kernel_SRCS += $(addprefix $(driversdir)multiboot_vga/, \
         multiboot_vga.c \
-	)
+    )

@@ -4,6 +4,6 @@ color cyan/blue white/blue
 
 title   opsys
 root    (hd0,0)
-kernel  --type=multiboot /oskernel
+kernel  --type=multiboot /kernel
 module  /helloworld
 

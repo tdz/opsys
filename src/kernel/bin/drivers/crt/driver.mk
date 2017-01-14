@@ -1,4 +1,4 @@
 
-oskernel_SRCS += $(addprefix $(driversdir)crt/, \
+kernel_SRCS += $(addprefix $(driversdir)crt/, \
         crt.c \
-	)
+    )

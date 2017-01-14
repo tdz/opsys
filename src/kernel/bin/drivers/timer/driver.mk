@@ -1,4 +1,4 @@
 
-oskernel_SRCS += $(addprefix $(driversdir)timer/, \
+kernel_SRCS += $(addprefix $(driversdir)timer/, \
         timer.c \
     )

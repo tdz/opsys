@@ -1,5 +1,5 @@
 
-oskernel_SRCS += $(addprefix $(archdir)/, \
+kernel_SRCS += $(addprefix $(archdir)/, \
         debug.c \
         gdt.c \
         idt.c \
@@ -20,5 +20,5 @@ oskernel_SRCS += $(addprefix $(archdir)/, \
         vmemarea_32.c \
 	)
 
-oskernel_INCLUDES += external/multiboot/include
-oskernel_LDSCRIPTS += $(archdir)/oskernel.ld
+kernel_INCLUDES += external/multiboot/include
+kernel_LDSCRIPTS += $(archdir)/kernel.ld

@@ -2,40 +2,40 @@
 archdir    := arch/$(HOST_CPU)/
 driversdir := drivers/
 
-BINS += oskernel
+BINS += kernel
 
-oskernel_MODULEDIR := kernel/bin
+kernel_MODULEDIR := kernel/bin
 
-oskernel_SRCS = alloc.c \
-                assert.c \
-                bitset.c \
-                console.c \
-                elfldr.c \
-                ipc.c \
-                ipcmsg.c \
-                irq.c \
-                list.c \
-                loader.c \
-                memzone.c \
-                pmem.c \
-                pmemarea.c \
-                sched.c \
-                semaphore.c \
-                spinlock.c \
-                syscall.c \
-                sysexec.c \
-                syssrv.c \
-                task.c \
-                taskhlp.c \
-                tcb.c \
-                tcbhlp.c \
-                timer.c \
-                vmem.c \
-                vmemarea.c
+kernel_SRCS = alloc.c \
+              assert.c \
+              bitset.c \
+              console.c \
+              elfldr.c \
+              ipc.c \
+              ipcmsg.c \
+              irq.c \
+              list.c \
+              loader.c \
+              memzone.c \
+              pmem.c \
+              pmemarea.c \
+              sched.c \
+              semaphore.c \
+              spinlock.c \
+              syscall.c \
+              sysexec.c \
+              syssrv.c \
+              task.c \
+              taskhlp.c \
+              tcb.c \
+              tcbhlp.c \
+              timer.c \
+              vmem.c \
+              vmemarea.c
 
-oskernel_INCLUDES += kernel/bin/$(archdir) kernel/bin
-oskernel_INCLUDES += kernel/include/$(archdir) kernel/include
-oskernel_LD_SEARCH_PATHS += kernel/bin kernel/lib
+kernel_INCLUDES += kernel/bin/$(archdir) kernel/bin
+kernel_INCLUDES += kernel/include/$(archdir) kernel/include
+kernel_LD_SEARCH_PATHS += kernel/bin kernel/lib
 
 # include architecture-specific files
 include $(srcdir)/kernel/bin/$(archdir)/arch.mk
@@ -44,4 +44,4 @@ include $(srcdir)/kernel/bin/$(archdir)/arch.mk
 driver_mk := driver.mk
 include $(shell find -P $(srcdir)/kernel/bin/$(driversdir) -type f -name "$(driver_mk)")
 
-oskernel_LIBS += libkernel.a
+kernel_LIBS += libkernel.a

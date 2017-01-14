@@ -44,4 +44,4 @@ include $(srcdir)/kernel/bin/$(archdir)/arch.mk
 driver_mk := driver.mk
 include $(shell find -P $(srcdir)/kernel/bin/$(driversdir) -type f -name "$(driver_mk)")
 
-oskernel_LIBS += libopsys.a
+oskernel_LIBS += libkernel.a

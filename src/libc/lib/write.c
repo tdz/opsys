@@ -19,7 +19,7 @@
 
 #include "crt.h"
 #include <errno.h>
-#include <generic/tid.h>
+#include <tid.h>
 #include "syscall.h"
 
 int

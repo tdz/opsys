@@ -1,7 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
  *  Copyright (C) 2009-2010  Thomas Zimmermann
- *  Copyright (C) 2016       Thomas Zimmermann
+ *  Copyright (C) 2016-2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 
 #include "syscall.h"
 #include <errno.h>
-#include <generic/tid.h>
 #include <string.h>
+#include <tid.h>
 #include "console.h"
 #include "cpu.h"
 #include "ipc.h"

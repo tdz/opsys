@@ -1,7 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann
- *  Copyright (C) 2016-2017  Thomas Zimmermann
+ *  Copyright (C) 2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,18 +16,25 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "crt.h"
-#include <errno.h>
-#include <tid.h>
-#include "ipc_consts.h"
-#include "syscall.h"
-#include "syscall_consts.h"
+#pragma once
 
-int
-crt_write(const char *buf, size_t buflen, unsigned char attr)
-{
-        return syscall0(threadid_create(0, 1),
-                        (unsigned long)((SYSCALL_OP_SEND_AND_WAIT<<28)|IPC_MSG_FLAGS_MMAP|1),
-                        ((unsigned long)buf)>>12,
-                        (unsigned long)(buflen>>12)+1);
-}
+enum ipc_msg_flags {
+    IPC_MSG_FLAGS_RESERVED = 0xe0000000,
+    IPC_MSG_FLAGS_MMAP     = 1<<17,
+    IPC_MSG_FLAG_IS_ERRNO  = 1<<16
+};
+
+enum {
+    IPC_OPSYS_TASK_QUIT = 0,
+};
+
+enum {
+    IPC_MMAP_RD = 1<<1, /**< \brief map pages readable */
+    IPC_MMAP_WR = 1<<2, /**< \brief map pages writeable */
+    IPC_MMAP_EX = 1<<3 /**< \brief map pages executable */
+};
+
+enum {
+    IPC_TIMEOUT_NOW = 0, /**< \brief return immediately if receiver is not ready */
+    IPC_TIMEOUT_NEVER = -1 /**< \brief never timeout */
+};

@@ -1,7 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann
- *  Copyright (C) 2016  Thomas Zimmermann
+ *  Copyright (C) 2010       Thomas Zimmermann
+ *  Copyright (C) 2016-2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,22 +19,10 @@
 
 #pragma once
 
+#include <ipc_consts.h>
 #include "list.h"
 
 struct tcb;
-
-enum ipc_timeout
-{
-        IPC_TIMEOUT_NOW   = 0,
-        IPC_TIMEOUT_NEVER = 0x7fffffff
-};
-
-enum ipc_msg_flags
-{
-        IPC_MSG_FLAGS_RESERVED = 0xe0000000,
-        IPC_MSG_FLAGS_MMAP     = 1<<17,
-        IPC_MSG_FLAG_IS_ERRNO  = 1<<16
-};
 
 struct ipc_msg {
     struct list     rcv_q;

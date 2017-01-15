@@ -19,39 +19,6 @@
 
 #pragma once
 
-enum ipc_msg_flags
-{
-        IPC_MSG_FLAGS_RESERVED = 0xe0000000,
-        IPC_MSG_FLAGS_MMAP     = 1<<17,
-        IPC_MSG_FLAG_IS_ERRNO  = 1<<16
-};
-
-enum
-{
-        IPC_OPSYS_TASK_QUIT = 0,
-};
-
-enum
-{
-        IPC_MMAP_RD = 1<<1, /**< \brief map pages readable */
-        IPC_MMAP_WR = 1<<2, /**< \brief map pages writeable */
-        IPC_MMAP_EX = 1<<3 /**< \brief map pages executable */
-};
-
-enum
-{
-        IPC_TIMEOUT_NOW = 0, /**< \brief return immediately if receiver is not ready */
-        IPC_TIMEOUT_NEVER = -1 /**< \brief never timeout */
-};
-
-enum
-{
-        IPC_OP_SEND = 0, /**< \brief execute a send call */
-        IPC_OP_SEND_AND_WAIT = 1, /**< \brief execute a send call and wait for reply from sender */
-        IPC_OP_RECV = 2, /**< \brief receive from any sender */
-        IPC_OP_REPLY_AND_RECV = 3 /**< \brief reply to sender and receive from any sender */
-};
-
 /**
  * \brief executes a system call
  * \param rcv the threadid of the receiver thread

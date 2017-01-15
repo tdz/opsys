@@ -20,6 +20,7 @@
 #include "syscall.h"
 #include <errno.h>
 #include <string.h>
+#include <syscall_consts.h>
 #include <tid.h>
 #include "console.h"
 #include "cpu.h"

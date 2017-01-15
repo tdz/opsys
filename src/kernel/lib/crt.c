@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <tid.h>
 #include "syscall.h"
+#include "syscall_consts.h"
 
 int
 crt_write(const char *buf, size_t buflen, unsigned char attr)

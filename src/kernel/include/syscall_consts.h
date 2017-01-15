@@ -1,7 +1,6 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009-2010  Thomas Zimmermann
- *  Copyright (C) 2016-2017  Thomas Zimmermann
+ *  Copyright (C) 2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +18,9 @@
 
 #pragma once
 
-void
-syscall_entry_handler(unsigned long *tid,
-                      unsigned long *flags,
-                      unsigned long *msg0,
-                      unsigned long *msg1);
+enum syscall_op {
+    SYSCALL_OP_SEND, /**< send message to another thread */
+    SYSCALL_OP_SEND_AND_WAIT, /**< send message to another thread and wait for its answer */
+    SYSCALL_OP_RECV, /**< receive from any thread */
+    SYSCALL_OP_REPLY_AND_RECV /**< replay to thread and receive from any thread */
+};

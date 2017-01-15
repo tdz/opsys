@@ -19,14 +19,6 @@
 
 #pragma once
 
-enum syscall_op
-{
-        SYSCALL_OP_SEND, /**< send message to another thread */
-        SYSCALL_OP_SEND_AND_WAIT, /**< send message to another thread and wait for its answer */
-        SYSCALL_OP_RECV, /**< receive from any thread */
-        SYSCALL_OP_REPLY_AND_RECV /**< replay to thread and receive from any thread */
-};
-
 enum ipc_msg_flags
 {
         IPC_MSG_FLAGS_RESERVED = 0xe0000000,

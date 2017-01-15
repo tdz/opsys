@@ -18,7 +18,6 @@
  */
 
 #include "tcb.h"
-#include <arch/i386/page.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -26,6 +25,7 @@
 #include "console.h"
 #include "cpu.h"
 #include "bitset.h"
+#include "page.h"
 #include "pageframe.h"
 #include "task.h"
 #include "vmem.h"

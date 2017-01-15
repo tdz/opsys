@@ -1,7 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann
- *  Copyright (C) 2016  Thomas Zimmermann
+ *  Copyright (C) 2010       Thomas Zimmermann
+ *  Copyright (C) 2016-2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,10 +18,10 @@
  */
 
 #include "vmem.h"
-#include <arch/i386/page.h>
 #include <errno.h>
 #include <stddef.h>
 #include "cpu.h"
+#include "page.h"
 #include "pagedir.h"
 #include "pageframe.h"
 #include "pagetbl.h"

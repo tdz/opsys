@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <arch/i386/page.h>
+#include "page.h"
 
 struct page_directory;
 

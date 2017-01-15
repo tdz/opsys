@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <arch/i386/page.h>
+#include "page.h"
 
 enum {
         PAGEFRAME_SHIFT = 12,

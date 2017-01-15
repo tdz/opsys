@@ -1,7 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
  *  Copyright (C) 2009-2010  Thomas Zimmermann
- *  Copyright (C) 2016       Thomas Zimmermann
+ *  Copyright (C) 2016-2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@ enum {
         PAGE_SIZE  = 1<<PAGE_SHIFT,
         PAGE_MASK  = PAGE_SIZE-1
 };
+
+typedef signed long os_index_t; /**< index of pages, page tables, etc */
 
 static __inline__ os_index_t
 page_index(const void *addr)

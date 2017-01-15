@@ -1,7 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2009  Thomas Zimmermann
- *  Copyright (C) 2016  Thomas Zimmermann
+ *  Copyright (C) 2009       Thomas Zimmermann
+ *  Copyright (C) 2016-2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,12 +19,6 @@
 
 #pragma once
 
-/* POSIX types */
-
 typedef unsigned long size_t;
 typedef   signed long ssize_t;
 typedef   signed long off_t;
-
-/* opsys types */
-
-typedef signed long os_index_t; /* index of pages, page tables, etc */

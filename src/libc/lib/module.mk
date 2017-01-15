@@ -8,4 +8,4 @@ libc.a_SRCS = start.S \
               syscall0.c \
               write.c
 
-libc.a_INCLUDES += libc/include kernel/include
+libc.a_INCLUDES += libc/include kernel/include libc0/include

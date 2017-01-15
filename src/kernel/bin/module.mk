@@ -33,9 +33,12 @@ kernel_SRCS = alloc.c \
               vmem.c \
               vmemarea.c
 
-kernel_INCLUDES += kernel/bin/$(archdir) kernel/bin
-kernel_INCLUDES += kernel/include/$(archdir) kernel/include
-kernel_LD_SEARCH_PATHS += kernel/bin kernel/lib
+kernel_INCLUDES += kernel/bin/$(archdir) \
+                   kernel/bin \
+                   kernel/include/$(archdir) \
+                   kernel/include \
+                   libc0/include
+kernel_LD_SEARCH_PATHS += kernel/bin kernel/lib libc0/lib
 
 # include architecture-specific files
 include $(srcdir)/kernel/bin/$(archdir)/arch.mk
@@ -44,4 +47,4 @@ include $(srcdir)/kernel/bin/$(archdir)/arch.mk
 driver_mk := driver.mk
 include $(shell find -P $(srcdir)/kernel/bin/$(driversdir) -type f -name "$(driver_mk)")
 
-kernel_LIBS += libkernel.a
+kernel_LIBS += libkernel.a libc0.a

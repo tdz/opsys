@@ -1,7 +1,7 @@
 /*
  *  opsys - A small, experimental operating system
- *  Copyright (C) 2010  Thomas Zimmermann
- *  Copyright (C) 2016  Thomas Zimmermann
+ *  Copyright (C) 2010       Thomas Zimmermann
+ *  Copyright (C) 2016-2017  Thomas Zimmermann
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,10 +35,11 @@ bitset_unset(unsigned char *bitset, unsigned long bit)
 void
 bitset_setto(unsigned char *bitset, unsigned long bit, int set)
 {
-        static void (*const setto[]) (unsigned char *, size_t) =
-        {
-        bitset_set, bitset_unset};
-        setto[!set] (bitset, bit);
+    static void (*const setto[]) (unsigned char *, unsigned long) = {
+        bitset_set,
+        bitset_unset
+    };
+    setto[!set] (bitset, bit);
 }
 
 int

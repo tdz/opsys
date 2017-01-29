@@ -25,9 +25,9 @@ enum vmem_area_name
 {
         VMEM_AREA_SYSTEM     = 0, /**< the first page in the address space */
         VMEM_AREA_KERNEL_LOW = 1, /**< low kernel virtual memory */
-        VMEM_AREA_USER       = 2, /**< user virtual memory */
+        VMEM_AREA_KERNEL     = 2, /**< high kernel virtual memory */
         VMEM_AREA_TMPMAP     = 3, /**< high kernel virtual memory for temporary mappings */
-        VMEM_AREA_KERNEL     = 4, /**< high kernel virtual memory */
+        VMEM_AREA_USER       = 4, /**< user virtual memory */
         LAST_VMEM_AREA       = 5 /**< the index of the last entry in vmem_area_name */
 };
 
